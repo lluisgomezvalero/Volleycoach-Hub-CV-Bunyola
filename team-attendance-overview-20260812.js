@@ -138,7 +138,7 @@ function renderTeamAttendance(){
   }
   const model=buildAttendanceModel();
   container.hidden=false;
-  const perf=document.getElementById('training-performance-panel');if(perf) perf.hidden=true;
+  const perf=document.getElementById('training-performance-panel');if(perf&&perf.closest('#view-training')) perf.hidden=true;
   const newBtn=document.getElementById('btn-add-training-session');if(newBtn) newBtn.style.visibility='hidden';
   container.innerHTML=`<section class="team-attendance-overview"><div class="team-attendance-header"><div><span class="team-attendance-kicker"><i data-lucide="users-round"></i> Seguimiento del equipo</span><h2>Asistencia</h2><p>Histórico basado únicamente en asistencia oficial validada.</p></div><div class="team-attendance-view-toggle"><button type="button" class="${attendanceMode==='summary'?'active':''}" onclick="setTeamAttendanceMode('summary')"><i data-lucide="list"></i> Resumen</button><button type="button" class="${attendanceMode==='sessions'?'active':''}" onclick="setTeamAttendanceMode('sessions')"><i data-lucide="table-2"></i> Por sesiones</button></div></div>${attendanceMode==='sessions'?renderMatrix(model):renderSummary(model)}</section>`;
   try{window.lucide?.createIcons?.();}catch(_){}
