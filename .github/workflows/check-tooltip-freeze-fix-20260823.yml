@@ -1,0 +1,19 @@
+name: Check tooltip freeze fix
+on:
+  push:
+    paths:
+      - '.github/workflows/check-tooltip-freeze-fix-20260823.yml'
+permissions:
+  contents: write
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node --check wellness-svg-point-tooltip-20260823.js
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/check-tooltip-freeze-fix-20260823.yml
+          git commit -m "Remove one-time tooltip freeze check"
+          git push
