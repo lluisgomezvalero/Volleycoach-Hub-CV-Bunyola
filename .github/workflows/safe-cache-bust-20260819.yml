@@ -13,44 +13,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Load player statistics mobile UX
+      - name: Force fresh known-good config
         run: |
-          BASE=$(git rev-parse HEAD^)
-          python - <<'PY'
-          from pathlib import Path
-
-          cfg=Path('supabase-config.js')
-          s=cfg.read_text()
-          old="window.VOLLEY_ASSET_VERSION = '20260823g';"
-          new="window.VOLLEY_ASSET_VERSION = '20260824a';"
-          if old not in s:
-              raise SystemExit('Asset version anchor not found')
-          s=s.replace(old,new,1)
-          anchor="  'match-statistics-player-overview-20260819.js?v=20260819a',\n"
-          addition=anchor+"  'match-statistics-player-mobile-ux-20260824.js?v=20260824a',\n"
-          if 'match-statistics-player-mobile-ux-20260824.js' not in s:
-              if anchor not in s:
-                  raise SystemExit('Player stats overview anchor not found')
-              s=s.replace(anchor,addition,1)
-          cfg.write_text(s)
-
-          index=Path('index.html')
-          s=index.read_text()
-          old='supabase-config.js?v=20260823safe66'
-          new='supabase-config.js?v=20260824safe1'
-          if old not in s:
-              raise SystemExit('Index cache anchor not found')
-          index.write_text(s.replace(old,new,1))
-          PY
-
-          node --check match-statistics-player-mobile-ux-20260824.js
+          sed -i 's/supabase-config.js?v=20260818b/supabase-config.js?v=20260819safe1/g' index.html
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add supabase-config.js index.html
-          git commit -m "Load player statistics mobile UX"
-          git push
-
-          git show "$BASE":.github/workflows/safe-cache-bust-20260819.yml > .github/workflows/safe-cache-bust-20260819.yml
-          git add .github/workflows/safe-cache-bust-20260819.yml
-          git commit -m "Restore safe cache workflow"
-          git push
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No cache key change needed"
+          else
+            git commit -m "Force fresh known-good app config"
+            git push
+          fi
