@@ -1,0 +1,50 @@
+name: Refresh wellness tooltip cache
+
+on:
+  push:
+    paths:
+      - '.github/workflows/cache-wellness-tooltip-freeze-20260823.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bump tooltip cache
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          config=Path('supabase-config.js')
+          s=config.read_text()
+          replacements=[
+            ("window.VOLLEY_ASSET_VERSION = '20260823a';","window.VOLLEY_ASSET_VERSION = '20260823b';"),
+            ("'wellness-svg-point-tooltip-20260823.js?v=20260823a'","'wellness-svg-point-tooltip-20260823.js?v=20260823b'"),
+          ]
+          for old,new in replacements:
+            if old not in s: raise SystemExit(f'Missing config anchor: {old}')
+            s=s.replace(old,new,1)
+          config.write_text(s)
+
+          index=Path('index.html')
+          s=index.read_text()
+          old='supabase-config.js?v=20260823safe64'
+          new='supabase-config.js?v=20260823safe65'
+          if old not in s: raise SystemExit('Missing index cache anchor')
+          index.write_text(s.replace(old,new,1))
+          PY
+
+          node --check wellness-svg-point-tooltip-20260823.js
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add supabase-config.js index.html
+          git commit -m "Refresh fixed wellness tooltip cache"
+          git push
+
+          git rm .github/workflows/cache-wellness-tooltip-freeze-20260823.yml
+          git commit -m "Remove one-time tooltip cache workflow"
+          git push
