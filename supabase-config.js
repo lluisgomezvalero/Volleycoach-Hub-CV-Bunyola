@@ -3,7 +3,7 @@
  * La publishable key es segura en el navegador SIEMPRE que las tablas tengan RLS.
  * Nunca pongas aquí la service_role ni una secret key.
  */
-window.VOLLEY_ASSET_VERSION = '20260823c';
+window.VOLLEY_ASSET_VERSION = '20260823d';
 window.VOLLEY_SUPABASE_CONFIG = Object.freeze({
   url: 'https://zpvlkdjdfnvamfcjihyt.supabase.co',
   publishableKey: 'sb_publishable_seL2H6gAGBrUDR0O1vhJDA_Y9d7Ky-u',
@@ -46,7 +46,7 @@ html:not(.attendance-ready) .btn-rsvp-no{visibility:hidden!important;pointer-eve
   'roll-call-mobile-ui-20260810.js?v=20260810n',
   'roll-call-effective-minutes-20260811.js?v=20260812f',
   'attendance-late-count-20260811.js?v=20260812f',
-  'team-attendance-overview-20260812.js?v=20260812p',
+  'team-attendance-overview-20260812.js?v=20260823a',
   'training-attendance-mobile-ux-20260820.js?v=20260820tablet1',
   'training-mobile-app-ux-20260820.js?v=20260820tablet1',
   'training-top-add-hide-20260820.js?v=20260820a',
@@ -60,7 +60,7 @@ html:not(.attendance-ready) .btn-rsvp-no{visibility:hidden!important;pointer-eve
   'dashboard-home-priority-20260812.js?v=20260812o',
   'player-dashboard-priority-20260812.js?v=20260812r',
   'navigation-shell-20260812.js?v=20260812k',
-  'performance-module-render-fix-20260823.js?v=20260823a',
+  'performance-module-render-fix-20260823.js?v=20260823b',
   'player-detail-global-dismiss-20260820.js?v=20260820a',
   'session-header-actions-fix-20260812.js?v=20260812c',
   'app-shell-polish-20260812.js?v=20260812w',

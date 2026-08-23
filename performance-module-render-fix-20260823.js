@@ -16,7 +16,11 @@ function install(attempt=0){
     const result=base.apply(this,arguments);
     if(moduleName==='fitness'){
       requestAnimationFrame(()=>{
-        try{window.renderPerformanceModule();}
+        try{
+          const panel=document.getElementById('training-performance-panel');
+          if(panel)panel.hidden=false;
+          window.renderPerformanceModule();
+        }
         catch(error){console.error('[VolleyCoach] No se pudo renderizar Rendimiento:',error);}
       });
     }
