@@ -1,4 +1,5 @@
 name: Safe cache bust after recovery
+# performance-final-trigger-20260823
 
 on:
   push:
@@ -39,12 +40,41 @@ jobs:
           if old not in s:
               raise SystemExit('app.js cache key not found')
           index.write_text(s.replace(old, new, 1))
+
+          workflow = Path('.github/workflows/safe-cache-bust-20260819.yml')
+          workflow.write_text('''name: Safe cache bust after recovery
+
+on:
+  push:
+    paths:
+      - '.github/workflows/safe-cache-bust-20260819.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  cache-bust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Force fresh known-good config
+        run: |
+          sed -i 's/supabase-config.js?v=20260818b/supabase-config.js?v=20260819safe1/g' index.html
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No cache key change needed"
+          else
+            git commit -m "Force fresh known-good app config"
+            git push
+          fi
+''')
           PY
 
           node --check app.js
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git show HEAD^:.github/workflows/safe-cache-bust-20260819.yml > .github/workflows/safe-cache-bust-20260819.yml
           git rm -f .github/workflows/fix-performance-rendertraining-hide-20260823.yml || true
           git add app.js index.html .github/workflows/safe-cache-bust-20260819.yml
           git commit -m "Keep Rendimiento visible after training refresh"
