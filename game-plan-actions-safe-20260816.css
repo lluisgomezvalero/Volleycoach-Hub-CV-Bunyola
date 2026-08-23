@@ -10,7 +10,18 @@ html body #view-tactics #scouting-interactive-root .scouting-publish-actions .co
   display:none!important;
 }
 
-/* Recuperar el Guardar original de la app en edición. */
+/* Jugadora: por defecto no mostrar título interior ni acciones de edición. */
+html body #view-tactics .scouting-header h3,
+html body #view-tactics #scouting-plan-content > .scouting-save-row{
+  display:none!important;
+}
+
+/* Entrenador: recuperar título y Guardar en edición. */
+html body #view-tactics.coach-top-compact .scouting-header h3,
+html body #view-tactics.game-plan-coach .scouting-header h3,
+html body #view-tactics.game-plan-preview-canonical .scouting-header h3{
+  display:block!important;
+}
 html body #view-tactics.coach-top-compact #scouting-plan-content > .scouting-save-row,
 html body #view-tactics.game-plan-coach #scouting-plan-content > .scouting-save-row{
   display:flex!important;
@@ -25,12 +36,6 @@ html body #view-tactics #scouting-plan-content > .scouting-save-row #save-scouti
 }
 /* En vista previa el render base oculta Guardar; no reservar espacio para su fila. */
 html body #view-tactics.game-plan-preview-canonical #scouting-plan-content > .scouting-save-row{
-  display:none!important;
-}
-
-/* Vista real de jugadora: la cabecera móvil ya muestra "Plan de juego" y no hay acciones de edición. */
-html body #view-tactics:has(#scouting-interactive-root .gp2-player:not(:has(.gp2-back-edit))) .scouting-header h3,
-html body #view-tactics:has(#scouting-interactive-root .gp2-player:not(:has(.gp2-back-edit))) #scouting-plan-content > .scouting-save-row{
   display:none!important;
 }
 
