@@ -13,6 +13,14 @@ function keepPanelVisible(){
   if(!view||!panel||!view.classList.contains('active'))return;
   if(panel.hidden)panel.hidden=false;
 }
+function loadMobilePerformanceUx(){
+  if(window.__performanceMobileUx20260823)return;
+  if(document.querySelector('script[src^="performance-mobile-ux-20260823.js"]'))return;
+  const script=document.createElement('script');
+  script.src='performance-mobile-ux-20260823.js?v=20260823a';
+  script.async=false;
+  document.head.appendChild(script);
+}
 function installVisibilityGuard(){
   const panel=getPanel();
   const view=getView();
@@ -34,6 +42,7 @@ function installVisibilityGuard(){
 }
 
 function install(attempt=0){
+  loadMobilePerformanceUx();
   if(typeof window.openModule!=='function'||typeof window.renderPerformanceModule!=='function'){
     if(attempt<160)setTimeout(()=>install(attempt+1),50);
     return;
