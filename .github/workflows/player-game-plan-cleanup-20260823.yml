@@ -1,0 +1,74 @@
+name: Clean player game plan view
+
+on:
+  push:
+    paths:
+      - '.github/workflows/player-game-plan-cleanup-20260823.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Hide coach-only controls in player game plan
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('game-plan-canonical-20260817.js')
+          s = path.read_text()
+          old = """function decorateHeader(label){
+  const h=document.querySelector('#view-tactics .scouting-header');if(!h)return;
+  const select=document.getElementById('scouting-match-select');if(select)select.style.display='none';
+  const title=h.querySelector('h3'),desc=h.querySelector('p');
+  if(title)title.textContent=label?`📋 ${label}`:'📋 Plan de juego';
+  if(desc)desc.textContent=ui.event?`${eventName(ui.event)} · ${formatEventDate(ui.event)}`:(ui.mode==='history'?'Consulta de planes anteriores.':'Solo se muestra el partido correspondiente a esta semana.');
+"""
+          new = """function decorateHeader(label){
+  const h=document.querySelector('#view-tactics .scouting-header');if(!h)return;
+  const select=document.getElementById('scouting-match-select');if(select)select.style.display='none';
+  const title=h.querySelector('h3'),desc=h.querySelector('p');
+  const playerView=!coach()&&!label;
+  if(title){title.hidden=playerView;title.textContent=label?`📋 ${label}`:'📋 Plan de juego';}
+  const saveRow=document.querySelector('#view-tactics .scouting-save-row');
+  if(saveRow)saveRow.hidden=!coach();
+  if(desc)desc.textContent=ui.event?`${eventName(ui.event)} · ${formatEventDate(ui.event)}`:(ui.mode==='history'?'Consulta de planes anteriores.':'Solo se muestra el partido correspondiente a esta semana.');
+"""
+          if old not in s:
+              raise SystemExit('decorateHeader anchor not found')
+          path.write_text(s.replace(old,new,1))
+
+          cfg = Path('supabase-config.js')
+          s = cfg.read_text()
+          replacements = [
+              ("window.VOLLEY_ASSET_VERSION = '20260823g';", "window.VOLLEY_ASSET_VERSION = '20260823h';"),
+              ("'game-plan-canonical-20260817.js?v=20260817g'", "'game-plan-canonical-20260817.js?v=20260817h'")
+          ]
+          for old,new in replacements:
+              if old not in s:
+                  raise SystemExit(f'Config anchor not found: {old}')
+              s=s.replace(old,new,1)
+          cfg.write_text(s)
+
+          index=Path('index.html')
+          s=index.read_text()
+          old='supabase-config.js?v=20260823safe66'
+          new='supabase-config.js?v=20260823safe67'
+          if old not in s:
+              raise SystemExit('Index cache anchor not found')
+          index.write_text(s.replace(old,new,1))
+          PY
+
+          node --check game-plan-canonical-20260817.js
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add game-plan-canonical-20260817.js supabase-config.js index.html
+          git commit -m "Clean player game plan view"
+          git push
+
+          git rm .github/workflows/player-game-plan-cleanup-20260823.yml
+          git commit -m "Remove one-time player game plan workflow"
+          git push
