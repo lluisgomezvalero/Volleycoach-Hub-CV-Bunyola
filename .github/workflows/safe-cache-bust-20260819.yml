@@ -13,15 +13,50 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Force fresh known-good config
+      - name: Fix player game plan empty state and bust CSS cache
         run: |
-          sed -i 's/supabase-config.js?v=20260818b/supabase-config.js?v=20260819safe1/g' index.html
+          python - <<'PY'
+          from pathlib import Path
+
+          css = Path('game-plan-actions-safe-20260816.css')
+          s = css.read_text()
+          old = '''/* Vista real de jugadora: la cabecera móvil ya muestra "Plan de juego" y no hay acciones de edición. */
+html body #view-tactics:has(#scouting-interactive-root .gp2-player:not(:has(.gp2-back-edit))) .scouting-header h3,
+html body #view-tactics:has(#scouting-interactive-root .gp2-player:not(:has(.gp2-back-edit))) #scouting-plan-content > .scouting-save-row{
+  display:none!important;
+}
+'''
+          new = '''/* Jugadora: ocultar acciones/título también cuando todavía no hay plan publicado. */
+html body #view-tactics .scouting-header h3,
+html body #view-tactics #scouting-plan-content > .scouting-save-row{
+  display:none!important;
+}
+/* Entrenador: restaurar el título y las acciones de edición. */
+html body #view-tactics.coach-top-compact .scouting-header h3,
+html body #view-tactics.game-plan-coach .scouting-header h3,
+html body #view-tactics.game-plan-preview-canonical .scouting-header h3{
+  display:block!important;
+}
+'''
+          if old not in s:
+              raise SystemExit('Expected player game-plan CSS block not found')
+          css.write_text(s.replace(old,new,1))
+
+          index = Path('index.html')
+          s = index.read_text()
+          old = 'game-plan-actions-safe-20260816.css?v=20260821a'
+          new = 'game-plan-actions-safe-20260816.css?v=20260824a'
+          if old not in s:
+              raise SystemExit('Expected game-plan CSS cache key not found')
+          index.write_text(s.replace(old,new,1))
+          PY
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
+          git add game-plan-actions-safe-20260816.css index.html
           if git diff --cached --quiet; then
-            echo "No cache key change needed"
+            echo "No game plan change needed"
           else
-            git commit -m "Force fresh known-good app config"
+            git commit -m "Fix player game plan empty state"
             git push
           fi
