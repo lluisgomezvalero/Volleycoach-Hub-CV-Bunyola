@@ -28,6 +28,12 @@ html body #view-tactics.game-plan-preview-canonical #scouting-plan-content > .sc
   display:none!important;
 }
 
+/* Vista real de jugadora: la cabecera móvil ya muestra "Plan de juego" y no hay acciones de edición. */
+html body #view-tactics:has(#scouting-interactive-root .gp2-player:not(:has(.gp2-back-edit))) .scouting-header h3,
+html body #view-tactics:has(#scouting-interactive-root .gp2-player:not(:has(.gp2-back-edit))) #scouting-plan-content > .scouting-save-row{
+  display:none!important;
+}
+
 @media(max-width:720px){
   /* La barra es compacta desde el PRIMER paint, sin esperar decoradores JS. */
   html body #view-tactics #scouting-interactive-root .scouting-publish-bar{
