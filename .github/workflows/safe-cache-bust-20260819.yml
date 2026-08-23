@@ -1,48 +1,4 @@
 name: Safe cache bust after recovery
-# performance-final-trigger-20260823
-
-on:
-  push:
-    paths:
-      - '.github/workflows/safe-cache-bust-20260819.yml'
-
-permissions:
-  contents: write
-
-jobs:
-  cache-bust:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Keep Rendimiento visible after training refresh
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          app = Path('app.js')
-          s = app.read_text()
-          old = '''  const performancePanel = document.getElementById("training-performance-panel");
-  if (performancePanel) performancePanel.hidden = true;
-  container.hidden = false;
-'''
-          new = '''  const performancePanel = document.getElementById("training-performance-panel");
-  if (performancePanel && performancePanel.closest("#view-training")) performancePanel.hidden = true;
-  container.hidden = false;
-'''
-          if old not in s:
-              raise SystemExit('renderTraining performance-panel anchor not found')
-          app.write_text(s.replace(old, new, 1))
-
-          index = Path('index.html')
-          s = index.read_text()
-          old = 'app.js?v=20260816q'
-          new = 'app.js?v=20260823performance2'
-          if old not in s:
-              raise SystemExit('app.js cache key not found')
-          index.write_text(s.replace(old, new, 1))
-
-          workflow = Path('.github/workflows/safe-cache-bust-20260819.yml')
-          workflow.write_text('''name: Safe cache bust after recovery
 
 on:
   push:
@@ -69,13 +25,3 @@ jobs:
             git commit -m "Force fresh known-good app config"
             git push
           fi
-''')
-          PY
-
-          node --check app.js
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm -f .github/workflows/fix-performance-rendertraining-hide-20260823.yml || true
-          git add app.js index.html .github/workflows/safe-cache-bust-20260819.yml
-          git commit -m "Keep Rendimiento visible after training refresh"
-          git push
