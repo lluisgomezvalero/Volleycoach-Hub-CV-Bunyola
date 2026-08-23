@@ -1,0 +1,86 @@
+name: Polish compact performance mobile cards
+
+on:
+  push:
+    paths:
+      - '.github/workflows/polish-performance-mobile-compact-20260823.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compact performance mobile UI
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('performance-mobile-ux-20260823.js')
+          s = path.read_text()
+          replacements = [
+            ("<article><small>Jugadoras</small><strong>${evaluated}/${players().length}</strong></article>", "<article><small>Jugadoras</small><strong>${evaluated} de ${players().length}</strong></article>"),
+            ("<article><small>Media actual</small><strong>${metric(average,unit,decimals)}</strong><em>última marca por jugadora</em></article>", "<article><small>Media actual</small><strong>${metric(average,unit,decimals)}</strong><em>Último registro por jugadora</em></article>"),
+            ("<article><small>Evaluadas</small><strong>${latest.length}/${players().length}</strong><em>jugadoras con registro</em></article>", "<article><small>Evaluadas</small><strong>${latest.length} de ${players().length}</strong><em>jugadoras con registro</em></article>"),
+            ("    card.classList.add('performance-mobile-player-card');\n", "    card.classList.add('performance-mobile-player-card');\n    const dateRow=card.querySelector('.performance-result-date');\n    card.classList.toggle('has-performance-record',Boolean(dateRow&&!/Sin registros/i.test(dateRow.textContent||'')));\n"),
+            ('''@media(max-width:420px){
+  #view-fitness .performance-test-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #view-fitness .performance-test-tab[data-performance-test="Histórico"]{grid-column:1/-1}
+  #view-fitness .performance-result-card.performance-mobile-player-card{grid-template-columns:minmax(0,1fr)!important;grid-template-areas:"player" "metrics" "date"!important}
+  #view-fitness .performance-result-metrics{margin:0!important;grid-template-columns:1fr 1fr!important}
+  #view-fitness .performance-result-date{margin-left:0!important}
+}
+''', '''@media(max-width:420px){
+  #view-fitness .performance-test-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #view-fitness .performance-test-tab[data-performance-test="Histórico"]{grid-column:1/-1}
+  #view-fitness .performance-result-card.performance-mobile-player-card{grid-template-columns:minmax(0,1fr) minmax(118px,auto)!important;grid-template-areas:"player metrics"!important}
+  #view-fitness .performance-result-card.performance-mobile-player-card.has-performance-record{grid-template-areas:"player metrics" "date metrics"!important}
+  #view-fitness .performance-result-metrics{margin:0 1rem 0 0!important;grid-template-columns:1fr 1fr!important}
+  #view-fitness .performance-result-date{margin-left:43px!important}
+}
+''')
+          ]
+          for old, new in replacements:
+              if old not in s:
+                  raise SystemExit(f'Expected performance UI anchor not found: {old[:80]}')
+              s = s.replace(old, new, 1)
+
+          marker = '  #view-fitness .performance-results-grid{display:grid!important;grid-template-columns:1fr!important;gap:.55rem!important;margin-top:.75rem!important}\n'
+          compact = '''  #view-fitness .performance-results-grid{display:grid!important;grid-template-columns:1fr!important;gap:.42rem!important;margin-top:.65rem!important}\n  #view-fitness .performance-result-card.performance-mobile-player-card{grid-template-columns:minmax(0,1fr) minmax(132px,auto)!important;grid-template-areas:"player metrics"!important;padding:.56rem .68rem!important;gap:.2rem .55rem!important}\n  #view-fitness .performance-result-card.performance-mobile-player-card.has-performance-record{grid-template-areas:"player metrics" "date metrics"!important}\n  #view-fitness .performance-result-player img{width:38px!important;height:38px!important;min-width:38px!important}\n  #view-fitness .performance-result-player strong{font-size:.88rem!important}\n  #view-fitness .performance-result-metrics>div{padding:.38rem .44rem!important}\n  #view-fitness .performance-result-date{display:none!important;margin-left:43px!important}\n  #view-fitness .performance-result-card.has-performance-record .performance-result-date{display:flex!important}\n'''
+          if marker not in s:
+              raise SystemExit('Performance results grid CSS anchor not found')
+          s = s.replace(marker, compact, 1)
+          path.write_text(s)
+
+          cfg = Path('supabase-config.js')
+          s = cfg.read_text()
+          for old, new in [
+              ("window.VOLLEY_ASSET_VERSION = '20260823f';", "window.VOLLEY_ASSET_VERSION = '20260823g';"),
+              ("'performance-mobile-ux-20260823.js?v=20260823a'", "'performance-mobile-ux-20260823.js?v=20260823b'")
+          ]:
+              if old not in s:
+                  raise SystemExit(f'Config cache anchor not found: {old}')
+              s = s.replace(old, new, 1)
+          cfg.write_text(s)
+
+          index = Path('index.html')
+          s = index.read_text()
+          old = 'supabase-config.js?v=20260823safe66'
+          new = 'supabase-config.js?v=20260823safe67'
+          if old not in s:
+              raise SystemExit('Index cache anchor not found')
+          index.write_text(s.replace(old, new, 1))
+          PY
+
+          node --check performance-mobile-ux-20260823.js
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add performance-mobile-ux-20260823.js supabase-config.js index.html
+          git commit -m "Polish compact performance cards"
+          git push
+
+          git rm .github/workflows/polish-performance-mobile-compact-20260823.yml
+          git commit -m "Remove one-time performance polish workflow"
+          git push
