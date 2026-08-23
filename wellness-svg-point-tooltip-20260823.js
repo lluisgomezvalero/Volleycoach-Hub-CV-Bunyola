@@ -7,19 +7,13 @@ window[FLAG]=true;
 
 let hideTimer=null;
 let observer=null;
+let scheduled=false;
 
 function mobileViewport(){
   try{return window.matchMedia('(max-width:760px), (max-width:1366px) and (any-pointer:coarse)').matches;}
   catch(_){return window.innerWidth<=1366;}
 }
 function view(){return document.getElementById('view-wellness');}
-function coach(){
-  try{
-    if(typeof isCoachUser==='function'&&isCoachUser())return true;
-    const role=String(typeof getCurrentUser==='function'?getCurrentUser()?.role:'').toLowerCase();
-    return role==='coach'||role==='administrator'||role==='admin';
-  }catch(_){return false;}
-}
 function shortDate(raw){
   const m=String(raw||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if(!m)return raw||'';
@@ -60,11 +54,7 @@ function hide(){
 }
 function parseTitle(text){
   const parts=String(text||'').split(' · ').map(x=>x.trim()).filter(Boolean);
-  return{
-    name:parts[0]||'Jugadora',
-    fatigue:parts[1]||'',
-    date:shortDate(parts[2]||'')
-  };
+  return{name:parts[0]||'Jugadora',fatigue:parts[1]||'',date:shortDate(parts[2]||'')};
 }
 function show(circle){
   const text=circle?.querySelector('title')?.textContent?.trim();
@@ -108,30 +98,27 @@ function bindSvg(svg){
     event.preventDefault();show(circle);
   });
 }
-function clarifyLabels(root){
-  if(!root||!coach())return;
-  root.querySelectorAll('.wellness-team-kpi small').forEach(label=>{
-    if(label.textContent.trim()==='Alertas carga')label.textContent='Alertas RPE';
-  });
-  const copy=root.querySelector('#wellness-chart-description');
-  if(copy&&/registros individuales/i.test(copy.textContent)){
-    copy.textContent='Fatiga media semanal del equipo y registros individuales. Toca un punto para ver la jugadora.';
-  }
-}
 function refresh(){
   if(!mobileViewport())return;
   const root=view();if(!root)return;
   ensureStyles();
-  clarifyLabels(root);
   root.querySelectorAll('.wellness-svg-chart').forEach(bindSvg);
+}
+function schedule(){
+  if(scheduled)return;
+  scheduled=true;
+  requestAnimationFrame(()=>{scheduled=false;refresh();});
 }
 function install(attempt=0){
   const root=view();
   if(!root){if(attempt<120)setTimeout(()=>install(attempt+1),50);return;}
   refresh();
   if(!observer){
-    observer=new MutationObserver(()=>refresh());
-    observer.observe(root,{childList:true,subtree:true,characterData:true});
+    observer=new MutationObserver(mutations=>{
+      if(!mutations.some(m=>m.type==='childList'&&(m.addedNodes.length||m.removedNodes.length)))return;
+      schedule();
+    });
+    observer.observe(root,{childList:true,subtree:true});
   }
 }
 
@@ -141,7 +128,7 @@ document.addEventListener('pointerdown',event=>{
   if(event.target.closest?.('.wellness-svg-chart circle'))return;
   hide();
 },{passive:true});
-document.addEventListener('visibilitychange',()=>{if(document.hidden)hide();else refresh();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)hide();else schedule();});
 window.addEventListener('resize',hide,{passive:true});
 
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>install(),{once:true});
