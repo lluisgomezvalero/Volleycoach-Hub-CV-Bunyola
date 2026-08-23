@@ -3,7 +3,7 @@
  * La publishable key es segura en el navegador SIEMPRE que las tablas tengan RLS.
  * Nunca pongas aquí la service_role ni una secret key.
  */
-window.VOLLEY_ASSET_VERSION = '20260823a';
+window.VOLLEY_ASSET_VERSION = '20260823b';
 window.VOLLEY_SUPABASE_CONFIG = Object.freeze({
   url: 'https://zpvlkdjdfnvamfcjihyt.supabase.co',
   publishableKey: 'sb_publishable_seL2H6gAGBrUDR0O1vhJDA_Y9d7Ky-u',
@@ -23,7 +23,7 @@ html:not(.attendance-ready) .btn-rsvp-no{visibility:hidden!important;pointer-eve
   'wellness-v2-20260811.js?v=20260811n',
   'wellness-unified-mobile-20260820.js?v=20260821b',
   'wellness-svg-chart-20260822.js?v=20260822a',
-  'wellness-svg-point-tooltip-20260823.js?v=20260823a',
+  'wellness-svg-point-tooltip-20260823.js?v=20260823b',
   'wellness-rpe-session-detail-20260822.js?v=20260822a',
   'attendance-fix.js?v=20260810n',
   'app-corrections-20260809.js?v=20260822b',
