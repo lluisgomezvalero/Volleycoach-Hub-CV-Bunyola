@@ -1,4 +1,4 @@
-name: Load optional match statistics v2
+name: Load player individual stats priority
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Load optional statistics module
+      - name: Load individual priority module
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -21,26 +21,26 @@ jobs:
 
           cfg = Path('supabase-config.js')
           s = cfg.read_text()
-          s = re.sub(r"window\.VOLLEY_ASSET_VERSION = '[^']+';", "window.VOLLEY_ASSET_VERSION = '20260825stats1';", s, count=1)
-          anchor = "  'match-statistics-player-navigation-close-20260819.js?v=20260819a',"
-          addition = "  'match-statistics-optional-v2-20260825.js?v=20260825stats1',"
+          s = re.sub(r"window\.VOLLEY_ASSET_VERSION = '[^']+';", "window.VOLLEY_ASSET_VERSION = '20260825stats2';", s, count=1)
+          anchor = "  'match-statistics-optional-v2-20260825.js?v=20260825stats1',"
+          addition = "  'match-statistics-player-individual-priority-20260825.js?v=20260825stats2',"
           if addition not in s:
               s = s.replace(anchor, anchor + "\n" + addition, 1)
           cfg.write_text(s)
 
           index = Path('index.html')
           i = index.read_text()
-          i = re.sub(r'supabase-config\.js\?v=[A-Za-z0-9._-]+', 'supabase-config.js?v=20260825stats1', i, count=1)
+          i = re.sub(r'supabase-config\.js\?v=[A-Za-z0-9._-]+', 'supabase-config.js?v=20260825stats2', i, count=1)
           index.write_text(i)
           PY
 
-          node --check match-statistics-optional-v2-20260825.js
+          node --check match-statistics-player-individual-priority-20260825.js
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add supabase-config.js index.html
           if git diff --cached --quiet; then
-            echo "No stats cache update needed"
+            echo "No player stats cache update needed"
           else
-            git commit -m "Load optional match statistics v2"
+            git commit -m "Load player individual stats priority"
             git push
           fi
