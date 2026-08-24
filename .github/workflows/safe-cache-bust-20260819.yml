@@ -13,25 +13,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Load player stats card polish
+      - name: Force fresh known-good config
         run: |
-          BASE=$(git rev-parse HEAD^)
-          sed -i 's/supabase-config.js?v=20260823safe66/supabase-config.js?v=20260824safe67/g' index.html
+          sed -i 's/supabase-config.js?v=20260818b/supabase-config.js?v=20260819safe1/g' index.html
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
           if git diff --cached --quiet; then
             echo "No cache key change needed"
           else
-            git commit -m "Load player stats card polish"
-            git push
-          fi
-
-          git show "$BASE":.github/workflows/safe-cache-bust-20260819.yml > .github/workflows/safe-cache-bust-20260819.yml
-          git add .github/workflows/safe-cache-bust-20260819.yml
-          if git diff --cached --quiet; then
-            echo "Workflow already restored"
-          else
-            git commit -m "Restore safe cache workflow"
+            git commit -m "Force fresh known-good app config"
             git push
           fi
