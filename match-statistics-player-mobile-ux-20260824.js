@@ -122,7 +122,7 @@ function polish(){
   const title=document.getElementById('stats-list-title');
   if(title&&title.textContent!=='Partidos')title.textContent='Partidos';
   const help=document.getElementById('stats-list-help');
-  const helpText='Toca un partido con estadísticas publicadas para consultar tu resumen.';
+  const helpText='Toca un partido con estadísticas publicadas para consultar el resumen publicado.';
   if(help&&help.textContent!==helpText)help.textContent=helpText;
   const local=matches();
   [...list.querySelectorAll('.player-match-stat-card')].forEach((card,index)=>{
