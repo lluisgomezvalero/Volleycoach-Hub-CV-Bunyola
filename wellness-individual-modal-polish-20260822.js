@@ -3,6 +3,8 @@
 const FLAG='__wellnessIndividualModalPolish20260822';
 if(window[FLAG])return;
 window[FLAG]=true;
+let syncQueued=false;
+let syncing=false;
 
 function ensureStyles(){
   if(document.getElementById('wellness-individual-modal-polish-20260822-style'))return;
@@ -60,9 +62,9 @@ function ensureStatus(modal){
     chip.className='wellness-player-status';
     meta.appendChild(chip);
   }
-  chip.classList.remove('good','warm','attn','neutral');
-  chip.classList.add(status.tone);
-  chip.textContent=status.label;
+  const wanted=`wellness-player-status ${status.tone}`;
+  if(chip.className!==wanted)chip.className=wanted;
+  if(chip.textContent!==status.label)chip.textContent=status.label;
 }
 function ensureDates(modal){
   const wrap=modal.querySelector('.wellness-player-spark-wrap');
@@ -78,23 +80,44 @@ function ensureDates(modal){
 }
 function polishModal(modal){
   if(!modal)return;
-  document.body.classList.add('wellness-player-modal-open');
+  if(!document.body.classList.contains('wellness-player-modal-open'))document.body.classList.add('wellness-player-modal-open');
   const trend=modal.querySelector('.wellness-player-spark-head span');
-  if(trend)trend.textContent=prettyTrend(trend.textContent);
+  if(trend){
+    const next=prettyTrend(trend.textContent);
+    if(trend.textContent!==next)trend.textContent=next;
+  }
   ensureStatus(modal);
   ensureDates(modal);
 }
-function sync(){
-  ensureStyles();
-  const modal=document.querySelector('.wellness-player-tracking-modal');
-  if(modal)polishModal(modal);
-  else document.body.classList.remove('wellness-player-modal-open');
+function syncNow(){
+  if(syncing)return;
+  syncing=true;
+  try{
+    ensureStyles();
+    const modal=document.querySelector('.wellness-player-tracking-modal');
+    if(modal)polishModal(modal);
+    else if(document.body.classList.contains('wellness-player-modal-open'))document.body.classList.remove('wellness-player-modal-open');
+  }finally{syncing=false;}
 }
-const observer=new MutationObserver(sync);
+function queueSync(){
+  if(syncQueued)return;
+  syncQueued=true;
+  requestAnimationFrame(()=>{syncQueued=false;syncNow();});
+}
+const observer=new MutationObserver(mutations=>{
+  if(syncing)return;
+  const relevant=mutations.some(m=>m.type==='childList'&&(
+    [...m.addedNodes,...m.removedNodes].some(node=>node.nodeType===1&&(
+      node.matches?.('.wellness-player-tracking-modal')||node.querySelector?.('.wellness-player-tracking-modal')||
+      node.matches?.('.wellness-player-modal-meta,.wellness-player-spark-wrap')
+    ))
+  ));
+  if(relevant)queueSync();
+});
 function install(){
   ensureStyles();
   observer.observe(document.body,{childList:true,subtree:true});
-  sync();
+  syncNow();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
