@@ -13,51 +13,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Load player statistics detail polish
+      - name: Force fresh known-good config
         run: |
-          BASE=$(git rev-parse HEAD^)
-          python - <<'PY'
-          from pathlib import Path
-
-          cfg=Path('supabase-config.js')
-          s=cfg.read_text()
-          s=s.replace("window.VOLLEY_ASSET_VERSION = '20260824b';","window.VOLLEY_ASSET_VERSION = '20260824c';",1)
-          s=s.replace("match-statistics-player-mobile-ux-20260824.js?v=20260824b","match-statistics-player-mobile-ux-20260824.js?v=20260824c",1)
-          s=s.replace("match-statistics-player-polish-20260819.js?v=20260819b","match-statistics-player-polish-20260819.js?v=20260824c",1)
-          cfg.write_text(s)
-
-          mobile=Path('match-statistics-player-mobile-ux-20260824.js')
-          m=mobile.read_text()
-          m=m.replace(
-              "Toca un partido con estadísticas publicadas para consultar tu resumen.",
-              "Toca un partido con estadísticas publicadas para consultar el resumen publicado.",
-              1
-          )
-          mobile.write_text(m)
-
-          index=Path('index.html')
-          i=index.read_text()
-          i=i.replace('supabase-config.js?v=20260823safe66','supabase-config.js?v=20260824safe68',1)
-          index.write_text(i)
-          PY
-
-          node --check match-statistics-player-polish-20260819.js
-          node --check match-statistics-player-mobile-ux-20260824.js
+          sed -i 's/supabase-config.js?v=20260818b/supabase-config.js?v=20260819safe1/g' index.html
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add supabase-config.js match-statistics-player-mobile-ux-20260824.js index.html
+          git add index.html
           if git diff --cached --quiet; then
-            echo "No detail cache update needed"
+            echo "No cache key change needed"
           else
-            git commit -m "Load player statistics detail polish"
-            git push
-          fi
-
-          git show "$BASE":.github/workflows/safe-cache-bust-20260819.yml > .github/workflows/safe-cache-bust-20260819.yml
-          git add .github/workflows/safe-cache-bust-20260819.yml
-          if git diff --cached --quiet; then
-            echo "Workflow already restored"
-          else
-            git commit -m "Restore safe cache workflow"
+            git commit -m "Force fresh known-good app config"
             git push
           fi
