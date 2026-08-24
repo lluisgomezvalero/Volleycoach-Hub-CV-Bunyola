@@ -13,15 +13,43 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Force fresh known-good config
+      - name: Load optional individual match statistics
         run: |
-          sed -i 's/supabase-config.js?v=20260818b/supabase-config.js?v=20260819safe1/g' index.html
+          BASE=$(git rev-parse HEAD^)
+          python - <<'PY'
+          from pathlib import Path
+
+          cfg = Path('supabase-config.js')
+          s = cfg.read_text()
+          s = s.replace("window.VOLLEY_ASSET_VERSION = '20260824c';", "window.VOLLEY_ASSET_VERSION = '20260824d';", 1)
+          anchor = "  'match-statistics-player-navigation-close-20260819.js?v=20260819a',"
+          addition = "  'match-statistics-individual-20260824.js?v=20260824d',"
+          if addition not in s:
+              s = s.replace(anchor, anchor + "\n" + addition, 1)
+          cfg.write_text(s)
+
+          index = Path('index.html')
+          i = index.read_text()
+          i = i.replace('supabase-config.js?v=20260824safe68', 'supabase-config.js?v=20260824safe69', 1)
+          index.write_text(i)
+          PY
+
+          node --check match-statistics-individual-20260824.js
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
+          git add supabase-config.js index.html
           if git diff --cached --quiet; then
-            echo "No cache key change needed"
+            echo "No optional individual stats cache update needed"
           else
-            git commit -m "Force fresh known-good app config"
+            git commit -m "Load optional individual match statistics"
+            git push
+          fi
+
+          git show "$BASE":.github/workflows/safe-cache-bust-20260819.yml > .github/workflows/safe-cache-bust-20260819.yml
+          git add .github/workflows/safe-cache-bust-20260819.yml
+          if git diff --cached --quiet; then
+            echo "Workflow already restored"
+          else
+            git commit -m "Restore safe cache workflow"
             git push
           fi
