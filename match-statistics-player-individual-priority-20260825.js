@@ -25,6 +25,35 @@ function mergePublishedRows(generalRows,individualRows){
   return [...byEvent.values()];
 }
 
+function normalizeNeutralLabels(){
+  const fieldLabel=document.querySelector('label[for="stats-rec-exclam-pct"]');
+  if(fieldLabel&&/exclamativa/i.test(fieldLabel.textContent||'')){
+    fieldLabel.textContent=(fieldLabel.textContent||'').replace(/exclamativa/ig,'neutra');
+  }
+  const checkbox=document.querySelector('[data-stats-visible="recExclamPct"]');
+  const checkboxLabel=checkbox?.closest('label');
+  if(checkboxLabel){
+    [...checkboxLabel.childNodes].forEach(node=>{
+      if(node.nodeType===Node.TEXT_NODE&&/exclamativa/i.test(node.nodeValue||'')){
+        node.nodeValue=(node.nodeValue||'').replace(/exclamativa/ig,'neutra');
+      }
+    });
+  }
+}
+
+function wrapExtendedHydration(){
+  const current=window.hydrateExtendedMatchStatsForm;
+  if(typeof current!=='function'||current.__neutralLabelWrapped)return false;
+  const wrapped=function(...args){
+    const result=current.apply(this,args);
+    normalizeNeutralLabels();
+    return result;
+  };
+  wrapped.__neutralLabelWrapped=true;
+  window.hydrateExtendedMatchStatsForm=wrapped;
+  return true;
+}
+
 function patchClient(){
   const client=window.VolleySupabase?.getClient?.();
   if(!client||typeof client.rpc!=='function')return false;
@@ -65,7 +94,10 @@ function install(){
   let tries=0;
   const timer=setInterval(()=>{
     tries++;
-    if(patchClient()||tries>=200)clearInterval(timer);
+    const clientReady=patchClient();
+    const labelsReady=wrapExtendedHydration();
+    normalizeNeutralLabels();
+    if((clientReady&&labelsReady)||tries>=200)clearInterval(timer);
   },75);
 }
 
