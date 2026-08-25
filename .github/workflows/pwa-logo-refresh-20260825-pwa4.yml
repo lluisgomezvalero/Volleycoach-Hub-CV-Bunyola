@@ -6,8 +6,7 @@ on:
       - fix/pwa-logo-refresh-20260825-pwa4
     paths:
       - '.github/workflows/pwa-logo-refresh-20260825-pwa4.yml'
-      - 'assets/apple-touch-icon.png'
-      - 'assets/pwa-icon-192.png'
+      - 'assets/cvb-logo-source.b64'
 
 permissions:
   contents: write
@@ -17,22 +16,53 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Prepare icon tooling
         run: python -m pip install --quiet pillow
-      - name: Generate icons and bump cache version
+
+      - name: Decode source and generate icons
         run: |
           python - <<'PY'
-          from PIL import Image
           from pathlib import Path
-          import json
+          from PIL import Image
+          import base64, json
 
-          source = Image.open('assets/pwa-icon-192.png').convert('RGB')
-          assert source.size == (192, 192), source.size
-          source.resize((512, 512), Image.Resampling.LANCZOS).save('assets/pwa-icon-512.png', 'PNG', optimize=True)
-          canvas = Image.new('RGB', (512, 512), 'white')
-          inner = source.resize((360, 360), Image.Resampling.LANCZOS)
-          canvas.paste(inner, ((512-360)//2, (512-360)//2))
-          canvas.save('assets/pwa-icon-maskable-512.png', 'PNG', optimize=True)
+          raw = ''.join(Path('assets/cvb-logo-source.b64').read_text(encoding='utf-8').split())
+          source_path = Path('/tmp/cvb-logo-source.jpg')
+          source_path.write_bytes(base64.b64decode(raw))
+
+          img = Image.open(source_path).convert('RGBA')
+          px = img.load()
+          xs, ys = [], []
+          for y in range(img.height):
+              for x in range(img.width):
+                  r, g, b, a = px[x, y]
+                  if a and not (r > 235 and g > 235 and b > 235):
+                      xs.append(x); ys.append(y)
+          assert xs and ys
+          content = img.crop((min(xs), min(ys), max(xs) + 1, max(ys) + 1)).convert('RGBA')
+
+          cp = content.load()
+          for y in range(content.height):
+              for x in range(content.width):
+                  r, g, b, a = cp[x, y]
+                  if a and r > 220 and g > 220 and b > 220:
+                      cp[x, y] = (255, 255, 255, a)
+
+          def make_icon(size, margin):
+              canvas = Image.new('RGBA', (size, size), 'white')
+              inner = int(size * (1 - 2 * margin))
+              scale = min(inner / content.width, inner / content.height)
+              w = max(1, round(content.width * scale))
+              h = max(1, round(content.height * scale))
+              resized = content.resize((w, h), Image.Resampling.LANCZOS)
+              canvas.alpha_composite(resized, ((size - w)//2, (size - h)//2))
+              return canvas.convert('RGB')
+
+          make_icon(180, 0.08).save('assets/apple-touch-icon.png', 'PNG', optimize=True)
+          make_icon(192, 0.08).save('assets/pwa-icon-192.png', 'PNG', optimize=True)
+          make_icon(512, 0.08).save('assets/pwa-icon-512.png', 'PNG', optimize=True)
+          make_icon(512, 0.15).save('assets/pwa-icon-maskable-512.png', 'PNG', optimize=True)
 
           manifest_path = Path('manifest.webmanifest')
           manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
@@ -50,28 +80,31 @@ jobs:
           html = html.replace('assets/pwa-icon-192.png?v=20260825pwa3', 'assets/pwa-icon-192.png?v=20260825pwa4')
           index_path.write_text(html, encoding='utf-8')
           PY
+
       - name: Validate generated files
         run: |
           python - <<'PY'
           from PIL import Image
           expected = {
-            'assets/apple-touch-icon.png': (180,180),
-            'assets/pwa-icon-192.png': (192,192),
-            'assets/pwa-icon-512.png': (512,512),
-            'assets/pwa-icon-maskable-512.png': (512,512),
+            'assets/apple-touch-icon.png': (180, 180),
+            'assets/pwa-icon-192.png': (192, 192),
+            'assets/pwa-icon-512.png': (512, 512),
+            'assets/pwa-icon-maskable-512.png': (512, 512),
           }
           for path, size in expected.items():
               image = Image.open(path)
+              image.verify()
               assert image.size == size, (path, image.size, size)
           PY
           python -m json.tool manifest.webmanifest >/dev/null
           grep -q '20260825pwa4' index.html
           grep -q '20260825pwa4' manifest.webmanifest
+
       - name: Commit generated assets
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add assets/pwa-icon-512.png assets/pwa-icon-maskable-512.png manifest.webmanifest index.html
+          git add assets/apple-touch-icon.png assets/pwa-icon-192.png assets/pwa-icon-512.png assets/pwa-icon-maskable-512.png manifest.webmanifest index.html
           if git diff --cached --quiet; then
             echo 'PWA icons already current'
           else
