@@ -1,0 +1,28 @@
+name: Validate calendar profile roster fixes v2
+
+on:
+  push:
+    branches:
+      - fix/calendario-perfil-dorsal-20260825
+    paths:
+      - '.github/workflows/validate-calendar-profile-roster-fix-20260825-v2.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax check
+        run: |
+          node --check calendar-profile-roster-fixes-20260825.js
+          node --check supabase-roster-sync.js
+          node --check supabase-config.js
+      - name: Wiring check
+        run: |
+          grep -q "calendar-profile-roster-fixes-20260825.js?v=20260825ux1" supabase-config.js
+          grep -q "supabase-config.js?v=20260825ux1" index.html
+          grep -q "update({dorsal:snapshot.number})" calendar-profile-roster-fixes-20260825.js
+          grep -q "last_login_at" supabase-roster-sync.js
