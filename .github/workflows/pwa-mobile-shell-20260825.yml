@@ -1,0 +1,74 @@
+name: PWA mobile shell integration
+
+on:
+  push:
+    paths:
+      - '.github/workflows/pwa-mobile-shell-20260825.yml'
+      - 'manifest.webmanifest'
+      - 'service-worker.js'
+      - 'pwa-mobile-shell.css'
+      - 'pwa-mobile-shell-20260825.js'
+      - 'index.html'
+
+permissions:
+  contents: write
+
+jobs:
+  integrate-and-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Integrate PWA shell in index
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('index.html')
+          html = path.read_text()
+
+          html = html.replace(
+              '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">',
+              '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">',
+              1
+          )
+
+          pwa_meta = '''  <meta name="theme-color" content="#0f172a">\n  <meta name="color-scheme" content="light">\n  <meta name="mobile-web-app-capable" content="yes">\n  <meta name="apple-mobile-web-app-capable" content="yes">\n  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n  <meta name="apple-mobile-web-app-title" content="CV Bunyola">\n  <meta name="format-detection" content="telephone=no">\n  <link rel="manifest" href="manifest.webmanifest?v=20260825pwa1">\n  <link rel="apple-touch-icon" href="assets/club_logo.png">\n  <link rel="icon" type="image/png" href="assets/club_logo.png">\n'''
+          if 'rel="manifest"' not in html:
+              html = html.replace('  <title>CV BUNYOLA - Hub del Equipo</title>\n', '  <title>CV BUNYOLA - Hub del Equipo</title>\n' + pwa_meta, 1)
+
+          pwa_css = '  <link rel="stylesheet" href="pwa-mobile-shell.css?v=20260825pwa1">\n'
+          if 'pwa-mobile-shell.css' not in html:
+              anchor = '  <link rel="stylesheet" href="styles.css?v=20260813s">\n'
+              html = html.replace(anchor, anchor + pwa_css, 1)
+
+          pwa_script = '    <script src="pwa-mobile-shell-20260825.js?v=20260825pwa1"></script>\n'
+          if 'pwa-mobile-shell-20260825.js' not in html:
+              anchor = '    <script src="app.js?v=20260816q"></script>\n'
+              html = html.replace(anchor, anchor + pwa_script, 1)
+
+          path.write_text(html)
+          PY
+
+      - name: Validate PWA files
+        run: |
+          node --check pwa-mobile-shell-20260825.js
+          node --check service-worker.js
+          python -m json.tool manifest.webmanifest >/dev/null
+          grep -q 'viewport-fit=cover' index.html
+          grep -q 'rel="manifest"' index.html
+          grep -q 'apple-mobile-web-app-capable' index.html
+          grep -q 'pwa-mobile-shell.css' index.html
+          grep -q 'pwa-mobile-shell-20260825.js' index.html
+
+      - name: Commit integration if needed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "PWA integration already up to date"
+          else
+            git commit -m "Integrate PWA shell in app entrypoint"
+            git push
+          fi
