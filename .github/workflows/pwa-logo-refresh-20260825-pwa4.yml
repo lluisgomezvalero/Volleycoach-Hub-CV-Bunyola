@@ -49,8 +49,9 @@ jobs:
               Path('assets/cvb-logo-source.part3.b64'),
           ]
           raw = ''.join(''.join(p.read_text(encoding='utf-8').split()) for p in parts)
+          raw += '=' * (-len(raw) % 4)
           source_path = Path('/tmp/cvb-logo-source.jpg')
-          source_path.write_bytes(base64.b64decode(raw, validate=True))
+          source_path.write_bytes(base64.b64decode(raw))
 
           img = Image.open(source_path).convert('RGBA')
           img.load()
