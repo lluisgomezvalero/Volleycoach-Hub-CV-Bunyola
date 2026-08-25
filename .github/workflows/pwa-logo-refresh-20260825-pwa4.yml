@@ -6,13 +6,17 @@ on:
       - fix/pwa-logo-refresh-20260825-pwa4
     paths:
       - '.github/workflows/pwa-logo-refresh-20260825-pwa4.yml'
-      - 'assets/cvb-logo-source.b64'
+      - 'assets/cvb-logo-source.part1.b64'
+      - 'assets/cvb-logo-source.part2.b64'
+      - 'assets/cvb-logo-source.part3.b64'
   pull_request:
     branches:
       - main
     paths:
       - '.github/workflows/pwa-logo-refresh-20260825-pwa4.yml'
-      - 'assets/cvb-logo-source.b64'
+      - 'assets/cvb-logo-source.part1.b64'
+      - 'assets/cvb-logo-source.part2.b64'
+      - 'assets/cvb-logo-source.part3.b64'
       - 'assets/apple-touch-icon.png'
       - 'assets/pwa-icon-192.png'
       - 'assets/pwa-icon-512.png'
@@ -39,19 +43,26 @@ jobs:
           from PIL import Image
           import base64, json
 
-          raw = ''.join(Path('assets/cvb-logo-source.b64').read_text(encoding='utf-8').split())
+          parts = [
+              Path('assets/cvb-logo-source.part1.b64'),
+              Path('assets/cvb-logo-source.part2.b64'),
+              Path('assets/cvb-logo-source.part3.b64'),
+          ]
+          raw = ''.join(''.join(p.read_text(encoding='utf-8').split()) for p in parts)
           source_path = Path('/tmp/cvb-logo-source.jpg')
-          source_path.write_bytes(base64.b64decode(raw))
+          source_path.write_bytes(base64.b64decode(raw, validate=True))
 
           img = Image.open(source_path).convert('RGBA')
+          img.load()
           px = img.load()
           xs, ys = [], []
           for y in range(img.height):
               for x in range(img.width):
                   r, g, b, a = px[x, y]
                   if a and not (r > 235 and g > 235 and b > 235):
-                      xs.append(x); ys.append(y)
-          assert xs and ys
+                      xs.append(x)
+                      ys.append(y)
+          assert xs and ys, 'No visible logo content detected'
           content = img.crop((min(xs), min(ys), max(xs) + 1, max(ys) + 1)).convert('RGBA')
 
           cp = content.load()
@@ -68,7 +79,7 @@ jobs:
               w = max(1, round(content.width * scale))
               h = max(1, round(content.height * scale))
               resized = content.resize((w, h), Image.Resampling.LANCZOS)
-              canvas.alpha_composite(resized, ((size - w)//2, (size - h)//2))
+              canvas.alpha_composite(resized, ((size - w) // 2, (size - h) // 2))
               return canvas.convert('RGB')
 
           make_icon(180, 0.08).save('assets/apple-touch-icon.png', 'PNG', optimize=True)
@@ -79,17 +90,18 @@ jobs:
           manifest_path = Path('manifest.webmanifest')
           manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
           manifest['icons'] = [
-              {'src':'assets/pwa-icon-192.png?v=20260825pwa4','sizes':'192x192','type':'image/png','purpose':'any'},
-              {'src':'assets/pwa-icon-512.png?v=20260825pwa4','sizes':'512x512','type':'image/png','purpose':'any'},
-              {'src':'assets/pwa-icon-maskable-512.png?v=20260825pwa4','sizes':'512x512','type':'image/png','purpose':'maskable'}
+              {'src': 'assets/pwa-icon-192.png?v=20260825pwa4', 'sizes': '192x192', 'type': 'image/png', 'purpose': 'any'},
+              {'src': 'assets/pwa-icon-512.png?v=20260825pwa4', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any'},
+              {'src': 'assets/pwa-icon-maskable-512.png?v=20260825pwa4', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'maskable'},
           ]
           manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
 
           index_path = Path('index.html')
           html = index_path.read_text(encoding='utf-8')
-          html = html.replace('manifest.webmanifest?v=20260825pwa3', 'manifest.webmanifest?v=20260825pwa4')
-          html = html.replace('assets/apple-touch-icon.png?v=20260825pwa3', 'assets/apple-touch-icon.png?v=20260825pwa4')
-          html = html.replace('assets/pwa-icon-192.png?v=20260825pwa3', 'assets/pwa-icon-192.png?v=20260825pwa4')
+          for old in ('20260825pwa1', '20260825pwa2', '20260825pwa3'):
+              html = html.replace(f'manifest.webmanifest?v={old}', 'manifest.webmanifest?v=20260825pwa4')
+              html = html.replace(f'assets/apple-touch-icon.png?v={old}', 'assets/apple-touch-icon.png?v=20260825pwa4')
+              html = html.replace(f'assets/pwa-icon-192.png?v={old}', 'assets/pwa-icon-192.png?v=20260825pwa4')
           index_path.write_text(html, encoding='utf-8')
           PY
 
@@ -98,15 +110,15 @@ jobs:
           python - <<'PY'
           from PIL import Image
           expected = {
-            'assets/apple-touch-icon.png': (180, 180),
-            'assets/pwa-icon-192.png': (192, 192),
-            'assets/pwa-icon-512.png': (512, 512),
-            'assets/pwa-icon-maskable-512.png': (512, 512),
+              'assets/apple-touch-icon.png': (180, 180),
+              'assets/pwa-icon-192.png': (192, 192),
+              'assets/pwa-icon-512.png': (512, 512),
+              'assets/pwa-icon-maskable-512.png': (512, 512),
           }
           for path, size in expected.items():
               with Image.open(path) as image:
                   assert image.size == size, (path, image.size, size)
-                  image.load()
+                  image.verify()
           PY
           python -m json.tool manifest.webmanifest >/dev/null
           grep -q '20260825pwa4' index.html
