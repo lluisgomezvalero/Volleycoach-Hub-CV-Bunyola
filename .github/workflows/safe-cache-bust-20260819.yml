@@ -1,4 +1,4 @@
-name: Load player individual stats priority
+name: Load player individual stats detail fix
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Load individual priority module
+      - name: Load individual detail fix
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -21,16 +21,13 @@ jobs:
 
           cfg = Path('supabase-config.js')
           s = cfg.read_text()
-          s = re.sub(r"window\.VOLLEY_ASSET_VERSION = '[^']+';", "window.VOLLEY_ASSET_VERSION = '20260825stats2';", s, count=1)
-          anchor = "  'match-statistics-optional-v2-20260825.js?v=20260825stats1',"
-          addition = "  'match-statistics-player-individual-priority-20260825.js?v=20260825stats2',"
-          if addition not in s:
-              s = s.replace(anchor, anchor + "\n" + addition, 1)
+          s = re.sub(r"window\.VOLLEY_ASSET_VERSION = '[^']+';", "window.VOLLEY_ASSET_VERSION = '20260825stats3';", s, count=1)
+          s = s.replace("match-statistics-player-individual-priority-20260825.js?v=20260825stats2", "match-statistics-player-individual-priority-20260825.js?v=20260825stats3", 1)
           cfg.write_text(s)
 
           index = Path('index.html')
           i = index.read_text()
-          i = re.sub(r'supabase-config\.js\?v=[A-Za-z0-9._-]+', 'supabase-config.js?v=20260825stats2', i, count=1)
+          i = re.sub(r'supabase-config\.js\?v=[A-Za-z0-9._-]+', 'supabase-config.js?v=20260825stats3', i, count=1)
           index.write_text(i)
           PY
 
@@ -41,6 +38,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No player stats cache update needed"
           else
-            git commit -m "Load player individual stats priority"
+            git commit -m "Force fresh player individual detail fix"
             git push
           fi
