@@ -7,6 +7,18 @@ on:
     paths:
       - '.github/workflows/pwa-logo-refresh-20260825-pwa4.yml'
       - 'assets/cvb-logo-source.b64'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/pwa-logo-refresh-20260825-pwa4.yml'
+      - 'assets/cvb-logo-source.b64'
+      - 'assets/apple-touch-icon.png'
+      - 'assets/pwa-icon-192.png'
+      - 'assets/pwa-icon-512.png'
+      - 'assets/pwa-icon-maskable-512.png'
+      - 'index.html'
+      - 'manifest.webmanifest'
 
 permissions:
   contents: write
@@ -92,15 +104,16 @@ jobs:
             'assets/pwa-icon-maskable-512.png': (512, 512),
           }
           for path, size in expected.items():
-              image = Image.open(path)
-              image.verify()
-              assert image.size == size, (path, image.size, size)
+              with Image.open(path) as image:
+                  assert image.size == size, (path, image.size, size)
+                  image.load()
           PY
           python -m json.tool manifest.webmanifest >/dev/null
           grep -q '20260825pwa4' index.html
           grep -q '20260825pwa4' manifest.webmanifest
 
       - name: Commit generated assets
+        if: github.event_name == 'push'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
