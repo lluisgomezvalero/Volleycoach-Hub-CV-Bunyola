@@ -3,7 +3,7 @@
  * La publishable key es segura en el navegador SIEMPRE que las tablas tengan RLS.
  * Nunca pongas aquí la service_role ni una secret key.
  */
-window.VOLLEY_ASSET_VERSION = '20260825stats4';
+window.VOLLEY_ASSET_VERSION = '20260825ux1';
 window.VOLLEY_SUPABASE_CONFIG = Object.freeze({
   url: 'https://zpvlkdjdfnvamfcjihyt.supabase.co',
   publishableKey: 'sb_publishable_seL2H6gAGBrUDR0O1vhJDA_Y9d7Ky-u',
@@ -94,6 +94,7 @@ html:not(.attendance-ready) .btn-rsvp-no{visibility:hidden!important;pointer-eve
   'calendar-mobile-app-ux-20260820.js?v=20260820tablet1',
   'calendar-toolbar-polish-20260820.js?v=20260820tablet1',
   'calendar-add-button-polish-20260820.js?v=20260820tablet1',
+  'calendar-profile-roster-fixes-20260825.js?v=20260825ux1',
   'match-statistics-authoritative-20260817.js?v=20260818b',
   'match-statistics-priority-ux-20260818.js?v=20260820tablet1',
   'match-statistics-form-ux-20260818.js?v=20260820tablet1',
