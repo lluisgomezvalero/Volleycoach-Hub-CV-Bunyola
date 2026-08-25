@@ -14,28 +14,22 @@
 html{
   width:100%;
   min-height:100%;
-  min-height:100dvh;
   background:#f8fafc;
   overflow-x:hidden;
-  overscroll-behavior-y:none;
   -webkit-text-size-adjust:100%;
   text-size-adjust:100%;
 }
 
 body{
   width:100%;
-  min-height:100%;
-  min-height:100dvh!important;
+  min-height:100vh;
+  min-height:100dvh;
   max-width:100%;
   overflow-x:hidden!important;
 }
 
-body::before,
-body::after{
-  height:100dvh!important;
-}
-
 #app-boot-screen{
+  min-height:100vh;
   min-height:100dvh;
   padding:var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   background:#f8fafc;
@@ -47,10 +41,12 @@ html:not(.auth-ready) body{
 }
 
 #view-login{
+  min-height:100vh;
   min-height:100dvh;
 }
 
 #view-login .login-container{
+  min-height:100vh!important;
   min-height:100dvh!important;
   padding:
     calc(1rem + var(--safe-top))
@@ -59,17 +55,16 @@ html:not(.auth-ready) body{
     max(1rem,var(--safe-left));
 }
 
-/* One natural page scroll. Individual wide components may keep their own horizontal scroller. */
 .app-portal-wrapper,
 .app-portal-wrapper>.page-view{
   max-width:100%;
   overflow-x:clip;
 }
 
-/* Modern viewport height for overlays; safe areas are handled once here. */
 .modal-backdrop{
   inset:0!important;
   width:100%!important;
+  height:100vh!important;
   height:100dvh!important;
   padding:
     calc(.65rem + var(--safe-top))
@@ -82,17 +77,8 @@ html:not(.auth-ready) body{
   max-height:calc(100dvh - var(--safe-top) - var(--safe-bottom) - 1.3rem)!important;
 }
 
-.modal-content>.modal-body,
-.modal-body{
-  overscroll-behavior:contain;
-  -webkit-overflow-scrolling:touch;
-}
+body.modal-open{overflow:hidden!important}
 
-body.modal-open{
-  overflow:hidden!important;
-}
-
-/* Native-feeling touch behavior without changing component visuals. */
 button,
 .btn,
 [role="button"],
@@ -113,12 +99,6 @@ button,
   user-select:none;
 }
 
-button:active,
-.btn:active,
-[role="button"]:active{
-  transition:transform .08s ease,opacity .08s ease;
-}
-
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{
     scroll-behavior:auto!important;
@@ -134,6 +114,7 @@ button:active,
     padding-right:max(1rem,var(--safe-right))!important;
     padding-bottom:calc(var(--mobile-bottombar-height) + var(--safe-bottom) + 24px)!important;
     padding-left:max(1rem,var(--safe-left))!important;
+    min-height:100vh!important;
     min-height:100dvh!important;
   }
 
@@ -170,29 +151,14 @@ button:active,
   }
 
   .btn,
-  button:not(.chip):not([class*="badge"]){
-    min-height:var(--app-touch-target);
-  }
+  button:not(.chip):not([class*="badge"]){min-height:var(--app-touch-target)}
 
-  /* iOS Safari zooms focused controls below 16px. */
   input,
   textarea,
   select,
-  .form-control{
-    font-size:16px!important;
-  }
+  .form-control{font-size:16px!important}
 
-  input,
-  textarea,
-  select{
-    -webkit-tap-highlight-color:transparent;
-  }
-
-  /* Avoid accidental page-width growth from common media/content surfaces. */
-  img,
-  video{
-    max-width:100%;
-  }
+  img,video{max-width:100%}
 
   .table-responsive,
   [class*="table-wrap"],
@@ -202,35 +168,37 @@ button:active,
   }
 }
 
-/* Standalone mode: use the whole iPhone canvas cleanly. */
+/* Standalone mode should be cheaper to paint than browser mode on Android.
+   Avoid fixed translucent blur layers, which can cause scroll jank in Chromium PWAs. */
 html.pwa-standalone,
 html.pwa-standalone body{
+  min-height:100vh;
   min-height:100dvh;
   background:#f8fafc;
 }
 
-html.pwa-standalone body{
-  overscroll-behavior-y:none;
-}
+@media (max-width:960px){
+  html.pwa-standalone .volley-mobile-bar,
+  html.pwa-standalone #volley-mobile-quick-nav{
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+    background:#fff!important;
+  }
 
-html.pwa-standalone .volley-mobile-bar,
-html.pwa-standalone #volley-mobile-quick-nav{
-  -webkit-backdrop-filter:saturate(160%) blur(18px);
-  backdrop-filter:saturate(160%) blur(18px);
+  html.pwa-standalone .volley-nav-overlay{
+    -webkit-backdrop-filter:none!important;
+    backdrop-filter:none!important;
+  }
 }
 
 @media (max-width:960px) and (prefers-reduced-motion:no-preference){
-  .modal-backdrop.active .modal-content{
-    animation:pwaModalIn .14s cubic-bezier(.2,.8,.2,1);
-  }
+  .modal-backdrop.active .modal-content{animation:pwaModalIn .12s ease-out}
   #volley-mobile-quick-nav button,
   .volley-mobile-menu,
-  .volley-mobile-profile{
-    transition:background-color .12s ease,color .12s ease,transform .08s ease;
-  }
+  .volley-mobile-profile{transition:background-color .1s ease,color .1s ease,transform .06s ease}
 }
 
 @keyframes pwaModalIn{
-  from{opacity:.88;transform:translateY(5px) scale(.995)}
-  to{opacity:1;transform:translateY(0) scale(1)}
+  from{opacity:.9;transform:translateY(4px)}
+  to{opacity:1;transform:translateY(0)}
 }
