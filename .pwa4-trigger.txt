@@ -1,0 +1,1 @@
+Trigger PR validation for refreshed CV Bunyola PWA logo.
