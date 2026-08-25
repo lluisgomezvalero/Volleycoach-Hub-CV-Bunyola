@@ -9,7 +9,8 @@ on:
       - 'assets/cvb-logo-source.part1.b64'
       - 'assets/cvb-logo-source.part2.b64'
       - 'assets/cvb-logo-source.part3.b64'
-      - 'assets/cvb-logo-source.part4a.b64'
+      - 'assets/cvb-logo-source.part4a1.b64'
+      - 'assets/cvb-logo-source.part4a2.b64'
       - 'assets/cvb-logo-source.part4.b64'
   pull_request:
     branches:
@@ -19,7 +20,8 @@ on:
       - 'assets/cvb-logo-source.part1.b64'
       - 'assets/cvb-logo-source.part2.b64'
       - 'assets/cvb-logo-source.part3.b64'
-      - 'assets/cvb-logo-source.part4a.b64'
+      - 'assets/cvb-logo-source.part4a1.b64'
+      - 'assets/cvb-logo-source.part4a2.b64'
       - 'assets/cvb-logo-source.part4.b64'
       - 'assets/apple-touch-icon.png'
       - 'assets/pwa-icon-192.png'
@@ -51,7 +53,8 @@ jobs:
               Path('assets/cvb-logo-source.part1.b64'),
               Path('assets/cvb-logo-source.part2.b64'),
               Path('assets/cvb-logo-source.part3.b64'),
-              Path('assets/cvb-logo-source.part4a.b64'),
+              Path('assets/cvb-logo-source.part4a1.b64'),
+              Path('assets/cvb-logo-source.part4a2.b64'),
               Path('assets/cvb-logo-source.part4.b64'),
           ]
           raw = ''.join(''.join(p.read_text(encoding='utf-8').split()) for p in parts)
