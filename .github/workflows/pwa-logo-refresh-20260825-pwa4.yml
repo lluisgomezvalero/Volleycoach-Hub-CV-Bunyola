@@ -42,29 +42,51 @@ jobs:
       - name: Prepare icon tooling
         run: python -m pip install --quiet pillow
 
-      - name: Decode source and generate icons
+      - name: Decode verified source and generate icons
         run: |
           python - <<'PY'
           from pathlib import Path
           from PIL import Image
-          import base64, json
+          import base64, hashlib, json
+
+          def compact(path):
+              return ''.join(Path(path).read_text(encoding='utf-8').split())
+
+          # part4a1 acquired three stray characters during transport. Repair it
+          # deterministically against the SHA-256 of the original local chunk.
+          a1 = compact('assets/cvb-logo-source.part4a1.b64')
+          expected_a1 = '5f4aae072803313a891e100492956c8d9b8f918eb755572da9982e92eb07d8da'
+          if hashlib.sha256(a1.encode()).hexdigest() != expected_a1:
+              assert len(a1) == 3503, len(a1)
+              repaired = None
+              for i in range(len(a1) - 2):
+                  candidate = a1[:i] + a1[i+3:]
+                  if hashlib.sha256(candidate.encode()).hexdigest() == expected_a1:
+                      repaired = candidate
+                      break
+              assert repaired is not None, 'Unable to repair source chunk exactly'
+              a1 = repaired
+          assert len(a1) == 3500
 
           parts = [
-              Path('assets/cvb-logo-source.part1.b64'),
-              Path('assets/cvb-logo-source.part2.b64'),
-              Path('assets/cvb-logo-source.part3.b64'),
-              Path('assets/cvb-logo-source.part4a1.b64'),
-              Path('assets/cvb-logo-source.part4a2.b64'),
-              Path('assets/cvb-logo-source.part4.b64'),
+              compact('assets/cvb-logo-source.part1.b64'),
+              compact('assets/cvb-logo-source.part2.b64'),
+              compact('assets/cvb-logo-source.part3.b64'),
+              a1,
+              compact('assets/cvb-logo-source.part4a2.b64'),
+              compact('assets/cvb-logo-source.part4.b64'),
           ]
-          raw = ''.join(''.join(p.read_text(encoding='utf-8').split()) for p in parts)
+          raw = ''.join(parts)
           assert len(raw) == 31548, len(raw)
-          source_path = Path('/tmp/cvb-logo-source.jpg')
-          source_path.write_bytes(base64.b64decode(raw, validate=True))
+          source_bytes = base64.b64decode(raw, validate=True)
+          assert hashlib.sha256(source_bytes).hexdigest() == 'c85b1e109aca334ce805c7a3bdc606830c16ef09f1183240b1eb5c3d01735ed4'
 
+          source_path = Path('/tmp/cvb-logo-source.jpg')
+          source_path.write_bytes(source_bytes)
           img = Image.open(source_path).convert('RGBA')
           img.load()
           assert img.size == (512, 512), img.size
+
           px = img.load()
           xs, ys = [], []
           for y in range(img.height):
@@ -144,6 +166,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'PWA icons already current'
           else
-            git commit -m 'Regenerate PWA icons from complete CV Bunyola logo'
+            git commit -m 'Regenerate PWA icons from verified CV Bunyola logo'
             git push
           fi
