@@ -1,5 +1,5 @@
 const CACHE_PREFIX='cvbunyola-pwa-';
-const CACHE_VERSION='20260825-v1';
+const CACHE_VERSION='20260825-v2';
 const CACHE_NAME=`${CACHE_PREFIX}${CACHE_VERSION}`;
 const APP_SHELL=['./','./manifest.webmanifest','./assets/club_logo.png'];
 
@@ -19,19 +19,20 @@ self.addEventListener('activate',event=>{
   })());
 });
 
-async function networkFirst(request){
-  const cache=await caches.open(CACHE_NAME);
+async function navigationFallback(request){
   try{
-    const response=await fetch(request,{cache:'no-store'});
-    if(response&&response.ok)await cache.put(request,response.clone());
+    // Do not bypass the browser HTTP cache. The previous no-store strategy forced
+    // a full network request for every app launch and made installed PWAs slower.
+    const response=await fetch(request);
+    if(response&&response.ok){
+      const cache=await caches.open(CACHE_NAME);
+      await cache.put('./',response.clone());
+    }
     return response;
   }catch(error){
-    const cached=await cache.match(request);
+    const cache=await caches.open(CACHE_NAME);
+    const cached=await cache.match('./');
     if(cached)return cached;
-    if(request.mode==='navigate'){
-      const fallback=await cache.match('./');
-      if(fallback)return fallback;
-    }
     throw error;
   }
 }
@@ -39,13 +40,7 @@ async function networkFirst(request){
 async function cacheFirst(request){
   const cache=await caches.open(CACHE_NAME);
   const cached=await cache.match(request);
-  if(cached){
-    // Refresh in the background, but never delay the visible asset.
-    fetch(request).then(response=>{
-      if(response&&response.ok)cache.put(request,response.clone());
-    }).catch(()=>{});
-    return cached;
-  }
+  if(cached)return cached;
   const response=await fetch(request);
   if(response&&response.ok)await cache.put(request,response.clone());
   return response;
@@ -56,20 +51,19 @@ self.addEventListener('fetch',event=>{
   if(request.method!=='GET')return;
 
   const url=new URL(request.url);
-  if(url.origin!==self.location.origin)return; // Supabase/CDNs keep their normal networking/auth behavior.
+  if(url.origin!==self.location.origin)return; // Supabase/CDNs keep normal networking/auth behavior.
 
   if(request.mode==='navigate'){
-    event.respondWith(networkFirst(request));
+    event.respondWith(navigationFallback(request));
     return;
   }
 
-  const destination=request.destination;
-  if(['script','style','document','worker'].includes(destination)){
-    event.respondWith(networkFirst(request));
-    return;
-  }
+  // Scripts and styles deliberately use the browser's native HTTP cache. Most app
+  // assets already carry versioned query strings, so intercepting them here only
+  // added service-worker/network overhead and could delay first paint.
+  if(['script','style','document','worker'].includes(request.destination))return;
 
-  if(['image','font'].includes(destination)){
+  if(['image','font'].includes(request.destination)){
     event.respondWith(cacheFirst(request));
   }
 });
