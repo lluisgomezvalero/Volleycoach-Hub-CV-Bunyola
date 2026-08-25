@@ -32,8 +32,13 @@ jobs:
               '<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">',
               1
           )
+          html = html.replace(
+              '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">',
+              '<meta name="apple-mobile-web-app-status-bar-style" content="default">',
+              1
+          )
 
-          pwa_meta = '''  <meta name="theme-color" content="#0f172a">\n  <meta name="color-scheme" content="light">\n  <meta name="mobile-web-app-capable" content="yes">\n  <meta name="apple-mobile-web-app-capable" content="yes">\n  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n  <meta name="apple-mobile-web-app-title" content="CV Bunyola">\n  <meta name="format-detection" content="telephone=no">\n  <link rel="manifest" href="manifest.webmanifest?v=20260825pwa1">\n  <link rel="apple-touch-icon" href="assets/club_logo.png">\n  <link rel="icon" type="image/png" href="assets/club_logo.png">\n'''
+          pwa_meta = '''  <meta name="theme-color" content="#0f172a">\n  <meta name="color-scheme" content="light">\n  <meta name="mobile-web-app-capable" content="yes">\n  <meta name="apple-mobile-web-app-capable" content="yes">\n  <meta name="apple-mobile-web-app-status-bar-style" content="default">\n  <meta name="apple-mobile-web-app-title" content="CV Bunyola">\n  <meta name="format-detection" content="telephone=no">\n  <link rel="manifest" href="manifest.webmanifest?v=20260825pwa1">\n  <link rel="apple-touch-icon" href="assets/club_logo.png">\n  <link rel="icon" type="image/png" href="assets/club_logo.png">\n'''
           if 'rel="manifest"' not in html:
               html = html.replace('  <title>CV BUNYOLA - Hub del Equipo</title>\n', '  <title>CV BUNYOLA - Hub del Equipo</title>\n' + pwa_meta, 1)
 
@@ -58,6 +63,7 @@ jobs:
           grep -q 'viewport-fit=cover' index.html
           grep -q 'rel="manifest"' index.html
           grep -q 'apple-mobile-web-app-capable' index.html
+          grep -q 'apple-mobile-web-app-status-bar-style" content="default' index.html
           grep -q 'pwa-mobile-shell.css' index.html
           grep -q 'pwa-mobile-shell-20260825.js' index.html
 
