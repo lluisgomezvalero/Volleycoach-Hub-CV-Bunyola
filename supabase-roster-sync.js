@@ -14,7 +14,7 @@ async function syncRosterFromSupabase(){
   try{
     const {data,error}=await client
       .from('players')
-      .select('id,legacy_id,team_id,dorsal,birth_date,position,status,active,profile_id,profiles:profile_id(id,username,full_name,avatar_path,active,role)')
+      .select('id,legacy_id,team_id,dorsal,birth_date,position,status,active,profile_id,profiles:profile_id(id,username,full_name,avatar_path,active,role,last_login_at)')
       .eq('active',true);
     if(error){console.warn('[RosterSync] Error cargando plantilla',error);return;}
 
@@ -46,6 +46,8 @@ async function syncRosterFromSupabase(){
         status:r.status||'Disponible',
         teamId:r.team_id||null,
         avatar_path:r.profiles?.avatar_path||null,
+        lastLoginAt:r.profiles?.last_login_at||null,
+        last_login_at:r.profiles?.last_login_at||null,
         active:r.active!==false
       };
 
@@ -66,6 +68,8 @@ async function syncRosterFromSupabase(){
           status:r.status||previous.status||'Disponible',
           teamId:r.team_id||previous.teamId||null,
           avatar_path:r.profiles?.avatar_path||previous.avatar_path||null,
+          lastLoginAt:r.profiles?.last_login_at||previous.lastLoginAt||previous.last_login_at||null,
+          last_login_at:r.profiles?.last_login_at||previous.last_login_at||previous.lastLoginAt||null,
           active:r.active!==false
         };
       }else if(r.profile_id){
@@ -96,6 +100,7 @@ async function syncRosterFromSupabase(){
       try{renderTraining()}catch(_){}
       try{renderHomePortalRSVP()}catch(_){}
       try{renderStats()}catch(_){}
+      try{renderRoster()}catch(_){}
     });
     console.info('[RosterSync] Plantilla conservada; identidades Supabase fusionadas.');
   }finally{syncing=false}
