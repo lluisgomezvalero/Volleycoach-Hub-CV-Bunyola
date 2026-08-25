@@ -84,6 +84,7 @@ function patchClient(){
     });
   };
   client.__matchStatsPlayerIndividualPriority20260825=true;
+  client.__matchStatsOriginalRpc20260825=originalRpc;
   document.documentElement.dataset.matchStatsPlayerIndividualPriority='1';
 
   try{window.invalidateViewRenderCache?.('stats');}catch(_){}
@@ -108,14 +109,14 @@ async function remoteEventId(match){
   return data?.id||null;
 }
 
-function statsFromIndividualRow(row){
+function statsFromPublishedRow(row,scope){
   return {
     ...(row?.payload||{}),
     visibleToPlayers:Array.isArray(row?.visible_metrics)?row.visible_metrics.map(String):[],
     publicationStatus:'published',
     publishedAt:row?.published_at||null,
-    statsScope:'individual',
-    individual:true
+    statsScope:scope,
+    individual:scope==='individual'
   };
 }
 
@@ -128,7 +129,7 @@ function activatePlayerStatsModal(matchId,stats){
   if(typeof window.enhancePlayerMatchStatsModal==='function'){
     window.enhancePlayerMatchStatsModal(matchId,stats);
   }else{
-    body.innerHTML='<div class="player-stats-empty">Estadísticas individuales publicadas.</div>';
+    body.innerHTML='<div class="player-stats-empty">Estadísticas publicadas.</div>';
   }
   modal.classList.add('active');
   modal.setAttribute('aria-hidden','false');
@@ -148,16 +149,31 @@ function patchPlayerOpen(){
       const eid=await remoteEventId(match);
       const client=db();
       if(client&&eid){
-        const {data,error}=await client.rpc('get_my_published_match_player_statistics');
-        if(error)throw error;
-        const row=(data||[]).find(item=>String(item?.event_id||'')===String(eid));
-        if(row){
-          const stats=statsFromIndividualRow(row);
-          if(activatePlayerStatsModal(matchId,stats))return;
+        const rpc=client.__matchStatsOriginalRpc20260825||client.rpc.bind(client);
+        const [individualResult,generalResult]=await Promise.all([
+          Promise.resolve(rpc('get_my_published_match_player_statistics')),
+          Promise.resolve(rpc('get_published_match_statistics'))
+        ]);
+
+        if(individualResult?.error)console.warn('[MatchStats] individual detail fallback',individualResult.error);
+        if(generalResult?.error)console.warn('[MatchStats] general detail fallback',generalResult.error);
+
+        const individualRow=!individualResult?.error
+          ?(individualResult?.data||[]).find(item=>String(item?.event_id||'')===String(eid))
+          :null;
+        if(individualRow){
+          if(activatePlayerStatsModal(matchId,statsFromPublishedRow(individualRow,'individual')))return;
+        }
+
+        const generalRow=!generalResult?.error
+          ?(generalResult?.data||[]).find(item=>String(item?.event_id||'')===String(eid))
+          :null;
+        if(generalRow){
+          if(activatePlayerStatsModal(matchId,statsFromPublishedRow(generalRow,'general')))return;
         }
       }
     }catch(error){
-      console.warn('[MatchStats] direct individual detail',error);
+      console.warn('[MatchStats] direct published detail',error);
     }
     return fallback.apply(this,arguments);
   };
