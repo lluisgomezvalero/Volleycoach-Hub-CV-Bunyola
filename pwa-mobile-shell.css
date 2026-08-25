@@ -1,0 +1,236 @@
+/* CV Bunyola · PWA/mobile shell
+ * Global iPhone/Android/tablet polish. Keep screen-specific logic untouched.
+ */
+:root{
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-right:env(safe-area-inset-right,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --safe-left:env(safe-area-inset-left,0px);
+  --mobile-topbar-height:62px;
+  --mobile-bottombar-height:68px;
+  --app-touch-target:44px;
+}
+
+html{
+  width:100%;
+  min-height:100%;
+  min-height:100dvh;
+  background:#f8fafc;
+  overflow-x:hidden;
+  overscroll-behavior-y:none;
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+
+body{
+  width:100%;
+  min-height:100%;
+  min-height:100dvh!important;
+  max-width:100%;
+  overflow-x:hidden!important;
+}
+
+body::before,
+body::after{
+  height:100dvh!important;
+}
+
+#app-boot-screen{
+  min-height:100dvh;
+  padding:var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+  background:#f8fafc;
+}
+
+html:not(.auth-ready),
+html:not(.auth-ready) body{
+  overflow:hidden!important;
+}
+
+#view-login{
+  min-height:100dvh;
+}
+
+#view-login .login-container{
+  min-height:100dvh!important;
+  padding:
+    calc(1rem + var(--safe-top))
+    max(1rem,var(--safe-right))
+    calc(1rem + var(--safe-bottom))
+    max(1rem,var(--safe-left));
+}
+
+/* One natural page scroll. Individual wide components may keep their own horizontal scroller. */
+.app-portal-wrapper,
+.app-portal-wrapper>.page-view{
+  max-width:100%;
+  overflow-x:clip;
+}
+
+/* Modern viewport height for overlays; safe areas are handled once here. */
+.modal-backdrop{
+  inset:0!important;
+  width:100%!important;
+  height:100dvh!important;
+  padding:
+    calc(.65rem + var(--safe-top))
+    max(.65rem,var(--safe-right))
+    calc(.65rem + var(--safe-bottom))
+    max(.65rem,var(--safe-left))!important;
+}
+
+.modal-content{
+  max-height:calc(100dvh - var(--safe-top) - var(--safe-bottom) - 1.3rem)!important;
+}
+
+.modal-content>.modal-body,
+.modal-body{
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
+
+body.modal-open{
+  overflow:hidden!important;
+}
+
+/* Native-feeling touch behavior without changing component visuals. */
+button,
+.btn,
+[role="button"],
+select,
+input[type="button"],
+input[type="submit"],
+input[type="reset"]{
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+
+button,
+.btn,
+[role="button"],
+.nav-item,
+.volley-side-item{
+  -webkit-user-select:none;
+  user-select:none;
+}
+
+button:active,
+.btn:active,
+[role="button"]:active{
+  transition:transform .08s ease,opacity .08s ease;
+}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    scroll-behavior:auto!important;
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:.01ms!important;
+  }
+}
+
+@media (max-width:960px){
+  body.volley-nav-ready .app-portal-wrapper{
+    padding-top:calc(var(--mobile-topbar-height) + var(--safe-top) + 14px)!important;
+    padding-right:max(1rem,var(--safe-right))!important;
+    padding-bottom:calc(var(--mobile-bottombar-height) + var(--safe-bottom) + 24px)!important;
+    padding-left:max(1rem,var(--safe-left))!important;
+    min-height:100dvh!important;
+  }
+
+  .volley-mobile-bar{
+    left:0!important;
+    right:0!important;
+    top:0!important;
+    height:calc(var(--mobile-topbar-height) + var(--safe-top))!important;
+    padding:var(--safe-top) max(.65rem,var(--safe-right)) 0 max(.65rem,var(--safe-left))!important;
+    border-radius:0 0 18px 18px!important;
+  }
+
+  #volley-mobile-quick-nav{
+    left:0!important;
+    right:0!important;
+    bottom:0!important;
+    min-height:calc(var(--mobile-bottombar-height) + var(--safe-bottom))!important;
+    padding:.38rem max(.45rem,var(--safe-right)) var(--safe-bottom) max(.45rem,var(--safe-left))!important;
+  }
+
+  #volley-mobile-quick-nav button{
+    min-height:52px!important;
+    touch-action:manipulation;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  .volley-mobile-menu,
+  .volley-mobile-profile,
+  .volley-side-close,
+  .modal-close,
+  .modal-close-btn{
+    min-width:var(--app-touch-target)!important;
+    min-height:var(--app-touch-target)!important;
+  }
+
+  .btn,
+  button:not(.chip):not([class*="badge"]){
+    min-height:var(--app-touch-target);
+  }
+
+  /* iOS Safari zooms focused controls below 16px. */
+  input,
+  textarea,
+  select,
+  .form-control{
+    font-size:16px!important;
+  }
+
+  input,
+  textarea,
+  select{
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  /* Avoid accidental page-width growth from common media/content surfaces. */
+  img,
+  video{
+    max-width:100%;
+  }
+
+  .table-responsive,
+  [class*="table-wrap"],
+  [class*="table-scroll"]{
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-inline:contain;
+  }
+}
+
+/* Standalone mode: use the whole iPhone canvas cleanly. */
+html.pwa-standalone,
+html.pwa-standalone body{
+  min-height:100dvh;
+  background:#f8fafc;
+}
+
+html.pwa-standalone body{
+  overscroll-behavior-y:none;
+}
+
+html.pwa-standalone .volley-mobile-bar,
+html.pwa-standalone #volley-mobile-quick-nav{
+  -webkit-backdrop-filter:saturate(160%) blur(18px);
+  backdrop-filter:saturate(160%) blur(18px);
+}
+
+@media (max-width:960px) and (prefers-reduced-motion:no-preference){
+  .modal-backdrop.active .modal-content{
+    animation:pwaModalIn .14s cubic-bezier(.2,.8,.2,1);
+  }
+  #volley-mobile-quick-nav button,
+  .volley-mobile-menu,
+  .volley-mobile-profile{
+    transition:background-color .12s ease,color .12s ease,transform .08s ease;
+  }
+}
+
+@keyframes pwaModalIn{
+  from{opacity:.88;transform:translateY(5px) scale(.995)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
