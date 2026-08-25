@@ -29,9 +29,7 @@ async function registerServiceWorker(){
   if(!('serviceWorker' in navigator))return;
   if(location.protocol!=='https:'&&location.hostname!=='localhost')return;
   try{
-    const registration=await navigator.serviceWorker.register('./service-worker.js',{scope:'./',updateViaCache:'none'});
-    // Ask for an update without forcing a page reload or disturbing an active session.
-    try{await registration.update();}catch(_){}
+    await navigator.serviceWorker.register('./service-worker.js',{scope:'./',updateViaCache:'none'});
     document.documentElement.dataset.pwaServiceWorker='ready';
   }catch(error){
     document.documentElement.dataset.pwaServiceWorker='error';
