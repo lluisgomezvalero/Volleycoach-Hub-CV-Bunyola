@@ -9,6 +9,8 @@ on:
       - 'assets/cvb-logo-source.part1.b64'
       - 'assets/cvb-logo-source.part2.b64'
       - 'assets/cvb-logo-source.part3.b64'
+      - 'assets/cvb-logo-source.part4a.b64'
+      - 'assets/cvb-logo-source.part4.b64'
   pull_request:
     branches:
       - main
@@ -17,6 +19,8 @@ on:
       - 'assets/cvb-logo-source.part1.b64'
       - 'assets/cvb-logo-source.part2.b64'
       - 'assets/cvb-logo-source.part3.b64'
+      - 'assets/cvb-logo-source.part4a.b64'
+      - 'assets/cvb-logo-source.part4.b64'
       - 'assets/apple-touch-icon.png'
       - 'assets/pwa-icon-192.png'
       - 'assets/pwa-icon-512.png'
@@ -40,22 +44,24 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          from PIL import Image, ImageFile
+          from PIL import Image
           import base64, json
 
-          ImageFile.LOAD_TRUNCATED_IMAGES = True
           parts = [
               Path('assets/cvb-logo-source.part1.b64'),
               Path('assets/cvb-logo-source.part2.b64'),
               Path('assets/cvb-logo-source.part3.b64'),
+              Path('assets/cvb-logo-source.part4a.b64'),
+              Path('assets/cvb-logo-source.part4.b64'),
           ]
           raw = ''.join(''.join(p.read_text(encoding='utf-8').split()) for p in parts)
-          raw += '=' * (-len(raw) % 4)
+          assert len(raw) == 31548, len(raw)
           source_path = Path('/tmp/cvb-logo-source.jpg')
-          source_path.write_bytes(base64.b64decode(raw))
+          source_path.write_bytes(base64.b64decode(raw, validate=True))
 
           img = Image.open(source_path).convert('RGBA')
           img.load()
+          assert img.size == (512, 512), img.size
           px = img.load()
           xs, ys = [], []
           for y in range(img.height):
@@ -120,7 +126,7 @@ jobs:
           for path, size in expected.items():
               with Image.open(path) as image:
                   assert image.size == size, (path, image.size, size)
-                  image.verify()
+                  image.load()
           PY
           python -m json.tool manifest.webmanifest >/dev/null
           grep -q '20260825pwa4' index.html
@@ -135,6 +141,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'PWA icons already current'
           else
-            git commit -m 'Regenerate PWA icons from new CV Bunyola logo'
+            git commit -m 'Regenerate PWA icons from complete CV Bunyola logo'
             git push
           fi
