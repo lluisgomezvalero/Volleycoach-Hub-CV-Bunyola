@@ -40,9 +40,10 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          from PIL import Image
+          from PIL import Image, ImageFile
           import base64, json
 
+          ImageFile.LOAD_TRUNCATED_IMAGES = True
           parts = [
               Path('assets/cvb-logo-source.part1.b64'),
               Path('assets/cvb-logo-source.part2.b64'),
