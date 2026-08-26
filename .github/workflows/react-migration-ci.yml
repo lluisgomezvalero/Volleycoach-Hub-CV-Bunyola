@@ -1,0 +1,35 @@
+name: React migration CI
+
+on:
+  push:
+    branches:
+      - react-vite-migration
+    paths:
+      - 'react-migration/**'
+      - '.github/workflows/react-migration-ci.yml'
+  pull_request:
+    paths:
+      - 'react-migration/**'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: react-migration
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: react-migration/package.json
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build React migration
+        run: npm run build
+      - name: Verify output
+        run: test -f dist/index.html
