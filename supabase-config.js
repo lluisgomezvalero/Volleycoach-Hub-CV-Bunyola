@@ -3,7 +3,7 @@
  * La publishable key es segura en el navegador SIEMPRE que las tablas tengan RLS.
  * Nunca pongas aquí la service_role ni una secret key.
  */
-window.VOLLEY_ASSET_VERSION = '20260826perf2';
+window.VOLLEY_ASSET_VERSION = '20260826baseline1';
 window.VOLLEY_SUPABASE_CONFIG = Object.freeze({
   url: 'https://zpvlkdjdfnvamfcjihyt.supabase.co',
   publishableKey: 'sb_publishable_seL2H6gAGBrUDR0O1vhJDA_Y9d7Ky-u',
@@ -13,70 +13,12 @@ window.VOLLEY_SUPABASE_CONFIG = Object.freeze({
   usernameDomain: 'cvbunyola.app',
   clubId: 'b0000000-0000-4000-8000-000000000001'
 });
-
-/* Performance runtime: reduce GPU repaint cost and coalesce repeated Lucide scans. */
-(function installVolleyPerformanceRuntime(){
-  if(window.__volleyPerformanceRuntime20260826)return;
-  window.__volleyPerformanceRuntime20260826=true;
-
-  if(!document.getElementById('volley-performance-runtime-css')){
-    const style=document.createElement('style');
-    style.id='volley-performance-runtime-css';
-    style.textContent=`
-@media(max-width:960px), (any-pointer:coarse){
-  html,body{background:#f8fafc!important;background-image:none!important;background-attachment:scroll!important}
-  body::before,body::after{display:none!important}
-  .app-portal-wrapper *,
-  .modal-backdrop *,
-  #volley-navigation-shell *,
-  #volley-mobile-quick-nav,
-  .volley-mobile-bar,
-  .volley-side-nav,
-  .volley-nav-overlay{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-  #volley-mobile-quick-nav,.volley-mobile-bar,.volley-side-nav{background:#fff!important}
-  .dashboard-card,.dashboard-summary-card,.dashboard-quick-access .island-card,.island-card,.player-card,.player-trading-card,.profile-private-card,.modal-content,.card{
-    transition-property:opacity,background-color,border-color,color!important;
-    transition-duration:.12s!important;
-    will-change:auto!important
-  }
-  .dashboard-card:hover,.dashboard-summary-card:hover,.dashboard-quick-access .island-card:hover,.island-card:hover,.player-card:hover,.player-trading-card:hover{transform:none!important}
-  .modal-backdrop.active{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
-}`;
-    document.head.appendChild(style);
-  }
-
-  const lib=window.lucide;
-  if(lib&&typeof lib.createIcons==='function'&&!lib.createIcons.__volleyPerfWrapped){
-    const original=lib.createIcons.bind(lib);
-    let timer=0;
-    let queued=false;
-    const flush=()=>{
-      timer=0;
-      if(!queued||document.hidden)return;
-      queued=false;
-      try{original();}catch(error){console.warn('[VolleyPerf] lucide refresh',error);}
-    };
-    const wrapped=()=>{
-      queued=true;
-      if(!timer)timer=window.setTimeout(flush,40);
-    };
-    wrapped.__volleyPerfWrapped=true;
-    lib.createIcons=wrapped;
-  }
-})();
-
 (function primeAttendanceLoadingState(){document.documentElement.classList.remove('attendance-ready');if(!document.getElementById('attendance-preload-css')){const style=document.createElement('style');style.id='attendance-preload-css';style.textContent=`
 html:not(.attendance-ready) button[onclick*="confirmTrainingAttendance"],
 html:not(.attendance-ready) .btn-rsvp-yes,
 html:not(.attendance-ready) .btn-rsvp-no{visibility:hidden!important;pointer-events:none!important}
 `;document.head.appendChild(style);}})();
 (function primeWellnessUnifiedState(){document.documentElement.classList.add('wellness-unified-ready');})();
-
-/*
- * Antes se lanzaban todos los parches mientras aún se estaban descargando app.js,
- * Supabase y los datos. Eso provocaba decenas de retries/MutationObservers a la vez.
- * Ahora esperan a que el DOM y app.js estén listos y se inicializan en lotes pequeños.
- */
 (function loadVolleySyncPatches(){const scripts=[
   'wellness-v2-20260811.js?v=20260811n',
   'wellness-unified-mobile-20260820.js?v=20260821b',
@@ -170,25 +112,4 @@ html:not(.attendance-ready) .btn-rsvp-no{visibility:hidden!important;pointer-eve
   'match-statistics-optional-v2-20260825.js?v=20260825stats1',
   'match-statistics-player-individual-priority-20260825.js?v=20260825stats4',
   'game-plan-canonical-20260817.js?v=20260817g',
-];
-
-  function appendScript(src){
-    if(document.querySelector(`script[src^="${src.split('?')[0]}"]`))return;
-    const script=document.createElement('script');
-    script.src=src;
-    script.async=false;
-    document.head.appendChild(script);
-  }
-  function start(){
-    let index=0;
-    const batchSize=10;
-    const next=()=>{
-      const end=Math.min(index+batchSize,scripts.length);
-      for(;index<end;index+=1)appendScript(scripts[index]);
-      if(index<scripts.length)window.setTimeout(next,55);
-    };
-    next();
-  }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
-  else start();
-})();
+];scripts.forEach(src=>{if(document.querySelector(`script[src^="${src.split('?')[0]}"]`))return;const script=document.createElement('script');script.src=src;script.async=false;document.head.appendChild(script);});})();
