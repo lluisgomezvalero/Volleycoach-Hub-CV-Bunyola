@@ -250,6 +250,7 @@ function syncLanguageSelector(){
 }
 
 function applyLanguage(){
+  try{pendingRoots.clear();}catch(_){}
   applying=true;
   try{
     document.documentElement.lang=language==='ca'?'ca':'es';
@@ -308,38 +309,79 @@ async function syncFromProfile(){
 
 const pendingRoots=new Set();
 let pendingCalendarRefresh=false;
+let mutationFlushHandle=null;
+
+function mutationElement(node){
+  if(!node)return null;
+  return node.nodeType===Node.ELEMENT_NODE?node:node.parentElement||null;
+}
+
+function ignoreMutationNode(node){
+  const el=mutationElement(node);
+  if(!el)return false;
+  if(el.matches?.('script,style,link,svg,canvas'))return true;
+  if(el.closest?.('script,style,svg,canvas'))return true;
+  if(el.id==='volley-i18n-es-ca-style'||el.closest?.('#profile-language-card'))return true;
+  return false;
+}
+
+function addPendingRoot(node){
+  if(!node||ignoreMutationNode(node))return false;
+  for(const existing of [...pendingRoots]){
+    if(existing===node)return false;
+    if(existing.nodeType===Node.ELEMENT_NODE&&existing.contains?.(node))return false;
+    if(node.nodeType===Node.ELEMENT_NODE&&node.contains?.(existing))pendingRoots.delete(existing);
+  }
+  pendingRoots.add(node);
+  return true;
+}
+
+function scheduleMutationFlush(){
+  if(mutationFlushHandle!==null)return;
+  const run=deadline=>{
+    mutationFlushHandle=null;
+    if(applying){scheduleMutationFlush();return;}
+    const started=performance.now();
+    applying=true;
+    try{
+      while(pendingRoots.size){
+        const root=pendingRoots.values().next().value;
+        pendingRoots.delete(root);
+        if(root.nodeType===Node.TEXT_NODE||root.isConnected)translateTree(root);
+        const idleLeft=typeof deadline?.timeRemaining==='function'?deadline.timeRemaining():0;
+        if((performance.now()-started)>6&&idleLeft<2)break;
+      }
+      if(!pendingRoots.size&&pendingCalendarRefresh){
+        refreshDates();
+        pendingCalendarRefresh=false;
+      }
+      if(!pendingRoots.size)syncLanguageSelector();
+    }finally{applying=false;}
+    if(pendingRoots.size)scheduleMutationFlush();
+  };
+  if(typeof window.requestIdleCallback==='function'){
+    mutationFlushHandle=window.requestIdleCallback(run,{timeout:120});
+  }else{
+    mutationFlushHandle=window.setTimeout(()=>run(null),16);
+  }
+}
 
 function queueMutationWork(mutations){
-  if(applying)return;
+  if(applying||language!=='ca')return;
   let hasWork=false;
   for(const mutation of mutations){
     if(mutation.type!=='childList'||!mutation.addedNodes?.length)continue;
-    const target=mutation.target?.nodeType===Node.ELEMENT_NODE?mutation.target:null;
+    const target=mutationElement(mutation.target);
+    if(ignoreMutationNode(target))continue;
     if(target?.closest?.('#view-calendar'))pendingCalendarRefresh=true;
     mutation.addedNodes.forEach(node=>{
-      if(node.nodeType!==Node.TEXT_NODE&&node.nodeType!==Node.ELEMENT_NODE&&node.nodeType!==Node.DOCUMENT_FRAGMENT_NODE)return;
-      if(node.nodeType===Node.ELEMENT_NODE&&(node.id==='volley-i18n-es-ca-style'||node.closest?.('#profile-language-card')))return;
-      if(node.nodeType===Node.ELEMENT_NODE&&(node.matches?.('#view-calendar *')||node.querySelector?.('#view-calendar')))pendingCalendarRefresh=true;
-      pendingRoots.add(node);
-      hasWork=true;
+      if(ignoreMutationNode(node))return;
+      const el=mutationElement(node);
+      if(el&&(el.matches?.('#view-calendar *')||el.querySelector?.('#view-calendar')))pendingCalendarRefresh=true;
+      if(addPendingRoot(node))hasWork=true;
     });
   }
-  if(!hasWork||scheduled)return;
-  scheduled=true;
-  requestAnimationFrame(()=>{
-    scheduled=false;
-    if(applying)return;
-    const roots=[...pendingRoots];
-    pendingRoots.clear();
-    applying=true;
-    try{
-      for(const root of roots){
-        if(root.nodeType===Node.TEXT_NODE||root.isConnected)translateTree(root);
-      }
-      if(pendingCalendarRefresh){refreshDates();pendingCalendarRefresh=false;}
-      syncLanguageSelector();
-    }finally{applying=false;}
-  });
+  if(hasWork)scheduleMutationFlush();
 }
 
 function install(){
