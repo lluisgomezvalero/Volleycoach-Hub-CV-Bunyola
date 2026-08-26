@@ -87,10 +87,10 @@ function headerMap(table){
   };
   return {
     pos:find('POS','POSICIÓN','POSICION','#'),
-    team:find('EQUIPO','TEAM'),
-    points:find('PTS','PUNTOS','PTOS'),
+    team:find('EQUIPO','EQUIP','TEAM'),
+    points:find('PTS','PUNTOS','PUNTS','PTOS'),
     pj:find('PJ'),pg:find('PG'),pp:find('PP'),sf:find('SF'),sc:find('SC'),
-    actions:find('ACCIONES','ACCIÓN','ACCION')
+    actions:find('ACCIONES','ACCIONS','ACCIÓN','ACCION')
   };
 }
 
@@ -99,11 +99,15 @@ function rowData(row,index,map){
   const cells=[...row.children];
   const teamCell=cell(row,map.team>=0?map.team:1)||cells[1]||cells[0];
   const img=row.querySelector('img');
-  const teamName=text(teamCell).replace(/Automático/gi,'').replace(/Editar/gi,'').trim()||`Equipo ${index+1}`;
-  const own=row.classList.contains('league-own-team-row')||/CV\s*BUNYOLA/i.test(teamName);
+  let stateTeam=null;
+  try{stateTeam=(typeof appState!=='undefined'&&Array.isArray(appState?.leagueTable))?appState.leagueTable[index]:null;}catch(_){}
+  const extracted=text(teamCell).replace(/Automático|Automàtic/gi,'').replace(/Editar/gi,'').trim();
+  const generic=/^(?:Equipo|Equip)\s+\d+$/i.test(extracted);
+  const teamName=String(stateTeam?.name||(!generic?extracted:'')||`Equipo ${index+1}`);
+  const own=Boolean(stateTeam?.isOwn)||row.classList.contains('league-own-team-row')||/CV\s*BUNYOLA/i.test(teamName);
   const val=(idx,fallback)=>number(text(cell(row,idx>=0?idx:fallback)));
   return {
-    row,index:index+1,own,teamName,logo:img?.getAttribute('src')||'assets/default_avatar.svg',
+    row,index:index+1,own,teamName,logo:stateTeam?.logo||img?.getAttribute('src')||'assets/default_avatar.svg',
     points:val(map.points,2),pj:val(map.pj,3),pg:val(map.pg,4),pp:val(map.pp,5),sf:val(map.sf,6),sc:val(map.sc,7),
     action:cell(row,map.actions>=0?map.actions:8)?.querySelector('button')||row.querySelector('button[onclick*="openEditTeamModal"]')
   };
