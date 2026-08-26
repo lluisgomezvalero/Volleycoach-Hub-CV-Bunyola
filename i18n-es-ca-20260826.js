@@ -40,7 +40,35 @@ const PAIRS=[
   ['Información Privada de la Cuenta','Informació privada del compte'],['Cuerpo Técnico','Cos tècnic'],['Mi Registro Semanal','El meu registre setmanal'],
   ['Pasar lista','Passar llista'],['Asistencia','Assistència'],['Confirmar asistencia','Confirmar assistència'],['Sí, asistiré','Sí, hi assistiré'],['No podré asistir','No hi podré assistir'],
   ['Ver detalle','Veure detall'],['Ver más','Veure més'],['Ver todo','Veure-ho tot'],['Próximos eventos','Pròxims esdeveniments'],['Último resultado','Darrer resultat'],
-  ['Seguimiento semanal','Seguiment setmanal'],['Pendientes','Pendents'],['Sin pendientes','Sense pendents'],['Sin datos','Sense dades'],['No hay datos disponibles','No hi ha dades disponibles']
+  ['Seguimiento semanal','Seguiment setmanal'],['Pendientes','Pendents'],['Sin pendientes','Sense pendents'],['Sin datos','Sense dades'],['No hay datos disponibles','No hi ha dades disponibles'],
+  ['Sesión','Sessió'],['Sesiones','Sessions'],['Sesión de entrenamiento','Sessió d’entrenament'],['Sesiones de entrenamiento','Sessions d’entrenament'],
+  ['Próximas sesiones','Pròximes sessions'],['Sesión completada','Sessió completada'],['Entrenamiento completado','Entrenament completat'],['Historial','Historial'],
+  ['Duración','Durada'],['Objetivo de la sesión','Objectiu de la sessió'],['Plan de entrenamiento','Pla d’entrenament'],['Material de la sesión','Material de la sessió'],
+  ['Comentarios de jugadoras','Comentaris de jugadores'],['Valoración del entrenador','Valoració de l’entrenador'],['Valoración','Valoració'],['Observaciones','Observacions'],
+  ['Pendiente','Pendent'],['Confirmado','Confirmat'],['Asistirá','Hi assistirà'],['No asistirá','No hi assistirà'],['Presente','Present'],['Ausente','Absent'],['Retraso','Retard'],['Lesión','Lesió'],
+  ['Validar asistencia','Validar assistència'],['Lista validada','Llista validada'],['Responder','Respondre'],['Confirmado por jugadora','Confirmat per la jugadora'],
+  ['Bienestar','Benestar'],['Mi bienestar','El meu benestar'],['Cuestionario de bienestar','Qüestionari de benestar'],['Registro semanal','Registre setmanal'],
+  ['Estado general','Estat general'],['Fatiga','Fatiga'],['Dolor muscular','Dolor muscular'],['Estrés','Estrès'],['Sueño','Son'],['Horas de sueño','Hores de son'],['Dolor','Dolor'],
+  ['¿Cómo te encuentras hoy?','Com et trobes avui?'],['Guardar bienestar','Desar benestar'],['Carga','Càrrega'],['Carga de entrenamiento','Càrrega d’entrenament'],
+  ['Carga de sesión','Càrrega de sessió'],['Carga semanal','Càrrega setmanal'],['Carga habitual','Càrrega habitual'],['Carga reciente','Càrrega recent'],['RPE de la sesión','RPE de la sessió'],
+  ['Estadísticas del partido','Estadístiques del partit'],['Estadísticas de partido','Estadístiques del partit'],['Resumen del partido','Resum del partit'],['Resumen','Resum'],
+  ['Individual','Individual'],['Equipo','Equip'],['Recepción','Recepció'],['Ataque','Atac'],['Bloqueo','Bloqueig'],['Saque','Servei'],['Defensa','Defensa'],['Colocación','Col·locació'],
+  ['Errores','Errors'],['Puntos','Punts'],['Intentos','Intents'],['Aces','Aces'],['Eficiencia','Eficiència'],['Partidos jugados','Partits jugats'],
+  ['Publicar estadísticas','Publicar estadístiques'],['Estadísticas publicadas','Estadístiques publicades'],['Borrador','Esborrany'],['Datos del partido','Dades del partit'],
+  ['Plan de Juego','Pla de joc'],['Objetivos del partido','Objectius del partit'],['Claves del partido','Claus del partit'],['Rival','Rival'],['Rotación','Rotació'],['Rotaciones','Rotacions'],
+  ['Sistema de recepción','Sistema de recepció'],['Sistema de bloqueo','Sistema de bloqueig'],['Visto','Vist'],['No visto','No vist'],['Marcar como visto','Marcar com a vist'],
+  ['Clasificación','Classificació'],['Jornada','Jornada'],['Resultados','Resultats'],['Próximos partidos','Pròxims partits'],['Editar equipo','Editar equip'],['Añadir equipo','Afegir equip'],
+  ['Guardar equipo','Desar equip'],['Local','Local'],['Visitante','Visitant'],['Partidos','Partits'],['Próximo partido','Pròxim partit'],
+  ['Cambiar contraseña','Canviar contrasenya'],['Nueva contraseña','Nova contrasenya'],['Confirmar contraseña','Confirmar contrasenya'],['Guardar contraseña','Desar contrasenya'],
+  ['Foto de Perfil','Foto de perfil'],['Información de la cuenta','Informació del compte'],['Editar Evento','Editar esdeveniment'],['Guardar Evento','Desar esdeveniment'],
+  ['Eliminar Evento','Eliminar esdeveniment'],['Hora de Fin','Hora de fi'],['Descripción','Descripció'],['Próximo','Pròxim'],['Finalizado','Finalitzat'],['Completado','Completat'],
+  ['Fecha pendiente','Data pendent'],['Posición sin asignar','Posició sense assignar'],['Plantilla del equipo','Plantilla de l’equip'],['Nueva jugadora','Nova jugadora'],
+  ['Usuarios del Equipo','Usuaris de l’equip'],['Usuarios Registrados','Usuaris registrats'],['Usuario de Acceso','Usuari d’accés'],['Rol / Función','Rol / Funció'],['Última Conexión','Darrera connexió'],
+  ['Rendimiento individual','Rendiment individual'],['Salto','Salt'],['Altura de salto','Alçada de salt'],['Fuerza','Força'],['Velocidad','Velocitat'],['Potencia','Potència'],
+  ['Evolución','Evolució'],['Mejor marca','Millor marca'],['Último test','Darrer test'],['Registrar test','Registrar test'],['Planificación semanal','Planificació setmanal'],
+  ['Semana','Setmana'],['Microciclo','Microcicle'],['Objetivo principal','Objectiu principal'],['Contenido','Contingut'],['Guardar cambios','Desar canvis'],
+  ['Cambios guardados correctamente','Canvis desats correctament'],['Guardado correctamente','Desat correctament'],['Evento guardado correctamente','Esdeveniment desat correctament'],
+  ['Sin sesiones programadas','Sense sessions programades'],['No hay sesiones completadas','No hi ha sessions completades'],['Sin partidos registrados','Sense partits registrats']
 ];
 
 const ES_TO_CA=new Map(PAIRS.map(([es,ca])=>[es,ca]));
@@ -102,7 +130,9 @@ function translateTree(root){
     if(next!==node.nodeValue)node.nodeValue=next;
   });
 
-  const elements=root.querySelectorAll?root.querySelectorAll('[title],[aria-label],[placeholder]'):[];
+  const elements=[];
+  if(root.matches?.('[title],[aria-label],[placeholder]'))elements.push(root);
+  if(root.querySelectorAll)elements.push(...root.querySelectorAll('[title],[aria-label],[placeholder]'));
   elements.forEach(el=>{
     ['title','aria-label','placeholder'].forEach(attr=>{
       if(!el.hasAttribute(attr))return;
@@ -253,14 +283,39 @@ async function syncFromProfile(){
   }catch(error){console.warn('[I18N] No se pudo cargar el idioma del perfil.',error);}
 }
 
-function scheduleApply(){
-  if(applying||scheduled)return;
+const pendingRoots=new Set();
+let pendingCalendarRefresh=false;
+
+function queueMutationWork(mutations){
+  if(applying)return;
+  let hasWork=false;
+  for(const mutation of mutations){
+    if(mutation.type!=='childList'||!mutation.addedNodes?.length)continue;
+    const target=mutation.target?.nodeType===Node.ELEMENT_NODE?mutation.target:null;
+    if(target?.closest?.('#view-calendar'))pendingCalendarRefresh=true;
+    mutation.addedNodes.forEach(node=>{
+      if(node.nodeType!==Node.TEXT_NODE&&node.nodeType!==Node.ELEMENT_NODE&&node.nodeType!==Node.DOCUMENT_FRAGMENT_NODE)return;
+      if(node.nodeType===Node.ELEMENT_NODE&&(node.id==='volley-i18n-es-ca-style'||node.closest?.('#profile-language-card')))return;
+      if(node.nodeType===Node.ELEMENT_NODE&&(node.matches?.('#view-calendar *')||node.querySelector?.('#view-calendar')))pendingCalendarRefresh=true;
+      pendingRoots.add(node);
+      hasWork=true;
+    });
+  }
+  if(!hasWork||scheduled)return;
   scheduled=true;
   requestAnimationFrame(()=>{
     scheduled=false;
     if(applying)return;
-    applyLanguage();
-    void syncFromProfile();
+    const roots=[...pendingRoots];
+    pendingRoots.clear();
+    applying=true;
+    try{
+      for(const root of roots){
+        if(root.nodeType===Node.TEXT_NODE||root.isConnected)translateTree(root);
+      }
+      if(pendingCalendarRefresh){refreshDates();pendingCalendarRefresh=false;}
+      syncLanguageSelector();
+    }finally{applying=false;}
   });
 }
 
@@ -268,22 +323,18 @@ function install(){
   injectStyles();
   applyLanguage();
   void syncFromProfile();
-  const observer=new MutationObserver(mutations=>{
-    if(applying)return;
-    if(mutations.some(m=>m.type==='childList'&&m.addedNodes.length))scheduleApply();
-  });
-  observer.observe(document.documentElement,{childList:true,subtree:true});
+
+  const observer=new MutationObserver(queueMutationWork);
+  observer.observe(document.body||document.documentElement,{childList:true,subtree:true});
+
   document.addEventListener('click',event=>{
-    if(event.target?.closest?.('#btn-my-profile-header,#btn-my-profile-home'))setTimeout(()=>{ensureLanguageSelector();applyLanguage();void syncFromProfile();},0);
+    if(event.target?.closest?.('#btn-my-profile-header,#btn-my-profile-home')){
+      setTimeout(()=>{ensureLanguageSelector();translateTree(document.getElementById('modal-my-profile'));void syncFromProfile();},0);
+    }
   },true);
   window.addEventListener('focus',()=>void syncFromProfile());
-  let tries=0;
-  const timer=setInterval(()=>{
-    ensureLanguageSelector();
-    void syncFromProfile();
-    tries+=1;
-    if(tries>=30)clearInterval(timer);
-  },500);
+
+  [250,900,2200].forEach(delay=>setTimeout(()=>{ensureLanguageSelector();void syncFromProfile();},delay));
 }
 
 window.VolleyI18n=Object.freeze({
