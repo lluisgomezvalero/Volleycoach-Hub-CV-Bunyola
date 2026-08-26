@@ -249,15 +249,45 @@ function syncLanguageSelector(){
   });
 }
 
-function applyLanguage(){
-  try{pendingRoots.clear();}catch(_){}
+function activeTranslationRoots(){
+  const roots=[];
+  const add=root=>{if(root&&root.isConnected!==false&&!roots.includes(root))roots.push(root);};
+  add(document.getElementById('view-login'));
+  add(document.getElementById('module-header-nav'));
+  add(document.querySelector('.page-view.active'));
+  document.querySelectorAll('.modal.show,.modal.active,.modal[style*="display: block"],[role="dialog"]:not([hidden])').forEach(add);
+  add(document.getElementById('profile-language-card'));
+  return roots;
+}
+
+function translateActiveSurfaces(){
+  if(applying)return;
   applying=true;
   try{
-    document.documentElement.lang=language==='ca'?'ca':'es';
-    translateTree(document.body);
+    activeTranslationRoots().forEach(translateTree);
     ensureLanguageSelector();
     refreshDates();
   }finally{applying=false;}
+}
+
+const surfaceTranslationTimers=new Set();
+function scheduleSurfaceTranslation(delays=[50,350]){
+  if(language!=='ca')return;
+  for(const delay of delays){
+    const timer=setTimeout(()=>{
+      surfaceTranslationTimers.delete(timer);
+      translateActiveSurfaces();
+    },delay);
+    surfaceTranslationTimers.add(timer);
+  }
+}
+
+function applyLanguage(){
+  try{pendingRoots.clear();}catch(_){}
+  for(const timer of surfaceTranslationTimers)clearTimeout(timer);
+  surfaceTranslationTimers.clear();
+  document.documentElement.lang=language==='ca'?'ca':'es';
+  translateActiveSurfaces();
   window.dispatchEvent(new CustomEvent('volley:language-applied',{detail:{language}}));
 }
 
@@ -389,17 +419,20 @@ function install(){
   applyLanguage();
   void syncFromProfile();
 
-  const observer=new MutationObserver(queueMutationWork);
-  observer.observe(document.body||document.documentElement,{childList:true,subtree:true});
-
+  // Performance: no global MutationObserver. The app replaces large DOM blocks often,
+  // and observing the whole subtree made Catalan mode block normal interaction.
+  const scheduleFromInteraction=()=>scheduleSurfaceTranslation();
   document.addEventListener('click',event=>{
+    scheduleFromInteraction();
     if(event.target?.closest?.('#btn-my-profile-header,#btn-my-profile-home')){
-      setTimeout(()=>{ensureLanguageSelector();translateTree(document.getElementById('modal-my-profile'));void syncFromProfile();},0);
+      setTimeout(()=>{ensureLanguageSelector();translateActiveSurfaces();void syncFromProfile();},0);
     }
   },true);
-  window.addEventListener('focus',()=>void syncFromProfile());
+  document.addEventListener('change',scheduleFromInteraction,true);
+  document.addEventListener('submit',scheduleFromInteraction,true);
+  window.addEventListener('focus',()=>{void syncFromProfile();scheduleSurfaceTranslation([120]);});
 
-  [250,900,2200].forEach(delay=>setTimeout(()=>{ensureLanguageSelector();void syncFromProfile();},delay));
+  [250,900,2200].forEach(delay=>setTimeout(()=>{ensureLanguageSelector();void syncFromProfile();scheduleSurfaceTranslation([0]);},delay));
 }
 
 window.VolleyI18n=Object.freeze({
