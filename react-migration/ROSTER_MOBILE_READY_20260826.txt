@@ -1,0 +1,1 @@
+Roster React mobile redesign ready: portrait photo-first cards, two-column phone grid, horizontal overflow guards and compact mobile detail layout.
