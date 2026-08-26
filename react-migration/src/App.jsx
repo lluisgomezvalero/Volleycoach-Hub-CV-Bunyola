@@ -21,6 +21,7 @@ import LoginPage from './pages/LoginPage.jsx';
 import ProfileModal from './components/ProfileModal.jsx';
 
 const HomePage = lazy(() => import('./pages/HomePage.jsx'));
+const TrainingPage = lazy(() => import('./pages/TrainingPage.jsx'));
 const RosterPage = lazy(() => import('./pages/RosterPage.jsx'));
 
 function lazyPlaceholder(title, text) {
@@ -29,7 +30,6 @@ function lazyPlaceholder(title, text) {
   })));
 }
 
-const TrainingPage = lazyPlaceholder('Entrenos', 'Aquí migraremos sesiones, asistencia, pasar lista y RPE como un único módulo React.');
 const CalendarPage = lazyPlaceholder('Calendario', 'Calendario modular conectado directamente a Supabase.');
 const WellnessPage = lazyPlaceholder('Bienestar', 'Cuestionario e historial como componentes React independientes.');
 const StatsPage = lazyPlaceholder('Estadísticas', 'El módulo se descargará y renderizará únicamente al entrar aquí.');
