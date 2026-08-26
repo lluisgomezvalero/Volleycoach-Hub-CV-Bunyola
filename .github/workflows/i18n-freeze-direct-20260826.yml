@@ -1,0 +1,32 @@
+name: I18N freeze direct fix
+
+on:
+  push:
+    branches:
+      - fix/i18n-freeze-direct-20260826
+    paths:
+      - .github/workflows/i18n-freeze-direct-20260826.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/i18n-freeze-direct-20260826
+      - run: python3 .github/scripts/i18n_freeze_patch_20260826.py
+      - run: node --check i18n-es-ca-20260826.js
+      - run: |
+          grep -q "Performance: no global MutationObserver" i18n-es-ca-20260826.js
+          if grep -q "observer.observe(document.body" i18n-es-ca-20260826.js; then exit 1; fi
+          grep -q "20260826i18n5" supabase-config.js
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/i18n-freeze-direct-20260826.yml .github/scripts/i18n_freeze_patch_20260826.py
+          git add i18n-es-ca-20260826.js supabase-config.js
+          git commit -m "Stop Catalan UI freezes"
+          git push origin HEAD:fix/i18n-freeze-direct-20260826
