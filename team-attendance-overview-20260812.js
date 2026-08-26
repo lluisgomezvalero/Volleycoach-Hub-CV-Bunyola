@@ -120,7 +120,7 @@ function renderSummary(model){
 function formatSessionHead(event){
   const start=eventStart(event);
   if(Number.isNaN(start.getTime())) return {day:'—',date:esc(event.date||'')};
-  return {day:start.toLocaleDateString('es-ES',{weekday:'short'}).replace('.','').toUpperCase(),date:start.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit'})};
+  return {day:start.toLocaleDateString(window.VolleyI18n?.locale?.() || 'es-ES',{weekday:'short'}).replace('.','').toUpperCase(),date:start.toLocaleDateString(window.VolleyI18n?.locale?.() || 'es-ES',{day:'2-digit',month:'2-digit'})};
 }
 function renderMatrix(model){
   if(!model.sessions.length) return `<div class="team-attendance-empty large"><i data-lucide="clipboard-x"></i><h3>Aún no hay listas oficiales</h3><p>Cuando valides la asistencia de una sesión, aparecerá aquí.</p></div>`;

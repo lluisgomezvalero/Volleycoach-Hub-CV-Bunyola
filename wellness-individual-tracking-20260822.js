@@ -38,11 +38,11 @@ function parseDate(key){
 }
 function shortDate(key){
   const d=parseDate(key);if(!d)return key||'—';
-  return new Intl.DateTimeFormat('es-ES',{day:'numeric',month:'short'}).format(d).replace(/\./g,'');
+  return new Intl.DateTimeFormat(window.VolleyI18n?.locale?.() || 'es-ES',{day:'numeric',month:'short'}).format(d).replace(/\./g,'');
 }
 function longDate(key){
   const d=parseDate(key);if(!d)return key||'Fecha sin registrar';
-  return new Intl.DateTimeFormat('es-ES',{weekday:'short',day:'numeric',month:'short'}).format(d).replace(/\./g,'');
+  return new Intl.DateTimeFormat(window.VolleyI18n?.locale?.() || 'es-ES',{weekday:'short',day:'numeric',month:'short'}).format(d).replace(/\./g,'');
 }
 function players(){return (app()?.players||[]).filter(player=>player&&player.active!==false);}
 function playerById(playerId){return players().find(player=>id(player.id)===id(playerId))||null;}
