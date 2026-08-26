@@ -1,0 +1,90 @@
+:root{
+  --cvb-gold:#d97706;
+  --cvb-gold-dark:#b45309;
+  --cvb-gold-light:#fbbf24;
+  --cvb-ink:#0f172a;
+  --cvb-slate:#334155;
+  --cvb-soft:#fff8eb;
+  --cvb-line:#f3dfb4;
+}
+
+/* Identidad visual CV Bunyola: mismo lenguaje de la app actual, sin efectos pesados. */
+html,body,#root{background:#f8fafc;color:var(--cvb-ink)}
+
+.brand-mark,.login-mark,.avatar-button,.profile-avatar{
+  background:linear-gradient(135deg,var(--cvb-gold-light),var(--cvb-gold));
+  color:#3b2503;
+  box-shadow:0 5px 14px rgba(217,119,6,.18);
+}
+
+.sidebar{border-right-color:#f0e4cc}
+.brand small,.mobile-brand span{color:#8b6b39}
+
+.nav-link{color:#64748b}
+.nav-link:hover{background:#fff9ed;color:var(--cvb-gold-dark)}
+.nav-link.active{
+  background:linear-gradient(135deg,#fff7e6,#ffefc4);
+  color:var(--cvb-gold-dark);
+  box-shadow:inset 3px 0 0 var(--cvb-gold);
+}
+.nav-link.active svg{color:var(--cvb-gold)}
+
+.primary-button{
+  background:linear-gradient(135deg,var(--cvb-gold-light),var(--cvb-gold));
+  color:#3b2503;
+  box-shadow:0 7px 16px rgba(217,119,6,.18);
+}
+.primary-button:active{background:linear-gradient(135deg,#f2ad18,var(--cvb-gold-dark))}
+.secondary-button{background:#fff7e8;color:#8a4d06;border:1px solid #f4dbab}
+
+.login-shell{
+  background:
+    radial-gradient(circle at 15% 12%,rgba(251,191,36,.20) 0,transparent 34%),
+    radial-gradient(circle at 86% 88%,rgba(217,119,6,.10) 0,transparent 30%),
+    #f8fafc;
+}
+.login-panel{border-color:#f0dfbe;box-shadow:0 24px 68px rgba(74,48,9,.12)}
+.login-brand{border-bottom-color:#f4e6cb}
+.login-copy .eyebrow{color:var(--cvb-gold-dark)!important}
+.field-with-icon:focus-within,.profile-form input:focus{
+  border-color:#e0a843;
+  box-shadow:0 0 0 3px rgba(251,191,36,.16);
+}
+
+.home-hero{
+  background:
+    radial-gradient(circle at 88% 15%,rgba(251,191,36,.28),transparent 28%),
+    linear-gradient(135deg,#111827 0%,#243047 60%,#4a3311 100%);
+  box-shadow:0 16px 36px rgba(75,48,8,.16);
+}
+.hero-season{color:#f8d887!important}
+.hero-badge{background:rgba(251,191,36,.12);border-color:rgba(251,191,36,.30);color:#fff2c7}
+
+.eyebrow{color:#9a650e!important}
+.surface-card,.page-card{border-color:#eee4d2}
+.card-heading>svg{color:var(--cvb-gold)}
+.shortcut-card{border-color:#eee3cf}
+.shortcut-card:active{background:#fff9ed}
+.shortcut-icon{background:#fff3d6;color:var(--cvb-gold-dark)}
+.shortcut-card>svg{color:#d2a14a}
+
+.runtime-pill{background:#edf9f2;color:#08734f}
+.status-dot-line i{background:#10b981}
+
+.profile-modal-header{border-bottom-color:#f1e3ca}
+.profile-identity-card{background:#fffaf1;border-color:#f1e0bf}
+.form-section{border-color:#efe2ca}
+.form-section-title{color:#71420a}
+.coach-profile-note{background:#fff6df;color:#78501c}
+
+.icon-button{background:#fff7e9;color:#7b4a0b}
+.icon-button:active{background:#ffedc8}
+.logout-button:hover,.drawer-logout:hover{color:#9a3412}
+
+@media(max-width:820px){
+  .mobile-header{border-bottom-color:#f0e2c8;box-shadow:0 4px 16px rgba(74,48,9,.04)}
+  .bottom-nav{border-top-color:#eddfc6;box-shadow:0 -6px 20px rgba(74,48,9,.04)}
+  .bottom-nav .nav-link.active{background:#fff4d7;color:var(--cvb-gold-dark);box-shadow:none}
+  .bottom-nav .nav-link.active svg{color:var(--cvb-gold)}
+  .bottom-more{color:#8b6b39}
+}
