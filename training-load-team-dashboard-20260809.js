@@ -63,7 +63,7 @@ function renderShell(){
   return card;
 }
 
-function fmtNum(v){return Number.isFinite(Number(v))?Math.round(Number(v)).toLocaleString('es-ES'):'—';}
+function fmtNum(v){return Number.isFinite(Number(v))?Math.round(Number(v)).toLocaleString(window.VolleyI18n?.locale?.() || 'es-ES'):'—';}
 function fmtAcwr(v){return Number.isFinite(Number(v))?Number(v).toFixed(2).replace('.',','):'Datos insuficientes';}
 function fmtChange(v){if(!Number.isFinite(Number(v)))return '—';const n=Math.round(Number(v));return `${n>0?'+':''}${n} %`;}
 function fmtRpe(v){return Number.isFinite(Number(v))?Number(v).toFixed(1).replace('.',','):'—';}

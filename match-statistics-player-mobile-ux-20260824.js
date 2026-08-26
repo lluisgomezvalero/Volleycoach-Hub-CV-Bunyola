@@ -11,7 +11,7 @@ function pad(n){return String(n).padStart(2,'0');}
 function localKey(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;}
 function todayKey(){return localKey(new Date());}
 function matches(){return (state()?.events||[]).filter(match=>['Partido','Amistoso'].includes(String(match?.type||''))).sort((a,b)=>String(a?.date||'').localeCompare(String(b?.date||'')));}
-function prettyDate(value){const raw=String(value||'').trim();if(!/^\d{4}-\d{2}-\d{2}$/.test(raw))return raw||'Fecha pendiente';const [y,m,d]=raw.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'}).replace(/\./g,'');}
+function prettyDate(value){const raw=String(value||'').trim();if(!/^\d{4}-\d{2}-\d{2}$/.test(raw))return raw||'Fecha pendiente';const [y,m,d]=raw.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString(window.VolleyI18n?.locale?.() || 'es-ES',{weekday:'short',day:'numeric',month:'short'}).replace(/\./g,'');}
 
 function ensureStyles(){
   if(document.getElementById('match-statistics-player-mobile-ux-style'))return;

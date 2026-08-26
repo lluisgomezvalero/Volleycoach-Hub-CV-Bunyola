@@ -116,8 +116,8 @@ function parseLoginDate(value){
 function formatLogin(value){
   const date=parseLoginDate(value);
   if(!date)return 'Sin accesos registrados';
-  const datePart=new Intl.DateTimeFormat('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'}).format(date);
-  const timePart=new Intl.DateTimeFormat('es-ES',{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(date);
+  const datePart=new Intl.DateTimeFormat(window.VolleyI18n?.locale?.() || 'es-ES',{day:'2-digit',month:'2-digit',year:'numeric'}).format(date);
+  const timePart=new Intl.DateTimeFormat(window.VolleyI18n?.locale?.() || 'es-ES',{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(date);
   return `${datePart} · ${timePart}`;
 }
 
