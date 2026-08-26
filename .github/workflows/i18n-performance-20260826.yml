@@ -1,0 +1,148 @@
+name: I18N performance fix
+
+on:
+  push:
+    branches:
+      - feature/i18n-performance-20260826
+    paths:
+      - .github/workflows/i18n-performance-20260826.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-i18n:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/i18n-performance-20260826
+
+      - name: Make Catalan translation updates non-blocking
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('i18n-es-ca-20260826.js')
+          s = path.read_text(encoding='utf-8')
+
+          pattern = re.compile(r"const pendingRoots=new Set\(\);.*?\nfunction install\(\)\{", re.S)
+          replacement = r'''const pendingRoots=new Set();
+let pendingCalendarRefresh=false;
+let mutationFlushHandle=null;
+
+function mutationElement(node){
+  if(!node)return null;
+  return node.nodeType===Node.ELEMENT_NODE?node:node.parentElement||null;
+}
+
+function ignoreMutationNode(node){
+  const el=mutationElement(node);
+  if(!el)return false;
+  if(el.matches?.('script,style,link,svg,canvas'))return true;
+  if(el.closest?.('script,style,svg,canvas'))return true;
+  if(el.id==='volley-i18n-es-ca-style'||el.closest?.('#profile-language-card'))return true;
+  return false;
+}
+
+function addPendingRoot(node){
+  if(!node||ignoreMutationNode(node))return false;
+  for(const existing of [...pendingRoots]){
+    if(existing===node)return false;
+    if(existing.nodeType===Node.ELEMENT_NODE&&existing.contains?.(node))return false;
+    if(node.nodeType===Node.ELEMENT_NODE&&node.contains?.(existing))pendingRoots.delete(existing);
+  }
+  pendingRoots.add(node);
+  return true;
+}
+
+function scheduleMutationFlush(){
+  if(mutationFlushHandle!==null)return;
+  const run=deadline=>{
+    mutationFlushHandle=null;
+    if(applying){scheduleMutationFlush();return;}
+    const started=performance.now();
+    applying=true;
+    try{
+      while(pendingRoots.size){
+        const root=pendingRoots.values().next().value;
+        pendingRoots.delete(root);
+        if(root.nodeType===Node.TEXT_NODE||root.isConnected)translateTree(root);
+        const idleLeft=typeof deadline?.timeRemaining==='function'?deadline.timeRemaining():0;
+        if((performance.now()-started)>6&&idleLeft<2)break;
+      }
+      if(!pendingRoots.size&&pendingCalendarRefresh){
+        refreshDates();
+        pendingCalendarRefresh=false;
+      }
+      if(!pendingRoots.size)syncLanguageSelector();
+    }finally{applying=false;}
+    if(pendingRoots.size)scheduleMutationFlush();
+  };
+  if(typeof window.requestIdleCallback==='function'){
+    mutationFlushHandle=window.requestIdleCallback(run,{timeout:120});
+  }else{
+    mutationFlushHandle=window.setTimeout(()=>run(null),16);
+  }
+}
+
+function queueMutationWork(mutations){
+  if(applying||language!=='ca')return;
+  let hasWork=false;
+  for(const mutation of mutations){
+    if(mutation.type!=='childList'||!mutation.addedNodes?.length)continue;
+    const target=mutationElement(mutation.target);
+    if(ignoreMutationNode(target))continue;
+    if(target?.closest?.('#view-calendar'))pendingCalendarRefresh=true;
+    mutation.addedNodes.forEach(node=>{
+      if(ignoreMutationNode(node))return;
+      const el=mutationElement(node);
+      if(el&&(el.matches?.('#view-calendar *')||el.querySelector?.('#view-calendar')))pendingCalendarRefresh=true;
+      if(addPendingRoot(node))hasWork=true;
+    });
+  }
+  if(hasWork)scheduleMutationFlush();
+}
+
+function install(){'''
+          s2, n = pattern.subn(replacement, s, count=1)
+          if n != 1:
+              raise SystemExit(f'performance block replacement count={n}')
+          s = s2
+
+          old_apply = "function applyLanguage(){\n  applying=true;"
+          new_apply = "function applyLanguage(){\n  try{pendingRoots.clear();}catch(_){}\n  applying=true;"
+          if old_apply not in s:
+              raise SystemExit('applyLanguage marker not found')
+          s = s.replace(old_apply, new_apply, 1)
+
+          path.write_text(s, encoding='utf-8')
+
+          cfg = Path('supabase-config.js')
+          c = cfg.read_text(encoding='utf-8')
+          c, count = re.subn(r"i18n-es-ca-20260826\.js\?v=[^']+", "i18n-es-ca-20260826.js?v=20260826i18n4", c, count=1)
+          if count != 1:
+              raise SystemExit('i18n script cache marker not found')
+          cfg.write_text(c, encoding='utf-8')
+          PY
+
+      - name: Validate performance patch
+        shell: bash
+        run: |
+          node --check i18n-es-ca-20260826.js
+          grep -q "requestIdleCallback" i18n-es-ca-20260826.js
+          grep -q "language!=='ca'" i18n-es-ca-20260826.js
+          grep -q "svg,canvas" i18n-es-ca-20260826.js
+          grep -q "20260826i18n4" supabase-config.js
+
+      - name: Commit performance fix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/i18n-performance-20260826.yml
+          git add i18n-es-ca-20260826.js supabase-config.js
+          git commit -m "Reduce Catalan translation lag"
+          git push origin HEAD:feature/i18n-performance-20260826
