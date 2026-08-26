@@ -1,5 +1,5 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
-import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
+import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import {
   CalendarDays,
   ChartNoAxesCombined,
@@ -82,9 +82,14 @@ function LoadingScreen() {
 
 export default function App() {
   const { session, identity, loading, authError, logout } = useAuth();
+  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const shellClass = useMemo(() => `app-shell${menuOpen ? ' menu-open' : ''}`, [menuOpen]);
+  const pageTitle = useMemo(() => {
+    const exact = nav.find(([to]) => to === location.pathname);
+    return exact?.[1] || 'VolleyCoach Hub';
+  }, [location.pathname]);
 
   if (loading) return <LoadingScreen />;
   if (!session) return <LoginPage />;
@@ -121,7 +126,7 @@ export default function App() {
     <div className={shellClass}>
       <header className="mobile-header">
         <button className="icon-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menú"><Menu /></button>
-        <div className="mobile-brand"><strong>VolleyCoach Hub</strong><span>CV Bunyola</span></div>
+        <div className="mobile-brand"><strong>{pageTitle}</strong><span>CV Bunyola</span></div>
         <button className="avatar-button" type="button" onClick={() => setProfileOpen(true)} aria-label="Abrir mi perfil">{initials}</button>
       </header>
 
