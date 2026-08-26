@@ -1,0 +1,37 @@
+name: Apply perf cache bust
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/apply-perf-cache-bust-20260826.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update performance asset version
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          old='supabase-config.js?v=20260826stability1'
+          new='supabase-config.js?v=20260826perf2'
+          if old not in s and new not in s:
+              raise SystemExit('supabase-config reference not found')
+          s=s.replace(old,new)
+          s=s.replace('    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>\n','')
+          p.write_text(s,encoding='utf-8')
+          PY
+          node --check supabase-config.js
+          grep -q 'supabase-config.js?v=20260826perf2' index.html
+          if grep -q 'xlsx.full.min.js' index.html; then exit 1; fi
+      - name: Commit cleanup
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -f .github/workflows/apply-perf-cache-bust-20260826.yml
+          git add index.html
+          git commit -m "Force performance runtime refresh"
+          git push
