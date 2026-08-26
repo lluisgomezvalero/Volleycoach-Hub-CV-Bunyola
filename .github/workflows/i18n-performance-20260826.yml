@@ -1,6 +1,5 @@
 name: I18N performance fix
 
-# one-time performance repair
 on:
   push:
     branches:
@@ -28,86 +27,87 @@ jobs:
 
           path = Path('i18n-es-ca-20260826.js')
           s = path.read_text(encoding='utf-8')
-
           pattern = re.compile(r"const pendingRoots=new Set\(\);.*?\nfunction install\(\)\{", re.S)
           replacement = r'''const pendingRoots=new Set();
-let pendingCalendarRefresh=false;
-let mutationFlushHandle=null;
+          let pendingCalendarRefresh=false;
+          let mutationFlushHandle=null;
 
-function mutationElement(node){
-  if(!node)return null;
-  return node.nodeType===Node.ELEMENT_NODE?node:node.parentElement||null;
-}
+          function mutationElement(node){
+            if(!node)return null;
+            return node.nodeType===Node.ELEMENT_NODE?node:node.parentElement||null;
+          }
 
-function ignoreMutationNode(node){
-  const el=mutationElement(node);
-  if(!el)return false;
-  if(el.matches?.('script,style,link,svg,canvas'))return true;
-  if(el.closest?.('script,style,svg,canvas'))return true;
-  if(el.id==='volley-i18n-es-ca-style'||el.closest?.('#profile-language-card'))return true;
-  return false;
-}
+          function ignoreMutationNode(node){
+            const el=mutationElement(node);
+            if(!el)return false;
+            if(el.matches?.('script,style,link,svg,canvas'))return true;
+            if(el.closest?.('script,style,svg,canvas'))return true;
+            if(el.id==='volley-i18n-es-ca-style'||el.closest?.('#profile-language-card'))return true;
+            return false;
+          }
 
-function addPendingRoot(node){
-  if(!node||ignoreMutationNode(node))return false;
-  for(const existing of [...pendingRoots]){
-    if(existing===node)return false;
-    if(existing.nodeType===Node.ELEMENT_NODE&&existing.contains?.(node))return false;
-    if(node.nodeType===Node.ELEMENT_NODE&&node.contains?.(existing))pendingRoots.delete(existing);
-  }
-  pendingRoots.add(node);
-  return true;
-}
+          function addPendingRoot(node){
+            if(!node||ignoreMutationNode(node))return false;
+            for(const existing of [...pendingRoots]){
+              if(existing===node)return false;
+              if(existing.nodeType===Node.ELEMENT_NODE&&existing.contains?.(node))return false;
+              if(node.nodeType===Node.ELEMENT_NODE&&node.contains?.(existing))pendingRoots.delete(existing);
+            }
+            pendingRoots.add(node);
+            return true;
+          }
 
-function scheduleMutationFlush(){
-  if(mutationFlushHandle!==null)return;
-  const run=deadline=>{
-    mutationFlushHandle=null;
-    if(applying){scheduleMutationFlush();return;}
-    const started=performance.now();
-    applying=true;
-    try{
-      while(pendingRoots.size){
-        const root=pendingRoots.values().next().value;
-        pendingRoots.delete(root);
-        if(root.nodeType===Node.TEXT_NODE||root.isConnected)translateTree(root);
-        const idleLeft=typeof deadline?.timeRemaining==='function'?deadline.timeRemaining():0;
-        if((performance.now()-started)>6&&idleLeft<2)break;
-      }
-      if(!pendingRoots.size&&pendingCalendarRefresh){
-        refreshDates();
-        pendingCalendarRefresh=false;
-      }
-      if(!pendingRoots.size)syncLanguageSelector();
-    }finally{applying=false;}
-    if(pendingRoots.size)scheduleMutationFlush();
-  };
-  if(typeof window.requestIdleCallback==='function'){
-    mutationFlushHandle=window.requestIdleCallback(run,{timeout:120});
-  }else{
-    mutationFlushHandle=window.setTimeout(()=>run(null),16);
-  }
-}
+          function scheduleMutationFlush(){
+            if(mutationFlushHandle!==null)return;
+            const run=deadline=>{
+              mutationFlushHandle=null;
+              if(applying){scheduleMutationFlush();return;}
+              const started=performance.now();
+              applying=true;
+              try{
+                while(pendingRoots.size){
+                  const root=pendingRoots.values().next().value;
+                  pendingRoots.delete(root);
+                  if(root.nodeType===Node.TEXT_NODE||root.isConnected)translateTree(root);
+                  const idleLeft=typeof deadline?.timeRemaining==='function'?deadline.timeRemaining():0;
+                  if((performance.now()-started)>6&&idleLeft<2)break;
+                }
+                if(!pendingRoots.size&&pendingCalendarRefresh){
+                  refreshDates();
+                  pendingCalendarRefresh=false;
+                }
+                if(!pendingRoots.size)syncLanguageSelector();
+              }finally{applying=false;}
+              if(pendingRoots.size)scheduleMutationFlush();
+            };
+            if(typeof window.requestIdleCallback==='function'){
+              mutationFlushHandle=window.requestIdleCallback(run,{timeout:120});
+            }else{
+              mutationFlushHandle=window.setTimeout(()=>run(null),16);
+            }
+          }
 
-function queueMutationWork(mutations){
-  if(applying||language!=='ca')return;
-  let hasWork=false;
-  for(const mutation of mutations){
-    if(mutation.type!=='childList'||!mutation.addedNodes?.length)continue;
-    const target=mutationElement(mutation.target);
-    if(ignoreMutationNode(target))continue;
-    if(target?.closest?.('#view-calendar'))pendingCalendarRefresh=true;
-    mutation.addedNodes.forEach(node=>{
-      if(ignoreMutationNode(node))return;
-      const el=mutationElement(node);
-      if(el&&(el.matches?.('#view-calendar *')||el.querySelector?.('#view-calendar')))pendingCalendarRefresh=true;
-      if(addPendingRoot(node))hasWork=true;
-    });
-  }
-  if(hasWork)scheduleMutationFlush();
-}
+          function queueMutationWork(mutations){
+            if(applying||language!=='ca')return;
+            let hasWork=false;
+            for(const mutation of mutations){
+              if(mutation.type!=='childList'||!mutation.addedNodes?.length)continue;
+              const target=mutationElement(mutation.target);
+              if(ignoreMutationNode(target))continue;
+              if(target?.closest?.('#view-calendar'))pendingCalendarRefresh=true;
+              mutation.addedNodes.forEach(node=>{
+                if(ignoreMutationNode(node))return;
+                const el=mutationElement(node);
+                if(el&&(el.matches?.('#view-calendar *')||el.querySelector?.('#view-calendar')))pendingCalendarRefresh=true;
+                if(addPendingRoot(node))hasWork=true;
+              });
+            }
+            if(hasWork)scheduleMutationFlush();
+          }
 
-function install(){'''
+          function install(){'''
+          # Remove YAML block indentation that is intentionally present inside the JS replacement.
+          replacement = re.sub(r'(?m)^          ', '', replacement)
           s2, n = pattern.subn(replacement, s, count=1)
           if n != 1:
               raise SystemExit(f'performance block replacement count={n}')
@@ -118,7 +118,6 @@ function install(){'''
           if old_apply not in s:
               raise SystemExit('applyLanguage marker not found')
           s = s.replace(old_apply, new_apply, 1)
-
           path.write_text(s, encoding='utf-8')
 
           cfg = Path('supabase-config.js')
