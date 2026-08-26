@@ -1,8 +1,10 @@
 name: Apply performance runtime
 on:
   push:
-    branches: [perf/runtime-loader-20260826]
-    paths: ['.github/workflows/apply-performance-runtime-20260826.yml']
+    branches:
+      - perf/runtime-loader-20260826
+    paths:
+      - '.github/workflows/apply-performance-runtime-20260826.yml'
 permissions:
   contents: write
 jobs:
