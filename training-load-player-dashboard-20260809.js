@@ -124,7 +124,7 @@ function wellnessSummary(rows){
   else if(hours!=null)sleepState={key:'neutral',label:'Sueño registrado',detail:'Tenemos horas de sueño, pero no una valoración reciente de su calidad.'};
 
   if(hours!=null){
-    const h=hours.toLocaleString(window.VolleyI18n?.locale?.() || 'es-ES',{minimumFractionDigits:1,maximumFractionDigits:1});
+    const h=hours.toLocaleString('es-ES',{minimumFractionDigits:1,maximumFractionDigits:1});
     sleepState={...sleepState,detail:`${sleepState.detail} · ${h} h de media registradas.`};
   }
 

@@ -93,7 +93,7 @@ function eventName(evt){
 function formatEventDate(evt){
   const k=eventDateKey(evt);if(!k)return '';
   const [y,m,d]=k.split('-').map(Number);
-  return new Date(y,m-1,d).toLocaleDateString(window.VolleyI18n?.locale?.() || 'es-ES',{weekday:'short',day:'numeric',month:'short'}).replace('.','');
+  return new Date(y,m-1,d).toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'}).replace('.','');
 }
 
 function defaultPlan(){
@@ -346,7 +346,7 @@ function readsHtml(){
   for(const [remoteId,row] of readMap){const p=ui.playerMap.get(remoteId);if(p)seen.push({p,row});}
   const seenIds=new Set(seen.map(x=>String(x.p.id)));
   const count=seenIds.size;
-  return `<section class="gp2-reads"><button type="button" class="gp2-reads-head" data-gp2-toggle-reads><span><small>Seguimiento</small><strong>${count}/${roster.length} vistos</strong></span><i>${ui.readDetailsOpen?'−':'+'}</i></button>${ui.readDetailsOpen?`<div class="gp2-read-list">${roster.map(p=>{const item=seen.find(x=>String(x.p.id)===String(p.id));return `<div class="${item?'seen':''}"><b>${esc(p.name)}</b><small>${item?new Date(item.row.read_at).toLocaleString(window.VolleyI18n?.locale?.() || 'es-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'Pendiente'}</small></div>`;}).join('')}</div>`:''}</section>`;
+  return `<section class="gp2-reads"><button type="button" class="gp2-reads-head" data-gp2-toggle-reads><span><small>Seguimiento</small><strong>${count}/${roster.length} vistos</strong></span><i>${ui.readDetailsOpen?'−':'+'}</i></button>${ui.readDetailsOpen?`<div class="gp2-read-list">${roster.map(p=>{const item=seen.find(x=>String(x.p.id)===String(p.id));return `<div class="${item?'seen':''}"><b>${esc(p.name)}</b><small>${item?new Date(item.row.read_at).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'Pendiente'}</small></div>`;}).join('')}</div>`:''}</section>`;
 }
 function attackEditor(){
   const key=ui.activeAttack,a=ui.draft.attackers[key],meta=ATTACK_META[key];

@@ -34,7 +34,7 @@ function prettyDate(value){
   const raw=String(value||'').trim();
   if(!/^\d{4}-\d{2}-\d{2}$/.test(raw))return raw||'Fecha pendiente';
   const [y,m,d]=raw.split('-').map(Number);
-  return new Date(y,m-1,d).toLocaleDateString(window.VolleyI18n?.locale?.() || 'es-ES',{weekday:'short',day:'numeric',month:'short'}).replace(/\./g,'');
+  return new Date(y,m-1,d).toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'}).replace(/\./g,'');
 }
 function roundLabel(match){
   if(String(match?.type||'')==='Amistoso')return'Amistoso';

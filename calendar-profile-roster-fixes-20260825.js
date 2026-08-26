@@ -116,8 +116,8 @@ function parseLoginDate(value){
 function formatLogin(value){
   const date=parseLoginDate(value);
   if(!date)return 'Sin accesos registrados';
-  const datePart=new Intl.DateTimeFormat(window.VolleyI18n?.locale?.() || 'es-ES',{day:'2-digit',month:'2-digit',year:'numeric'}).format(date);
-  const timePart=new Intl.DateTimeFormat(window.VolleyI18n?.locale?.() || 'es-ES',{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(date);
+  const datePart=new Intl.DateTimeFormat('es-ES',{day:'2-digit',month:'2-digit',year:'numeric'}).format(date);
+  const timePart=new Intl.DateTimeFormat('es-ES',{hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(date);
   return `${datePart} · ${timePart}`;
 }
 
@@ -155,6 +155,45 @@ function injectStyles(){
       #modal-my-profile .profile-private-card{padding:.8rem!important}
       #modal-my-profile .profile-info-item{padding:.62rem .68rem!important}
     }
+
+    /* Mobile private profile stays between fixed top/bottom navigation. */
+    @media(max-width:760px), (max-width:1366px) and (any-pointer:coarse){
+      #modal-my-profile{
+        align-items:flex-start!important;
+        padding-top:calc(70px + env(safe-area-inset-top,0px))!important;
+        padding-bottom:calc(82px + env(safe-area-inset-bottom,0px))!important;
+        padding-left:6px!important;
+        padding-right:6px!important;
+        overflow:hidden!important;
+      }
+      #modal-my-profile .modal-content{
+        width:min(520px,calc(100vw - 12px))!important;
+        max-height:calc(100dvh - 152px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))!important;
+        margin:0 auto!important;
+        border-radius:18px!important;
+        overflow:hidden!important;
+      }
+      #modal-my-profile .modal-header{flex:0 0 auto!important;padding:.85rem 1rem!important}
+      #modal-my-profile .modal-body{
+        min-height:0!important;
+        max-height:none!important;
+        overflow-y:auto!important;
+        overscroll-behavior:contain!important;
+        -webkit-overflow-scrolling:touch!important;
+        padding-top:.8rem!important;
+        padding-bottom:1.1rem!important;
+      }
+      #modal-my-profile #form-my-profile>div:last-child{
+        position:sticky;
+        bottom:-1.1rem;
+        z-index:4;
+        margin-left:-.15rem;
+        margin-right:-.15rem;
+        padding:.8rem .15rem calc(.2rem + env(safe-area-inset-bottom,0px));
+        background:linear-gradient(180deg,rgba(255,255,255,0),#fff 24%,#fff 100%);
+      }
+    }
+
   `;
   document.head.appendChild(style);
 }
@@ -200,9 +239,23 @@ async function refreshCoachOwnLogin(){
   }catch(error){console.warn('[ProfileFix] No se pudo refrescar el último acceso.',error);}
   finally{profileRefreshBusy=false;}
 }
+
+function syncProfileRoleSections(){
+  const coach=isCoach();
+  ['profile-attendance-card','profile-achievements-card'].forEach(id=>{
+    const section=document.getElementById(id);
+    if(!section)return;
+    section.hidden=coach;
+    section.setAttribute('aria-hidden',coach?'true':'false');
+    if(coach)section.style.setProperty('display','none','important');
+    else section.style.removeProperty('display');
+  });
+}
+
 function polishProfile(){
   const modal=document.getElementById('modal-my-profile');
   if(!modal)return;
+  syncProfileRoleSections();
   const role=String(currentUser()?.role||'').toLowerCase();
   if(role==='player')removePlayerLastLoginFromProfile();
   else if(['administrator','admin','coach'].includes(role)){
@@ -335,12 +388,7 @@ function install(){
   });
   observeUi();
   syncAll();
-  let tries=0;
-  const timer=setInterval(()=>{
-    syncAll();
-    tries+=1;
-    if(tries>=30)clearInterval(timer);
-  },180);
+  [250,900,1800].forEach(delay=>setTimeout(syncAll,delay));
   window.addEventListener('focus',syncAll);
   document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncAll();});
   console.info('[UXFixes] Calendario, perfil privado, último acceso y dorsal sincronizado activos.');

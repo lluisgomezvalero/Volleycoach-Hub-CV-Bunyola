@@ -118,7 +118,7 @@ function renderMonthGrid(events){
     if(items.length)button.classList.add('has-events');
     const dotTypes=[...new Set(items.map(item=>typeMeta(item).key))].slice(0,3);
     button.innerHTML=`<span class="cal-month-day-number">${day}</span><span class="cal-month-dots">${dotTypes.map(type=>`<i class="dot-${type}"></i>`).join('')}</span>`;
-    button.setAttribute('aria-label',`${day} de ${new Intl.DateTimeFormat(window.VolleyI18n?.locale?.() || 'es-ES',{month:'long'}).format(first)}${items.length?`, ${items.length} eventos`:''}`);
+    button.setAttribute('aria-label',`${day} de ${new Intl.DateTimeFormat('es-ES',{month:'long'}).format(first)}${items.length?`, ${items.length} eventos`:''}`);
     button.addEventListener('click',()=>{selectedDateKey=key;renderCalendarMobile();});
     grid.appendChild(button);
   }
@@ -129,7 +129,7 @@ function renderSelectedAgenda(events){
   section.className='cal-selected-agenda';
   const selected=dateObj(selectedDateKey);
   const items=events.filter(evt=>String(evt.date||'')===selectedDateKey).sort((a,b)=>String(a.time||'').localeCompare(String(b.time||'')));
-  const dateText=selected?new Intl.DateTimeFormat(window.VolleyI18n?.locale?.() || 'es-ES',{weekday:'long',day:'numeric',month:'long'}).format(selected):'';
+  const dateText=selected?new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'long'}).format(selected):'';
   section.innerHTML=`<header class="cal-selected-head"><div><span>Agenda</span><strong>${esc(dateText)}</strong></div><small>${items.length} ${items.length===1?'evento':'eventos'}</small></header><div class="cal-selected-events"></div>`;
   const list=section.querySelector('.cal-selected-events');
   if(items.length)items.forEach(evt=>list.appendChild(renderEvent(evt)));

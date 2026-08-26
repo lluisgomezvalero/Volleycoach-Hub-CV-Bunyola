@@ -45,7 +45,7 @@ function formatDate(value){
   if(!value)return '';
   const d=new Date(String(value).length===10?`${value}T12:00:00`:value);
   if(Number.isNaN(d.getTime()))return String(value);
-  return d.toLocaleDateString(window.VolleyI18n?.locale?.() || 'es-ES',{day:'numeric',month:'short'});
+  return d.toLocaleDateString('es-ES',{day:'numeric',month:'short'});
 }
 function sleepLabel(value){
   return ({1:'Muy mal',2:'Mal',3:'Regular',4:'Bien',5:'Muy bien'})[Number(value)]||'—';

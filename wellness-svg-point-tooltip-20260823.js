@@ -18,7 +18,7 @@ function shortDate(raw){
   const m=String(raw||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if(!m)return raw||'';
   const d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]),12);
-  return new Intl.DateTimeFormat(window.VolleyI18n?.locale?.() || 'es-ES',{day:'numeric',month:'short'}).format(d).replace(/\./g,'');
+  return new Intl.DateTimeFormat('es-ES',{day:'numeric',month:'short'}).format(d).replace(/\./g,'');
 }
 function ensureStyles(){
   if(document.getElementById('wellness-svg-point-tooltip-20260823-style'))return;
