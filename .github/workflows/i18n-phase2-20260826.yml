@@ -18,132 +18,10 @@ jobs:
         with:
           ref: feature/i18n-phase2-20260826
 
-      - name: Expand translations and remove full-page rescans
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-
-          path = Path('i18n-es-ca-20260826.js')
-          s = path.read_text(encoding='utf-8')
-
-          marker = "  ['Seguimiento semanal','Seguiment setmanal'],['Pendientes','Pendents'],['Sin pendientes','Sense pendents'],['Sin datos','Sense dades'],['No hay datos disponibles','No hi ha dades disponibles']\n];"
-          replacement = """  ['Seguimiento semanal','Seguiment setmanal'],['Pendientes','Pendents'],['Sin pendientes','Sense pendents'],['Sin datos','Sense dades'],['No hay datos disponibles','No hi ha dades disponibles'],
-  ['Sesión','Sessió'],['Sesiones','Sessions'],['Sesión de entrenamiento','Sessió d’entrenament'],['Sesiones de entrenamiento','Sessions d’entrenament'],
-  ['Próximas sesiones','Pròximes sessions'],['Sesión completada','Sessió completada'],['Entrenamiento completado','Entrenament completat'],['Historial','Historial'],
-  ['Duración','Durada'],['Objetivo de la sesión','Objectiu de la sessió'],['Plan de entrenamiento','Pla d’entrenament'],['Material de la sesión','Material de la sessió'],
-  ['Comentarios de jugadoras','Comentaris de jugadores'],['Valoración del entrenador','Valoració de l’entrenador'],['Valoración','Valoració'],['Observaciones','Observacions'],
-  ['Pendiente','Pendent'],['Confirmado','Confirmat'],['Asistirá','Hi assistirà'],['No asistirá','No hi assistirà'],['Presente','Present'],['Ausente','Absent'],['Retraso','Retard'],['Lesión','Lesió'],
-  ['Validar asistencia','Validar assistència'],['Lista validada','Llista validada'],['Responder','Respondre'],['Confirmado por jugadora','Confirmat per la jugadora'],
-  ['Bienestar','Benestar'],['Mi bienestar','El meu benestar'],['Cuestionario de bienestar','Qüestionari de benestar'],['Registro semanal','Registre setmanal'],
-  ['Estado general','Estat general'],['Fatiga','Fatiga'],['Dolor muscular','Dolor muscular'],['Estrés','Estrès'],['Sueño','Son'],['Horas de sueño','Hores de son'],['Dolor','Dolor'],
-  ['¿Cómo te encuentras hoy?','Com et trobes avui?'],['Guardar bienestar','Desar benestar'],['Carga','Càrrega'],['Carga de entrenamiento','Càrrega d’entrenament'],
-  ['Carga de sesión','Càrrega de sessió'],['Carga semanal','Càrrega setmanal'],['Carga habitual','Càrrega habitual'],['Carga reciente','Càrrega recent'],['RPE de la sesión','RPE de la sessió'],
-  ['Estadísticas del partido','Estadístiques del partit'],['Estadísticas de partido','Estadístiques del partit'],['Resumen del partido','Resum del partit'],['Resumen','Resum'],
-  ['Individual','Individual'],['Equipo','Equip'],['Recepción','Recepció'],['Ataque','Atac'],['Bloqueo','Bloqueig'],['Saque','Servei'],['Defensa','Defensa'],['Colocación','Col·locació'],
-  ['Errores','Errors'],['Puntos','Punts'],['Intentos','Intents'],['Aces','Aces'],['Eficiencia','Eficiència'],['Partidos jugados','Partits jugats'],
-  ['Publicar estadísticas','Publicar estadístiques'],['Estadísticas publicadas','Estadístiques publicades'],['Borrador','Esborrany'],['Datos del partido','Dades del partit'],
-  ['Plan de Juego','Pla de joc'],['Objetivos del partido','Objectius del partit'],['Claves del partido','Claus del partit'],['Rival','Rival'],['Rotación','Rotació'],['Rotaciones','Rotacions'],
-  ['Sistema de recepción','Sistema de recepció'],['Sistema de bloqueo','Sistema de bloqueig'],['Visto','Vist'],['No visto','No vist'],['Marcar como visto','Marcar com a vist'],
-  ['Clasificación','Classificació'],['Jornada','Jornada'],['Resultados','Resultats'],['Próximos partidos','Pròxims partits'],['Editar equipo','Editar equip'],['Añadir equipo','Afegir equip'],
-  ['Guardar equipo','Desar equip'],['Local','Local'],['Visitante','Visitant'],['Partidos','Partits'],['Próximo partido','Pròxim partit'],
-  ['Cambiar contraseña','Canviar contrasenya'],['Nueva contraseña','Nova contrasenya'],['Confirmar contraseña','Confirmar contrasenya'],['Guardar contraseña','Desar contrasenya'],
-  ['Foto de Perfil','Foto de perfil'],['Información de la cuenta','Informació del compte'],['Editar Evento','Editar esdeveniment'],['Guardar Evento','Desar esdeveniment'],
-  ['Eliminar Evento','Eliminar esdeveniment'],['Hora de Fin','Hora de fi'],['Descripción','Descripció'],['Próximo','Pròxim'],['Finalizado','Finalitzat'],['Completado','Completat'],
-  ['Fecha pendiente','Data pendent'],['Posición sin asignar','Posició sense assignar'],['Plantilla del equipo','Plantilla de l’equip'],['Nueva jugadora','Nova jugadora'],
-  ['Usuarios del Equipo','Usuaris de l’equip'],['Usuarios Registrados','Usuaris registrats'],['Usuario de Acceso','Usuari d’accés'],['Rol / Función','Rol / Funció'],['Última Conexión','Darrera connexió'],
-  ['Rendimiento individual','Rendiment individual'],['Salto','Salt'],['Altura de salto','Alçada de salt'],['Fuerza','Força'],['Velocidad','Velocitat'],['Potencia','Potència'],
-  ['Evolución','Evolució'],['Mejor marca','Millor marca'],['Último test','Darrer test'],['Registrar test','Registrar test'],['Planificación semanal','Planificació setmanal'],
-  ['Semana','Setmana'],['Microciclo','Microcicle'],['Objetivo principal','Objectiu principal'],['Contenido','Contingut'],['Guardar cambios','Desar canvis'],
-  ['Cambios guardados correctamente','Canvis desats correctament'],['Guardado correctamente','Desat correctament'],['Evento guardado correctamente','Esdeveniment desat correctament'],
-  ['Sin sesiones programadas','Sense sessions programades'],['No hay sesiones completadas','No hi ha sessions completades'],['Sin partidos registrados','Sense partits registrats']
-];"""
-          if marker not in s:
-              raise SystemExit('translation marker not found')
-          s = s.replace(marker, replacement, 1)
-
-          old_elements = "  const elements=root.querySelectorAll?root.querySelectorAll('[title],[aria-label],[placeholder]'):[];\n  elements.forEach(el=>{"
-          new_elements = """  const elements=[];
-  if(root.matches?.('[title],[aria-label],[placeholder]'))elements.push(root);
-  if(root.querySelectorAll)elements.push(...root.querySelectorAll('[title],[aria-label],[placeholder]'));
-  elements.forEach(el=>{"""
-          if old_elements not in s:
-              raise SystemExit('attribute translation block not found')
-          s = s.replace(old_elements, new_elements, 1)
-
-          pattern = re.compile(r"function scheduleApply\(\)\{.*?\n\}\n\nfunction install\(\)\{.*?\n\}\n\nwindow\.VolleyI18n", re.S)
-          new_tail = r"""const pendingRoots=new Set();
-let pendingCalendarRefresh=false;
-
-function queueMutationWork(mutations){
-  if(applying)return;
-  let hasWork=false;
-  for(const mutation of mutations){
-    if(mutation.type!=='childList'||!mutation.addedNodes?.length)continue;
-    const target=mutation.target?.nodeType===Node.ELEMENT_NODE?mutation.target:null;
-    if(target?.closest?.('#view-calendar'))pendingCalendarRefresh=true;
-    mutation.addedNodes.forEach(node=>{
-      if(node.nodeType!==Node.TEXT_NODE&&node.nodeType!==Node.ELEMENT_NODE&&node.nodeType!==Node.DOCUMENT_FRAGMENT_NODE)return;
-      if(node.nodeType===Node.ELEMENT_NODE&&(node.id==='volley-i18n-es-ca-style'||node.closest?.('#profile-language-card')))return;
-      if(node.nodeType===Node.ELEMENT_NODE&&(node.matches?.('#view-calendar *')||node.querySelector?.('#view-calendar')))pendingCalendarRefresh=true;
-      pendingRoots.add(node);
-      hasWork=true;
-    });
-  }
-  if(!hasWork||scheduled)return;
-  scheduled=true;
-  requestAnimationFrame(()=>{
-    scheduled=false;
-    if(applying)return;
-    const roots=[...pendingRoots];
-    pendingRoots.clear();
-    applying=true;
-    try{
-      for(const root of roots){
-        if(root.nodeType===Node.TEXT_NODE||root.isConnected)translateTree(root);
-      }
-      if(pendingCalendarRefresh){refreshDates();pendingCalendarRefresh=false;}
-      syncLanguageSelector();
-    }finally{applying=false;}
-  });
-}
-
-function install(){
-  injectStyles();
-  applyLanguage();
-  void syncFromProfile();
-
-  const observer=new MutationObserver(queueMutationWork);
-  observer.observe(document.body||document.documentElement,{childList:true,subtree:true});
-
-  document.addEventListener('click',event=>{
-    if(event.target?.closest?.('#btn-my-profile-header,#btn-my-profile-home')){
-      setTimeout(()=>{ensureLanguageSelector();translateTree(document.getElementById('modal-my-profile'));void syncFromProfile();},0);
-    }
-  },true);
-  window.addEventListener('focus',()=>void syncFromProfile());
-
-  [250,900,2200].forEach(delay=>setTimeout(()=>{ensureLanguageSelector();void syncFromProfile();},delay));
-}
-
-window.VolleyI18n"""
-          s2, n = pattern.subn(new_tail, s, count=1)
-          if n != 1:
-              raise SystemExit(f'observer block replacement count={n}')
-          s = s2
-
-          path.write_text(s, encoding='utf-8')
-
-          cfg = Path('supabase-config.js')
-          c = cfg.read_text(encoding='utf-8')
-          c = c.replace("window.VOLLEY_ASSET_VERSION = '20260825ux1';", "window.VOLLEY_ASSET_VERSION = '20260826i18n2';")
-          c = c.replace("'i18n-es-ca-20260826.js?v=20260826i18n1'", "'i18n-es-ca-20260826.js?v=20260826i18n2'")
-          cfg.write_text(c, encoding='utf-8')
-          PY
+      - name: Apply i18n phase 2 patch
+        run: python3 i18n-phase2-patch.py
 
       - name: Validate JavaScript and wiring
-        shell: bash
         run: |
           node --check i18n-es-ca-20260826.js
           grep -q "queueMutationWork" i18n-es-ca-20260826.js
@@ -151,11 +29,10 @@ window.VolleyI18n"""
           ! grep -q "function scheduleApply" i18n-es-ca-20260826.js
 
       - name: Commit phase 2
-        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add i18n-es-ca-20260826.js supabase-config.js
-          git rm .github/workflows/i18n-phase2-20260826.yml
+          git rm .github/workflows/i18n-phase2-20260826.yml i18n-phase2-patch.py
           git commit -m "Expand bilingual UI and optimize language updates"
           git push origin HEAD:feature/i18n-phase2-20260826
