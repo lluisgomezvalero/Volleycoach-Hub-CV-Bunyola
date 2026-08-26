@@ -15,10 +15,12 @@ import {
   UserMinus,
   UserRoundCheck,
   Users,
+  UsersRound,
   X
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider.jsx';
 import { supabase } from '../lib/supabase.js';
+import TeamAttendancePanel from './TeamAttendancePanel.jsx';
 import './TrainingPage.css';
 
 const STATUS = {
@@ -382,8 +384,9 @@ export default function TrainingPage() {
       <section className="training-toolbar surface-card">
         <div className="training-toolbar-row">
           <div className="training-tabs">
-            <button className={tab === 'upcoming' ? 'active' : ''} type="button" onClick={() => setTab('upcoming')}><Sparkles size={16} /> Próximos <span>{upcoming.length}</span></button>
-            <button className={tab === 'history' ? 'active' : ''} type="button" onClick={() => setTab('history')}><CalendarDays size={16} /> Historial <span>{history.length}</span></button>
+            <button className={tab === 'upcoming' ? 'active' : ''} type="button" onClick={() => setTab('upcoming')}><Sparkles size={16} /> Próxima sesión <span>{upcoming.length}</span></button>
+            <button className={tab === 'history' ? 'active' : ''} type="button" onClick={() => setTab('history')}><CalendarDays size={16} /> Completados <span>{history.length}</span></button>
+            {isStaff ? <button className={tab === 'attendance' ? 'active' : ''} type="button" onClick={() => setTab('attendance')}><UsersRound size={16} /> Asistencia del equipo</button> : null}
           </div>
           {isStaff ? <button className="primary-button training-new" type="button" onClick={() => { setCreateError(''); setCreateForm(defaultTrainingForm()); setCreateOpen(true); }}><Plus size={17} /> Nueva sesión</button> : null}
         </div>
@@ -397,6 +400,8 @@ export default function TrainingPage() {
 
       {!loading && !error ? (
         <>
+          {tab === 'attendance' && isStaff ? <TeamAttendancePanel teamId={teamId} events={events} /> : null}
+          {tab !== 'attendance' ? <>
           {tab === 'upcoming' && nextSession ? (
             <section className="training-next-block">
               <div className="training-section-title"><div><p className="eyebrow">Siguiente sesión</p><h2>Lo próximo del equipo</h2></div><span>Abre la ficha para consultar o pasar lista</span></div>
@@ -411,6 +416,7 @@ export default function TrainingPage() {
             </div>
             {!shown.length ? <div className="training-empty">No hay entrenamientos en esta vista.</div> : null}
           </section>
+          </> : null}
         </>
       ) : null}
 
