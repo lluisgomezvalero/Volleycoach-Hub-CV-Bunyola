@@ -4289,3 +4289,26 @@ body.profile-modal-open #module-header-nav{visibility:hidden!important;pointer-e
 .session-rsvp-actions button{display:inline-flex;align-items:center;gap:.35rem}
 .session-rsvp-actions button svg{width:15px;height:15px}
 @media(max-width:700px){.session-phase{margin-top:1rem}.session-phase-heading{margin-bottom:.6rem}.session-phase-step{width:30px;height:30px;border-radius:10px}.session-phase-heading h3{font-size:1rem}.session-participation-note{font-size:.78rem}.session-attendance-state{padding:.8rem}}
+
+
+/* 2026-08-26 · first-paint stability: no legacy photo flash and no hero luminance flicker. */
+html,body{background-color:#f1f5f9!important}
+body{background-image:none!important;background-attachment:scroll!important}
+#dashboard-hero{
+  background:linear-gradient(135deg,#172033 0%,#223149 58%,#293952 100%)!important;
+  background-image:linear-gradient(135deg,#172033 0%,#223149 58%,#293952 100%)!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+  filter:none!important;
+  transform:none!important;
+  transition:none!important;
+  will-change:auto!important;
+}
+#dashboard-hero .dashboard-hero-overlay{
+  z-index:0!important;
+  background:linear-gradient(115deg,rgba(7,18,37,.22) 0%,rgba(7,18,37,.10) 55%,rgba(7,18,37,.04) 100%)!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+#dashboard-hero .dashboard-hero-content{position:relative!important;z-index:2!important}
+#dashboard-hero.dashboard-motion-ready,#dashboard-hero.dashboard-motion-visible{opacity:1!important;transform:none!important;filter:none!important}

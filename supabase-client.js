@@ -157,7 +157,7 @@
 
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
-      .select('id, club_id, username, full_name, role, avatar_path, active, last_login_at, preferred_language')
+      .select('id, club_id, username, full_name, role, avatar_path, active, last_login_at')
       .eq('id', authData.user.id)
       .single();
     if (profileError) return { data: null, error: profileError };
@@ -204,14 +204,13 @@
     const allowed = {};
     if (typeof changes?.full_name === 'string') allowed.full_name = changes.full_name.trim();
     if (typeof changes?.avatar_path === 'string' || changes?.avatar_path === null) allowed.avatar_path = changes.avatar_path;
-    if (['es', 'ca'].includes(changes?.preferred_language)) allowed.preferred_language = changes.preferred_language;
     if (!Object.keys(allowed).length) return { data: null, error: new Error('No hay cambios válidos') };
 
     return supabaseClient
       .from('profiles')
       .update(allowed)
       .eq('id', authData.user.id)
-      .select('id, club_id, username, full_name, role, avatar_path, active, last_login_at, preferred_language')
+      .select('id, club_id, username, full_name, role, avatar_path, active, last_login_at')
       .single();
   }
 

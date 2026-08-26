@@ -27,13 +27,13 @@ function formatDate(value){
   if(!value)return 'Sin test';
   const d=new Date(String(value).length===10?`${value}T12:00:00`:value);
   if(Number.isNaN(d.getTime()))return String(value);
-  return d.toLocaleDateString(window.VolleyI18n?.locale?.() || 'es-ES',{day:'2-digit',month:'short'}).replace('.','');
+  return d.toLocaleDateString('es-ES',{day:'2-digit',month:'short'}).replace('.','');
 }
 function formatFullDate(value){
   if(!value)return 'Sin registros';
   const d=new Date(String(value).length===10?`${value}T12:00:00`:value);
   if(Number.isNaN(d.getTime()))return String(value);
-  return d.toLocaleDateString(window.VolleyI18n?.locale?.() || 'es-ES',{day:'numeric',month:'long',year:'numeric'});
+  return d.toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'});
 }
 function unitMeta(test){return test==='Drop Jump'?{unit:'RSI',decimals:2}:{unit:'cm',decimals:1};}
 function validResult(record){const n=Number(record?.result);return Number.isFinite(n)&&n>=0?n:null;}

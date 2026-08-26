@@ -54,14 +54,14 @@ function shortDate(event){
   const m=raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if(!m)return raw||'Fecha pendiente';
   const d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]),12);
-  return new Intl.DateTimeFormat(window.VolleyI18n?.locale?.() || 'es-ES',{weekday:'short',day:'numeric',month:'short'}).format(d).replace(/\./g,'');
+  return new Intl.DateTimeFormat('es-ES',{weekday:'short',day:'numeric',month:'short'}).format(d).replace(/\./g,'');
 }
 function longDate(event){
   const raw=String(event?.date||event?.startDate||event?.starts_at||'').slice(0,10);
   const m=raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if(!m)return raw||'Fecha pendiente';
   const d=new Date(Number(m[1]),Number(m[2])-1,Number(m[3]),12);
-  return new Intl.DateTimeFormat(window.VolleyI18n?.locale?.() || 'es-ES',{weekday:'long',day:'numeric',month:'long'}).format(d);
+  return new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'long'}).format(d);
 }
 function players(){return (app()?.players||[]).filter(player=>player&&player.active!==false);}
 function playerMap(){return new Map(players().map(player=>[id(player.id),player]));}
