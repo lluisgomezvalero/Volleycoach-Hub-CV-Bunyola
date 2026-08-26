@@ -1,5 +1,6 @@
 name: I18N performance fix
 
+# one-time performance repair
 on:
   push:
     branches:
