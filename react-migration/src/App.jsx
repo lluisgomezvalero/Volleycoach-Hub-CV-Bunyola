@@ -1,24 +1,41 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
-import { NavLink, Route, Routes } from 'react-router-dom';
-import { CalendarDays, ChartNoAxesCombined, Dumbbell, Gauge, HeartPulse, Home, Menu, Shield, Trophy, Users, X } from 'lucide-react';
+import { NavLink, Navigate, Route, Routes } from 'react-router-dom';
+import {
+  CalendarDays,
+  ChartNoAxesCombined,
+  Dumbbell,
+  Gauge,
+  HeartPulse,
+  Home,
+  LogOut,
+  Menu,
+  MoreHorizontal,
+  Shield,
+  Trophy,
+  UserRound,
+  Users,
+  X
+} from 'lucide-react';
+import { useAuth } from './auth/AuthProvider.jsx';
+import LoginPage from './pages/LoginPage.jsx';
+import ProfileModal from './components/ProfileModal.jsx';
 
-const Placeholder = ({ title, text }) => (
-  <section className="page-card">
-    <p className="eyebrow">Migración React</p>
-    <h1>{title}</h1>
-    <p>{text}</p>
-  </section>
-);
+const HomePage = lazy(() => import('./pages/HomePage.jsx'));
 
-const HomePage = lazy(() => Promise.resolve({ default: () => <Placeholder title="Inicio" text="Primera pantalla de la nueva arquitectura. Sin parches del DOM ni observadores globales." /> }));
-const TrainingPage = lazy(() => Promise.resolve({ default: () => <Placeholder title="Entrenos" text="Aquí migraremos sesiones, asistencia y RPE." /> }));
-const CalendarPage = lazy(() => Promise.resolve({ default: () => <Placeholder title="Calendario" text="Calendario modular conectado a Supabase." /> }));
-const WellnessPage = lazy(() => Promise.resolve({ default: () => <Placeholder title="Bienestar" text="Cuestionario e historial se migrarán como componentes React independientes." /> }));
-const RosterPage = lazy(() => Promise.resolve({ default: () => <Placeholder title="Plantilla" text="Jugadoras y perfiles sin reescrituras posteriores del DOM." /> }));
-const StatsPage = lazy(() => Promise.resolve({ default: () => <Placeholder title="Estadísticas" text="Este módulo solo se cargará cuando entres aquí." /> }));
-const CompetitionPage = lazy(() => Promise.resolve({ default: () => <Placeholder title="Competición" text="Clasificación, partidos y convocatorias manteniendo nombres reales desde datos." /> }));
-const GamePlanPage = lazy(() => Promise.resolve({ default: () => <Placeholder title="Plan de juego" text="Plan táctico aislado del resto de la aplicación." /> }));
-const PerformancePage = lazy(() => Promise.resolve({ default: () => <Placeholder title="Rendimiento" text="Métricas y tests se cargarán bajo demanda." /> }));
+function lazyPlaceholder(title, text) {
+  return lazy(() => import('./pages/PlaceholderPage.jsx').then(({ default: PlaceholderPage }) => ({
+    default: () => <PlaceholderPage title={title} text={text} />
+  })));
+}
+
+const TrainingPage = lazyPlaceholder('Entrenos', 'Aquí migraremos sesiones, asistencia, pasar lista y RPE como un único módulo React.');
+const CalendarPage = lazyPlaceholder('Calendario', 'Calendario modular conectado directamente a Supabase.');
+const WellnessPage = lazyPlaceholder('Bienestar', 'Cuestionario e historial como componentes React independientes.');
+const RosterPage = lazyPlaceholder('Plantilla', 'Jugadoras y perfiles sin reescrituras posteriores del DOM.');
+const StatsPage = lazyPlaceholder('Estadísticas', 'El módulo se descargará y renderizará únicamente al entrar aquí.');
+const CompetitionPage = lazyPlaceholder('Competición', 'Clasificación, partidos y convocatorias leyendo los nombres directamente de los datos.');
+const GamePlanPage = lazyPlaceholder('Plan de juego', 'Plan táctico aislado del resto de la aplicación.');
+const PerformancePage = lazyPlaceholder('Rendimiento', 'Métricas y tests físicos cargados bajo demanda.');
 
 const nav = [
   ['/', 'Inicio', Home],
@@ -32,35 +49,103 @@ const nav = [
   ['/performance', 'Rendimiento', Gauge]
 ];
 
-function Navigation({ onNavigate }) {
-  return nav.map(([to, label, Icon]) => (
-    <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`} onClick={onNavigate}>
+const ROLE_LABELS = {
+  administrator: 'Administrador',
+  coach: 'Entrenador',
+  player: 'Jugadora'
+};
+
+function Navigation({ onNavigate, items = nav }) {
+  return items.map(([to, label, Icon]) => (
+    <NavLink
+      key={to}
+      to={to}
+      end={to === '/'}
+      className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+      onClick={onNavigate}
+    >
       <Icon size={19} strokeWidth={2.1} />
       <span>{label}</span>
     </NavLink>
   ));
 }
 
+function LoadingScreen() {
+  return (
+    <div className="boot-screen">
+      <span className="brand-mark">VB</span>
+      <strong>VolleyCoach Hub</strong>
+      <small>Preparando tu sesión…</small>
+    </div>
+  );
+}
+
 export default function App() {
+  const { session, identity, loading, authError, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const shellClass = useMemo(() => `app-shell${menuOpen ? ' menu-open' : ''}`, [menuOpen]);
+
+  if (loading) return <LoadingScreen />;
+  if (!session) return <LoginPage />;
+
+  if (!identity) {
+    return (
+      <main className="fatal-shell">
+        <section className="page-card">
+          <p className="eyebrow">Sesión iniciada</p>
+          <h1>No hemos podido cargar tu perfil</h1>
+          <p>{authError || 'Comprueba que el usuario tenga un perfil activo en VolleyCoach Hub.'}</p>
+          <button className="primary-button" type="button" onClick={() => logout()}>Cerrar sesión</button>
+        </section>
+      </main>
+    );
+  }
+
+  const profile = identity.profile;
+  const initials = String(profile?.full_name || profile?.username || 'VB')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+
+  async function handleLogout() {
+    setMenuOpen(false);
+    setProfileOpen(false);
+    try { await logout(); } catch { /* la sesión local ya queda cerrada */ }
+  }
 
   return (
     <div className={shellClass}>
       <header className="mobile-header">
         <button className="icon-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menú"><Menu /></button>
-        <div><strong>VolleyCoach Hub</strong><span>CV Bunyola</span></div>
+        <div className="mobile-brand"><strong>VolleyCoach Hub</strong><span>CV Bunyola</span></div>
+        <button className="avatar-button" type="button" onClick={() => setProfileOpen(true)} aria-label="Abrir mi perfil">{initials}</button>
       </header>
 
       <aside className="sidebar">
         <div className="brand"><span className="brand-mark">VB</span><div><strong>VolleyCoach Hub</strong><small>CV Bunyola</small></div></div>
         <nav><Navigation onNavigate={() => setMenuOpen(false)} /></nav>
+        <div className="sidebar-user">
+          <button className="sidebar-profile" type="button" onClick={() => setProfileOpen(true)}>
+            <span className="avatar-button">{initials}</span>
+            <span><strong>{profile.full_name || profile.username}</strong><small>{ROLE_LABELS[profile.role] || profile.role}</small></span>
+          </button>
+          <button className="logout-button" type="button" onClick={handleLogout} aria-label="Cerrar sesión"><LogOut size={18} /></button>
+        </div>
       </aside>
 
-      {menuOpen && <button className="overlay" aria-label="Cerrar menú" onClick={() => setMenuOpen(false)} />}
-      <aside className="mobile-drawer">
-        <div className="drawer-head"><strong>Menú</strong><button className="icon-button" onClick={() => setMenuOpen(false)}><X /></button></div>
+      {menuOpen ? <button className="overlay" aria-label="Cerrar menú" onClick={() => setMenuOpen(false)} /> : null}
+      <aside className="mobile-drawer" aria-hidden={!menuOpen}>
+        <div className="drawer-head"><strong>Menú</strong><button className="icon-button" onClick={() => setMenuOpen(false)} aria-label="Cerrar menú"><X /></button></div>
+        <button className="drawer-profile" type="button" onClick={() => { setMenuOpen(false); setProfileOpen(true); }}>
+          <span className="avatar-button">{initials}</span>
+          <span><strong>{profile.full_name || profile.username}</strong><small>{ROLE_LABELS[profile.role] || profile.role}</small></span>
+        </button>
         <nav><Navigation onNavigate={() => setMenuOpen(false)} /></nav>
+        <button className="drawer-logout" type="button" onClick={handleLogout}><LogOut size={18} /> Cerrar sesión</button>
       </aside>
 
       <main className="content">
@@ -75,9 +160,17 @@ export default function App() {
             <Route path="/competition" element={<CompetitionPage />} />
             <Route path="/game-plan" element={<GamePlanPage />} />
             <Route path="/performance" element={<PerformancePage />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </main>
+
+      <nav className="bottom-nav" aria-label="Navegación principal móvil">
+        <Navigation items={nav.slice(0, 4)} onNavigate={() => setMenuOpen(false)} />
+        <button className="bottom-more" type="button" onClick={() => setMenuOpen(true)}><MoreHorizontal size={20} /><span>Más</span></button>
+      </nav>
+
+      <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   );
 }
