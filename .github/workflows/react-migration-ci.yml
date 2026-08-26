@@ -12,7 +12,7 @@ on:
       - 'react-migration/**'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -27,16 +27,6 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: react-migration/package.json
-      - name: Integrate team attendance source
-        run: |
-          node scripts/integrate-team-attendance.mjs
-          if ! git diff --quiet -- src/pages/TrainingPage.jsx; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add src/pages/TrainingPage.jsx
-            git commit -m "Integrate team attendance into React training"
-            git push
-          fi
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Build React migration
