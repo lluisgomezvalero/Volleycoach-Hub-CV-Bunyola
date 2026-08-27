@@ -93,6 +93,7 @@ export default function App() {
 
   if (loading) return <LoadingScreen />;
   if (!session) return <LoginPage />;
+  if (!identity && !authError) return <LoadingScreen />;
 
   if (!identity) {
     return (
