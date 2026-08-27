@@ -1,0 +1,1 @@
+Trigger de publicación para la vista de jugadora sin UA/ACWR y con ritmo de entrenamiento simplificado.
