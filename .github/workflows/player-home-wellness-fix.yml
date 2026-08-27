@@ -1,0 +1,31 @@
+name: Player home wellness fix
+
+on:
+  push:
+    branches: [react-vite-migration]
+    paths:
+      - '.github/workflows/player-home-wellness-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: react-vite-migration
+      - name: Apply player home and wellness patch
+        run: python scripts/patch-player-home-wellness.py
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add react-migration/src/pages/HomePage.jsx react-migration/src/pages/HomePageDashboard.css react-migration/src/pages/WellnessPage.jsx
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "Simplificar Inicio y bienestar diario de jugadoras"
+            git push origin HEAD:react-vite-migration
+          fi
