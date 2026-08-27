@@ -1,0 +1,43 @@
+name: Fix wellness sleep scale
+
+on:
+  push:
+    branches: [react-vite-migration]
+    paths:
+      - '.github/workflows/fix-wellness-sleep-scale.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: react-vite-migration
+      - name: Correct sleep scale semantics
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('react-migration/src/pages/WellnessPage.jsx')
+          text = path.read_text()
+          old_tone = "function sleepTone(value) {\n  return fatigueTone(value);\n}"
+          new_tone = "function sleepTone(value) {\n  const n = Number(value);\n  if (!Number.isFinite(n)) return 'neutral';\n  if (n >= 4) return 'good';\n  if (n === 3) return 'warm';\n  return 'alert';\n}"
+          old_labels = "const sleepLabels = ['Muy bien', 'Bien', 'Regular', 'Mal', 'Muy mal'];"
+          new_labels = "const sleepLabels = ['Muy mal', 'Mal', 'Regular', 'Bien', 'Muy bien'];"
+          old_alert = "Number(todayEntry.fatigue >= 4) + Number(todayEntry.sleep >= 4) + Number((todayEntry.pain_score || 0) >= 4) + Number(Boolean(String(todayEntry.notes || '').trim()))"
+          new_alert = "Number(todayEntry.fatigue >= 4) + Number(todayEntry.sleep <= 2) + Number((todayEntry.pain_score || 0) >= 4) + Number(Boolean(String(todayEntry.notes || '').trim()))"
+          for old, new, label in [(old_tone, new_tone, 'sleepTone'), (old_labels, new_labels, 'sleepLabels'), (old_alert, new_alert, 'alertScore')]:
+              if old not in text:
+                  raise SystemExit(f'No se encontró patrón esperado: {label}')
+              text = text.replace(old, new, 1)
+          path.write_text(text)
+          PY
+      - name: Commit correction
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add react-migration/src/pages/WellnessPage.jsx
+          git commit -m "Corregir escala de sueño en bienestar"
+          git push origin react-vite-migration
