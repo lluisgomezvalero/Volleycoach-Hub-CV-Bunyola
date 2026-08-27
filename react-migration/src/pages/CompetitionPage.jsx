@@ -323,16 +323,6 @@ export default function CompetitionPage() {
 
   return (
     <section className="competition-page">
-      <header className="competition-hero">
-        <div className="competition-hero-icon"><Trophy size={24} /></div>
-        <div className="competition-hero-copy">
-          <span>Competición · Liga {season}</span>
-          <h1>Clasificación de Liga</h1>
-          <p>Cadete Femenino 1ª División · {sorted.length || 12} equipos</p>
-        </div>
-        {isStaff ? <span className="competition-staff-pill"><ShieldCheck size={14} /> Panel técnico</span> : null}
-      </header>
-
       {error ? <div className="competition-error">{error}</div> : null}
 
       {own ? (
@@ -350,14 +340,12 @@ export default function CompetitionPage() {
       ) : null}
 
       <section className="competition-card">
-        <div className="competition-card-head">
-          <div><small>12 equipos</small><h2>Tabla clasificatoria</h2><p>{isStaff ? 'CV Bunyola se actualiza sola; puedes editar los datos del resto de equipos.' : 'Clasificación compartida del equipo.'}</p></div>
+        <div className="competition-toolbar">
+          <label className="competition-search"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar equipo…" /></label>
           {isStaff ? (
-            <button type="button" className="competition-reset-button" onClick={resetRivals} disabled={resetting} title="Reiniciar clasificación"><RefreshCcw size={17} /> <span>{resetting ? 'Reiniciando…' : 'Reiniciar'}</span></button>
+            <button type="button" className="competition-reset-button" onClick={resetRivals} disabled={resetting} title="Reiniciar clasificación" aria-label="Reiniciar clasificación"><RefreshCcw size={17} /> <span>{resetting ? 'Reiniciando…' : 'Reiniciar'}</span></button>
           ) : null}
         </div>
-
-        <label className="competition-search"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar equipo…" /></label>
 
         {!filtered.length ? <div className="competition-empty">No hay equipos que coincidan con la búsqueda.</div> : (
           <>
@@ -400,11 +388,6 @@ export default function CompetitionPage() {
             </div>
           </>
         )}
-      </section>
-
-      <section className="competition-info-card">
-        <Trophy size={18} />
-        <div><strong>Cómo se calcula CV Bunyola</strong><p>La fila del equipo usa exclusivamente los resultados de los partidos de Liga. Los amistosos y torneos no alteran esta clasificación. {matches.filter((event) => normalizeResult(event?.payload?.result)).length ? `${matches.filter((event) => normalizeResult(event?.payload?.result)).length} jornadas con resultado registradas.` : 'Aún no hay jornadas con resultado registrado.'}</p></div>
       </section>
 
       {editing ? <EditTeamModal row={editing} onClose={() => setEditing(null)} onSaved={handleSaved} profileId={profile?.id} /> : null}

@@ -155,32 +155,51 @@ export default function HomePage() {
         const from28 = new Date(now.getTime() - 28 * 86400000).toISOString();
         const from7Date = new Date(now.getTime() - 7 * 86400000).toISOString().slice(0, 10);
 
-        const [futureResult, pastTrainingResult, recentMatchResult] = await Promise.all([
-          supabase
-            .from('events')
-            .select('id,team_id,event_type,title,starts_at,ends_at,location,status,payload')
-            .eq('team_id', team.id)
-            .gte('starts_at', now.toISOString())
-            .order('starts_at', { ascending: true })
-            .limit(20),
-          supabase
-            .from('events')
-            .select('id,starts_at,ends_at,payload')
-            .eq('team_id', team.id)
-            .eq('event_type', 'training')
-            .gte('starts_at', from28)
-            .lte('starts_at', now.toISOString())
-            .order('starts_at', { ascending: false })
-            .limit(30),
-          supabase
-            .from('events')
-            .select('id,event_type,title,starts_at,payload')
-            .eq('team_id', team.id)
-            .in('event_type', ['match', 'friendly', 'tournament'])
-            .lt('starts_at', now.toISOString())
-            .order('starts_at', { ascending: false })
-            .limit(5)
-        ]);
+        const futureRequest = supabase
+          .from('events')
+          .select('id,team_id,event_type,title,starts_at,ends_at,location,status,payload')
+          .eq('team_id', team.id)
+          .gte('starts_at', now.toISOString())
+          .order('starts_at', { ascending: true })
+          .limit(12);
+        const pastTrainingRequest = supabase
+          .from('events')
+          .select('id,starts_at,ends_at,payload')
+          .eq('team_id', team.id)
+          .eq('event_type', 'training')
+          .gte('starts_at', from28)
+          .lte('starts_at', now.toISOString())
+          .order('starts_at', { ascending: false })
+          .limit(30);
+        const recentMatchRequest = supabase
+          .from('events')
+          .select('id,event_type,title,starts_at,payload')
+          .eq('team_id', team.id)
+          .in('event_type', ['match', 'friendly', 'tournament'])
+          .lt('starts_at', now.toISOString())
+          .order('starts_at', { ascending: false })
+          .limit(5);
+
+        // Para jugadoras, la pantalla principal depende solo del calendario futuro.
+        // Historial y tendencias continúan cargándose en segundo plano.
+        let futureResult;
+        let pastTrainingResult;
+        let recentMatchResult;
+        if (!isStaff) {
+          futureResult = await futureRequest;
+          if (futureResult.error) throw futureResult.error;
+          const quickFuture = futureResult.data || [];
+          const quickTraining = quickFuture.find((event) => event.event_type === 'training') || null;
+          const quickMatch = quickFuture.find((event) => ['match', 'friendly', 'tournament'].includes(event.event_type)) || null;
+          if (active) {
+            setNextTraining(quickTraining);
+            setNextMatch(quickMatch);
+            setLoading(false);
+          }
+          [pastTrainingResult, recentMatchResult] = await Promise.all([pastTrainingRequest, recentMatchRequest]);
+        } else {
+          [futureResult, pastTrainingResult, recentMatchResult] = await Promise.all([futureRequest, pastTrainingRequest, recentMatchRequest]);
+        }
 
         if (futureResult.error) throw futureResult.error;
         if (pastTrainingResult.error) throw pastTrainingResult.error;
@@ -190,15 +209,6 @@ export default function HomePage() {
         const training = future.find((event) => event.event_type === 'training') || null;
         const match = future.find((event) => ['match', 'friendly', 'tournament'].includes(event.event_type)) || null;
         const pastTrainings = pastTrainingResult.data || [];
-
-        // En jugadoras, no bloqueamos las tarjetas principales mientras termina de
-        // cargarse el resumen personal de las últimas semanas.
-        if (!isStaff && active) {
-          setNextTraining(training);
-          setNextMatch(match);
-          setRecentMatches(recentMatchResult.data || []);
-          setLoading(false);
-        }
 
         let nextPlayers = [];
         let nextWellness = [];
