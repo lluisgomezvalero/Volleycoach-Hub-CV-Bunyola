@@ -23,6 +23,7 @@ import ProfileModal from './components/ProfileModal.jsx';
 const HomePage = lazy(() => import('./pages/HomePage.jsx'));
 const TrainingPage = lazy(() => import('./pages/TrainingPage.jsx'));
 const CalendarPage = lazy(() => import('./pages/CalendarPage.jsx'));
+const WellnessPage = lazy(() => import('./pages/WellnessPage.jsx'));
 const RosterPage = lazy(() => import('./pages/RosterPage.jsx'));
 
 function lazyPlaceholder(title, text) {
@@ -31,7 +32,6 @@ function lazyPlaceholder(title, text) {
   })));
 }
 
-const WellnessPage = lazyPlaceholder('Bienestar', 'Cuestionario e historial como componentes React independientes.');
 const StatsPage = lazyPlaceholder('Estadísticas', 'El módulo se descargará y renderizará únicamente al entrar aquí.');
 const CompetitionPage = lazyPlaceholder('Competición', 'Clasificación, partidos y convocatorias leyendo los nombres directamente de los datos.');
 const GamePlanPage = lazyPlaceholder('Plan de juego', 'Plan táctico aislado del resto de la aplicación.');
