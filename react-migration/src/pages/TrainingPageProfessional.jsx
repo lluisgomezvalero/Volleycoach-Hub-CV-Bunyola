@@ -349,9 +349,18 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
                 </div>
               </>
             ) : null}
-            <RpeScale value={rpeValue} onChange={setRpeValue} disabled={rpeSaving} />
-            <button className="pro-primary-action" type="button" onClick={() => void saveRpe()} disabled={rpeSaving}><Save size={17} /> {rpeSaving ? 'Guardando…' : isStaff ? 'Guardar RPE' : 'Guardar mi RPE'}</button>
-            {rpeSaved ? <p className="pro-success-copy"><Check size={15} /> {rpeSaved}</p> : null}
+            {isStaff && coachRpe ? (
+              <div className="pro-rpe-locked">
+                <Check size={18} />
+                <span><strong>RPE previsto registrado</strong><small>Este valor queda cerrado y ya no puede modificarse.</small></span>
+              </div>
+            ) : (
+              <>
+                <RpeScale value={rpeValue} onChange={setRpeValue} disabled={rpeSaving} />
+                <button className="pro-primary-action" type="button" onClick={() => void saveRpe()} disabled={rpeSaving}><Save size={17} /> {rpeSaving ? 'Guardando…' : isStaff ? 'Guardar RPE' : 'Guardar mi RPE'}</button>
+                {rpeSaved ? <p className="pro-success-copy"><Check size={15} /> {rpeSaved}</p> : null}
+              </>
+            )}
           </>
         ) : null}
       </article>
