@@ -13,10 +13,10 @@ import { supabase } from '../lib/supabase.js';
 import './TeamAttendancePanel.css';
 
 const STATUS = {
-  present: { label: 'Presentes', short: 'P' },
-  late: { label: 'Retrasos', short: 'T' },
-  justified: { label: 'Justificadas', short: 'J' },
-  unjustified: { label: 'No justificadas', short: 'X' }
+  present: { label: 'Presente', short: 'P' },
+  late: { label: 'Tarde', short: 'T' },
+  justified: { label: 'Justificada', short: 'J' },
+  unjustified: { label: 'No justificada', short: 'X' }
 };
 
 function nameOf(player) {
@@ -58,7 +58,7 @@ export default function TeamAttendancePanel({ teamId, events = [] }) {
   const [avatars, setAvatars] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [mode, setMode] = useState('summary');
+  const [mode, setMode] = useState('sessions');
   const [sort, setSort] = useState('attendance');
 
   useEffect(() => {
@@ -162,8 +162,8 @@ export default function TeamAttendancePanel({ teamId, events = [] }) {
           <p>Histórico basado únicamente en asistencia oficial validada.</p>
         </div>
         <div className="team-attendance-view-toggle">
-          <button className={mode === 'summary' ? 'active' : ''} type="button" onClick={() => setMode('summary')}><List size={17} /> Resumen</button>
-          <button className={mode === 'sessions' ? 'active' : ''} type="button" onClick={() => setMode('sessions')}><Table2 size={17} /> Por sesiones</button>
+          <button className={mode === 'summary' ? 'active' : ''} type="button" onClick={() => setMode('summary')} aria-pressed={mode === 'summary'}><List size={17} /> Resumen</button>
+          <button className={mode === 'sessions' ? 'active' : ''} type="button" onClick={() => setMode('sessions')} aria-pressed={mode === 'sessions'}><Table2 size={17} /> Por sesiones</button>
         </div>
       </header>
 
@@ -222,13 +222,40 @@ export default function TeamAttendancePanel({ teamId, events = [] }) {
         <div className="team-attendance-session-view">
           {!model.sessions.length ? <div className="team-attendance-state">Aún no hay listas oficiales.</div> : (
             <>
-              <div className="team-attendance-legend">
-                <span className="tone-present">P · Presente</span><span className="tone-late">T · Tarde</span><span className="tone-justified">J · Justificada</span><span className="tone-unjustified">X · No justificada</span>
+              <div className="team-attendance-legend" aria-label="Leyenda de asistencia">
+                <span className="tone-present">P · Presente</span>
+                <span className="tone-late">T · Tarde</span>
+                <span className="tone-justified">J · Justificada</span>
+                <span className="tone-unjustified">X · No justificada</span>
               </div>
+              <p className="team-attendance-swipe-hint">Cada columna es una sesión · desliza horizontalmente para ver el histórico →</p>
               <div className="team-attendance-matrix-scroll">
                 <table className="team-attendance-matrix">
-                  <thead><tr><th>Jugadora</th>{model.sessions.map((event) => { const label = sessionLabel(event); return <th key={event.id}><span>{label.day}</span><strong>{label.date}</strong></th>; })}</tr></thead>
-                  <tbody>{sortedPlayers.map((item) => <tr key={item.player.id}><th><strong>{nameOf(item.player)}</strong><small>{item.pct === null ? 'Sin datos' : `${item.pct}%`}</small></th>{model.sessions.map((event) => { const status = item.bySession.get(event.id); return <td key={event.id}><span className={`attendance-matrix-status tone-${status || 'empty'}`}>{status ? STATUS[status]?.short || '—' : '—'}</span></td>; })}</tr>)}</tbody>
+                  <thead>
+                    <tr>
+                      <th>Jugadora</th>
+                      {model.sessions.map((event) => {
+                        const label = sessionLabel(event);
+                        return <th key={event.id}><span>{label.day}</span><strong>{label.date}</strong></th>;
+                      })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedPlayers.map((item) => (
+                      <tr key={item.player.id}>
+                        <th><strong>{nameOf(item.player)}</strong><small>{item.pct === null ? 'Sin datos' : `${item.pct}%`}</small></th>
+                        {model.sessions.map((event) => {
+                          const status = item.bySession.get(event.id);
+                          const label = status ? STATUS[status]?.label : 'Sin validar';
+                          return (
+                            <td key={event.id} title={label} aria-label={`${nameOf(item.player)} · ${sessionLabel(event).date} · ${label}`}>
+                              <span className={`attendance-matrix-status tone-${status || 'empty'}`}>{status ? STATUS[status]?.short || '—' : '—'}</span>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
                 </table>
               </div>
             </>
