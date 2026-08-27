@@ -374,6 +374,8 @@ export default function WellnessPage() {
       chronicWeek: 0,
       sessions: 0,
       recentSessions: 0,
+      recentRpeTotal: 0,
+      recentRpeMean: null,
       ratio: null,
       historyCoverageDays: 0,
       ready: false,
@@ -429,6 +431,7 @@ export default function WellnessPage() {
       if (age < 7 * DAY_MS) {
         target.seven += load;
         target.recentSessions += 1;
+        target.recentRpeTotal += score;
       } else if (age < 35 * DAY_MS) {
         target.twentyEight += load;
       }
@@ -436,6 +439,7 @@ export default function WellnessPage() {
 
     map.forEach((value) => {
       value.chronicWeek = value.twentyEight / 4;
+      value.recentRpeMean = value.recentSessions > 0 ? value.recentRpeTotal / value.recentSessions : null;
       value.historyCoverageDays = value.oldestTime === null
         ? 0
         : Math.max(0, Math.floor((now - value.oldestTime) / DAY_MS));
@@ -501,6 +505,65 @@ export default function WellnessPage() {
 
   const selectedModel = selectedPlayerId ? playerRows.find((row) => row.player.id === selectedPlayerId) || null : null;
   const selectedHistory = selectedPlayerId ? wellnessRows.filter((row) => row.player_id === selectedPlayerId) : [];
+
+  const currentPlayerLatest = currentPlayerHistory[0] || null;
+  const currentPlayerSnapshot = (() => {
+    if (!currentPlayerLatest) {
+      return {
+        key: 'neutral',
+        title: 'Aún no tenemos registros',
+        text: 'Cuando completes tu primer bienestar podremos empezar a enseñarte cómo te estás encontrando.'
+      };
+    }
+    const fatigueValue = Number(currentPlayerLatest.fatigue);
+    const sleepValue = Number(currentPlayerLatest.sleep);
+    const painValue = Number(currentPlayerLatest.pain_score || 0);
+    const attention = fatigueValue >= 4 || sleepValue <= 2 || painValue >= 4;
+    const watch = fatigueValue === 3 || sleepValue === 3 || (painValue > 0 && painValue < 4);
+    if (attention) return {
+      key: 'alert',
+      title: 'Hay algo que vigilar',
+      text: 'Tus últimas respuestas muestran alguna señal a tener en cuenta. Si lo necesitas, coméntalo con el cuerpo técnico.'
+    };
+    if (watch) return {
+      key: 'warm',
+      title: 'Conviene seguir observando',
+      text: 'Tus sensaciones están dentro de lo esperable, aunque hay algún detalle que merece seguimiento.'
+    };
+    return {
+      key: 'good',
+      title: 'Buenas sensaciones',
+      text: 'Tus últimas respuestas no muestran señales destacadas. Sigue escuchando cómo responde tu cuerpo.'
+    };
+  })();
+
+  const currentPlayerTraining = (() => {
+    if (!currentLoad?.ready) return {
+      key: 'neutral',
+      title: 'Aún sin tendencia',
+      text: 'Necesitamos más semanas de entrenamientos para comparar tu carga reciente con tu ritmo habitual.'
+    };
+    if (!currentLoad?.seven) return {
+      key: 'neutral',
+      title: 'Semana tranquila',
+      text: 'Esta semana todavía tiene poca actividad registrada.'
+    };
+    if (currentLoad.ratio < 0.8) return {
+      key: 'low',
+      title: 'Semana más suave',
+      text: 'Tu semana está siendo más ligera que tu ritmo habitual.'
+    };
+    if (currentLoad.ratio <= 1.3) return {
+      key: 'stable',
+      title: 'En tu ritmo habitual',
+      text: 'Tu semana está siendo parecida a lo que vienes haciendo normalmente.'
+    };
+    return {
+      key: 'high',
+      title: 'Semana más exigente',
+      text: 'Esta semana está siendo más intensa que tu ritmo habitual. Prioriza descanso y buenas sensaciones.'
+    };
+  })();
 
   function resetForm(row = null) {
     setFatigue(Number(row?.fatigue || 2));
@@ -599,7 +662,7 @@ export default function WellnessPage() {
       <div className="wellness-page wellness-player-page">
         <header className="wellness-page-head">
           <div>
-            <span className="wellness-eyebrow"><HeartPulse size={14} /> Bienestar y carga</span>
+            <span className="wellness-eyebrow"><HeartPulse size={14} /> Tu bienestar</span>
             <h1>¿Cómo estás hoy?</h1>
             <p>Tu información es personal y la utiliza el cuerpo técnico para adaptar mejor el entrenamiento.</p>
           </div>
@@ -639,22 +702,37 @@ export default function WellnessPage() {
           />
         )}
 
-        <section className="wellness-card wellness-player-load-card">
+        <section className={`wellness-player-snapshot wellness-player-snapshot-${currentPlayerSnapshot.key}`}>
+          <div className="wellness-player-snapshot-head">
+            <div>
+              <small>Tu bienestar</small>
+              <h2>{currentPlayerSnapshot.title}</h2>
+              <p>{currentPlayerSnapshot.text}{currentPlayerLatest ? ` · Último registro: ${shortDate(currentPlayerLatest.entry_date)}` : ''}</p>
+            </div>
+            <span className="wellness-player-snapshot-icon">{currentPlayerSnapshot.key === 'alert' ? <AlertTriangle /> : <ShieldCheck />}</span>
+          </div>
+          {currentPlayerLatest ? (
+            <div className="wellness-player-snapshot-grid">
+              <div className={fatigueTone(currentPlayerLatest.fatigue)}><span><Activity /></span><strong>{currentPlayerLatest.fatigue}/5</strong><small>Fatiga</small></div>
+              <div className={sleepTone(currentPlayerLatest.sleep)}><span><BedDouble /></span><strong>{currentPlayerLatest.sleep}/5</strong><small>Sueño</small></div>
+              <div className={painTone(currentPlayerLatest.pain_score || 0)}><span><HeartPulse /></span><strong>{currentPlayerLatest.pain_score || 0}/10</strong><small>Molestias</small></div>
+            </div>
+          ) : null}
+        </section>
+
+        <section className="wellness-card wellness-player-simple-load">
           <div className="wellness-card-head">
             <div>
-              <span><Zap size={14} /> Mi carga</span>
-              <h2>Cómo viene tu semana</h2>
-              <p>Te mostramos una lectura simple, sin métricas técnicas innecesarias.</p>
+              <h2>Tu carga reciente</h2>
+              <p>Resumen simple de tus últimos entrenamientos.</p>
             </div>
           </div>
-          <div className="wellness-player-load-grid">
-            <div><small>Últimos 7 días</small><strong>{Math.round(currentLoad?.seven || 0)} UA</strong></div>
-            <div><small>Sesiones 28 días</small><strong>{currentLoad?.sessions || 0}</strong></div>
+          <div className="wellness-player-simple-grid">
+            <div className="wellness-player-week-copy"><small>Esta semana</small><strong>{currentPlayerTraining.title}</strong><span>{currentPlayerTraining.text}</span></div>
+            <div><small>RPE medio</small><strong>{Number.isFinite(currentLoad?.recentRpeMean) ? currentLoad.recentRpeMean.toFixed(1) : '—'}</strong></div>
+            <div><small>Sesiones</small><strong>{currentLoad?.recentSessions || 0}</strong></div>
           </div>
-          <div className={`wellness-load-status wellness-load-${currentLoad?.state?.key || 'neutral'}`}>
-            <Gauge size={17} />
-            <div><strong>{currentLoad?.state?.label || 'Sin referencia'}</strong><span>{currentLoad?.ready ? 'Se calcula a partir de tus entrenamientos y tu RPE.' : `Necesitamos 35 días de historial para construir tu referencia (${currentLoad?.historyCoverageDays || 0}/35).`}</span></div>
-          </div>
+          <div className={`wellness-player-trend-pill wellness-player-trend-${currentPlayerTraining.key}`}><Activity size={18} /><strong>{currentPlayerTraining.title}</strong></div>
         </section>
 
         <section className="wellness-card">

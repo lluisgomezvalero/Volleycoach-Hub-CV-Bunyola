@@ -130,6 +130,7 @@ export default function HomePage() {
   const [wellness, setWellness] = useState([]);
   const [workloadRows, setWorkloadRows] = useState([]);
   const [recentMatches, setRecentMatches] = useState([]);
+  const [playerTrainingSummary, setPlayerTrainingSummary] = useState({ weekLoads: [0, 0, 0, 0, 0], recentSessions: 0, recentRpeMean: null, historyCoverageDays: 0, ready: false, label: 'Conociendo tu ritmo', text: 'Estamos empezando a conocer tu ritmo habitual de entrenamiento.' });
 
   useEffect(() => {
     let active = true;
@@ -246,12 +247,88 @@ export default function HomePage() {
         } else if (identity?.player?.id) {
           const wellnessResult = await supabase
             .from('wellness_entries')
-            .select('player_id,entry_date,general_state,fatigue,sleep')
+            .select('player_id,entry_date,general_state,fatigue,sleep,pain_score')
             .eq('player_id', identity.player.id)
             .gte('entry_date', from7Date)
             .order('entry_date', { ascending: false });
           if (wellnessResult.error) throw wellnessResult.error;
           nextWellness = wellnessResult.data || [];
+
+          const historyStart = new Date(now.getTime() - 35 * 86400000).toISOString();
+          const playerEventsResult = await supabase
+            .from('events')
+            .select('id,starts_at,ends_at,payload')
+            .eq('team_id', team.id)
+            .eq('event_type', 'training')
+            .gte('starts_at', historyStart)
+            .lte('starts_at', now.toISOString())
+            .order('starts_at', { ascending: true });
+          if (playerEventsResult.error) throw playerEventsResult.error;
+          const playerEvents = playerEventsResult.data || [];
+          const playerEventIds = playerEvents.map((event) => event.id);
+          let summary = { weekLoads: [0, 0, 0, 0, 0], recentSessions: 0, recentRpeMean: null, historyCoverageDays: 0, ready: false, label: 'Conociendo tu ritmo', text: 'Estamos empezando a conocer tu ritmo habitual de entrenamiento.' };
+          if (playerEventIds.length) {
+            const [playerRpeResult, playerAttendanceResult] = await Promise.all([
+              supabase.from('rpe_entries').select('event_id,player_id,score,source,created_at').in('event_id', playerEventIds).eq('player_id', identity.player.id),
+              supabase.from('attendance').select('event_id,player_id,official_status,effective_minutes').in('event_id', playerEventIds).eq('player_id', identity.player.id)
+            ]);
+            if (playerRpeResult.error) throw playerRpeResult.error;
+            if (playerAttendanceResult.error) throw playerAttendanceResult.error;
+            const eventMap = new Map(playerEvents.map((event) => [event.id, event]));
+            const attendanceMap = new Map((playerAttendanceResult.data || []).map((row) => [row.event_id, row]));
+            const chosen = new Map();
+            (playerRpeResult.data || []).filter((row) => ['player', 'coach_for_player'].includes(row.source)).forEach((row) => {
+              const prev = chosen.get(row.event_id);
+              if (!prev || (row.source === 'player' && prev.source !== 'player') || (row.source === prev.source && new Date(row.created_at || 0) > new Date(prev.created_at || 0))) chosen.set(row.event_id, row);
+            });
+            const weekLoads = [0, 0, 0, 0, 0];
+            const recentRpes = [];
+            let oldest = null;
+            chosen.forEach((row) => {
+              const event = eventMap.get(row.event_id);
+              const attendance = attendanceMap.get(row.event_id);
+              if (!event || !['present', 'late'].includes(attendance?.official_status)) return;
+              const start = new Date(event.starts_at).getTime();
+              const duration = eventDuration(event);
+              const end = event.ends_at ? new Date(event.ends_at).getTime() : start + duration * 60000;
+              if (!Number.isFinite(start) || !Number.isFinite(end) || end > now.getTime()) return;
+              let minutes = duration;
+              if (attendance.official_status === 'late') {
+                const effective = Number(attendance.effective_minutes);
+                if (!Number.isFinite(effective) || effective <= 0) return;
+                minutes = Math.min(duration, effective);
+              }
+              const score = Number(row.score);
+              if (!Number.isFinite(score) || score < 0 || score > 10) return;
+              const age = now.getTime() - start;
+              const weekFromNow = Math.floor(age / (7 * 86400000));
+              if (weekFromNow < 0 || weekFromNow > 4) return;
+              weekLoads[4 - weekFromNow] += Math.round(score * minutes);
+              oldest = oldest === null ? start : Math.min(oldest, start);
+              if (age < 7 * 86400000) recentRpes.push(score);
+            });
+            const coverage = oldest === null ? 0 : Math.floor((now.getTime() - oldest) / 86400000);
+            const prevMean = weekLoads.slice(0, 4).reduce((sum, value) => sum + value, 0) / 4;
+            const current = weekLoads[4];
+            const ready = coverage >= 35 && prevMean > 0;
+            let label = 'Conociendo tu ritmo';
+            let text = 'Estamos empezando a conocer tu ritmo habitual de entrenamiento.';
+            if (ready) {
+              if (current < prevMean * .8) { label = 'Semana más suave'; text = 'Esta semana está siendo más ligera que tu ritmo habitual.'; }
+              else if (current > prevMean * 1.3) { label = 'Semana más exigente'; text = 'Esta semana está siendo más intensa que tu ritmo habitual. Cuida especialmente tu recuperación.'; }
+              else { label = 'En tu ritmo habitual'; text = 'Tu semana está siendo parecida a lo que vienes haciendo normalmente.'; }
+            }
+            summary = {
+              weekLoads,
+              recentSessions: recentRpes.length,
+              recentRpeMean: recentRpes.length ? recentRpes.reduce((a, b) => a + b, 0) / recentRpes.length : null,
+              historyCoverageDays: coverage,
+              ready,
+              label,
+              text
+            };
+          }
+          setPlayerTrainingSummary(summary);
         }
 
         if (!active) return;
@@ -460,15 +537,34 @@ export default function HomePage() {
             </div>
           </article>
         ) : (
-          <article className="coach-card coach-wellness-card">
-            <div className="coach-wellness-head">
-              <div><span className="coach-card-kicker"><ShieldCheck size={13} /> Mi semana</span><h3>Tu seguimiento</h3></div>
-              <ShieldCheck size={22} color="#7b8798" />
+          <article className="coach-card player-week-card">
+            <span className="coach-card-kicker"><Activity size={13} /> Tu entrenamiento</span>
+            <h3>Tu semana de entrenamiento</h3>
+            <div className="player-week-status"><span className="player-week-dot" /><div><strong>{playerTrainingSummary.label}</strong><p>{playerTrainingSummary.text}</p></div></div>
+            <div className="player-week-divider" />
+            <div className="player-week-feelings">
+              <h4>Cómo te has encontrado</h4>
+              <small>{wellnessModel.values.length} registro{wellnessModel.values.length === 1 ? '' : 's'} en los últimos 7 días</small>
+              {wellnessModel.values[0] ? (
+                <div className="player-feeling-grid">
+                  <div><span className="player-feeling-icon energy"><Activity size={17} /></span><div><small>Energía</small><strong>{Number(wellnessModel.values[0].fatigue) >= 4 ? 'Más cansada' : Number(wellnessModel.values[0].fatigue) === 3 ? 'Cansancio moderado' : 'Buena energía'}</strong><p>{Number(wellnessModel.values[0].fatigue) >= 4 ? 'Tus últimos registros reflejan más cansancio acumulado.' : 'Tus sensaciones de fatiga están dentro de un rango cómodo.'}</p></div></div>
+                  <div><span className="player-feeling-icon sleep"><HeartPulse size={17} /></span><div><small>Sueño</small><strong>{Number(wellnessModel.values[0].sleep) <= 2 ? 'Sueño más flojo' : Number(wellnessModel.values[0].sleep) === 3 ? 'Sueño regular' : 'Buen descanso'}</strong><p>{Number(wellnessModel.values[0].sleep) <= 2 ? 'La calidad de tu sueño ha sido más baja en tu último registro.' : 'Tu descanso reciente acompaña bien al entrenamiento.'}</p></div></div>
+                </div>
+              ) : <p className="player-week-empty">Cuando registres tu bienestar podremos enseñarte aquí tus sensaciones recientes.</p>}
             </div>
-            <div className="coach-card-actions">
-              <Link className="coach-action-primary" to="/wellness"><HeartPulse size={15} /> Bienestar</Link>
-              <Link className="coach-action-secondary" to="/training"><Clock3 size={15} /> Entrenos</Link>
+            <div className="player-week-divider" />
+            <div className="player-week-evolution">
+              <h4>Tu evolución reciente</h4><small>Comparada con tus últimas semanas</small>
+              <div className="player-week-bars">
+                {playerTrainingSummary.weekLoads.map((value, index, values) => {
+                  const max = Math.max(...values, 1);
+                  const height = Math.max(8, Math.round((value / max) * 100));
+                  const labels = ['Hace 4 sem.', 'Hace 3 sem.', 'Hace 2 sem.', 'Semana pasada', 'Esta semana'];
+                  return <div key={labels[index]}><span><i style={{ height: `${height}%` }} /></span><small>{labels[index]}</small></div>;
+                })}
+              </div>
             </div>
+            <Link className="coach-inline-link player-week-link" to="/wellness">Ver mi bienestar <ChevronRight size={14} /></Link>
           </article>
         )}
       </div>
