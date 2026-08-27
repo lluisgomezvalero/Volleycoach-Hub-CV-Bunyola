@@ -121,7 +121,7 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
   const [rpeRows, setRpeRows] = useState([]);
   const [feedbackRows, setFeedbackRows] = useState([]);
   const [teamPlayers, setTeamPlayers] = useState([]);
-  const [rpeValue, setRpeValue] = useState(4);
+  const [rpeValue, setRpeValue] = useState(5);
   const [rpeSaving, setRpeSaving] = useState(false);
   const [rpeSaved, setRpeSaved] = useState('');
   const [commentText, setCommentText] = useState('');
@@ -189,6 +189,8 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
   const playerRpes = useMemo(() => rpeRows.filter((row) => row.source === 'player' && row.player_id), [rpeRows]);
   const playerMean = playerRpes.length ? playerRpes.reduce((sum, row) => sum + Number(row.score || 0), 0) / playerRpes.length : null;
   const coachRpe = rpeRows.find((row) => row.source === 'coach' && row.coach_profile_id === identity?.profile?.id);
+  const coachScore = coachRpe ? Number(coachRpe.score) : null;
+  const rpeGap = coachScore !== null && playerMean !== null ? coachScore - playerMean : null;
   const playerMap = useMemo(() => new Map(teamPlayers.map((player) => [player.id, player])), [teamPlayers]);
   const playerComments = feedbackRows.filter((row) => row.kind === 'player_comment' && String(row.comment_text || '').trim());
 
@@ -317,19 +319,38 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
 
       <SectionHeader number={3} kicker="Al terminar" title="Después de la sesión" tone="orange" />
       <article className="pro-session-panel tone-orange pro-rpe-panel">
-        <div className="pro-panel-title"><Activity size={19} /><span><small>Percepción del esfuerzo</small><strong>RPE de la sesión</strong></span></div>
+        <div className="pro-panel-title pro-rpe-title"><Activity size={19} /><span><small>Percepción del esfuerzo</small><strong>Percepción del esfuerzo</strong></span></div>
         {!completed ? <p className="pro-muted-copy">El RPE se habilitará al finalizar la sesión.</p> : null}
         {completed && loadingExtras ? <p className="pro-muted-copy">Cargando seguimiento…</p> : null}
         {completed && !loadingExtras ? (
           <>
             {isStaff ? (
-              <div className="pro-rpe-comparison">
-                <div><span>Entrenador</span><strong>{coachRpe ? Number(coachRpe.score).toFixed(0) : '—'}</strong><small>{coachRpe ? 'RPE registrado' : 'Sin responder'}</small></div>
-                <div><span>Media jugadoras</span><strong>{playerMean === null ? '—' : playerMean.toFixed(1)}</strong><small>{playerRpes.length} respuesta{playerRpes.length === 1 ? '' : 's'}</small></div>
-              </div>
+              <>
+                <div className="pro-rpe-comparison">
+                  <div className="pro-rpe-summary-card coach">
+                    <span>Entrenador</span>
+                    <strong>{coachScore === null ? '—' : coachScore.toFixed(0)}</strong>
+                    <div className="pro-rpe-meter" aria-hidden="true"><i style={{ width: `${coachScore === null ? 0 : Math.max(0, Math.min(100, coachScore * 10))}%` }} /></div>
+                    <small>{coachScore === null ? 'Sin responder' : 'RPE registrado'}</small>
+                  </div>
+                  <div className="pro-rpe-summary-card players">
+                    <span>Media jugadoras</span>
+                    <strong>{playerMean === null ? '—' : playerMean.toFixed(1)}</strong>
+                    <div className="pro-rpe-meter" aria-hidden="true"><i style={{ width: `${playerMean === null ? 0 : Math.max(0, Math.min(100, playerMean * 10))}%` }} /></div>
+                    <small>{playerRpes.length} respuesta{playerRpes.length === 1 ? '' : 's'}</small>
+                  </div>
+                </div>
+                <div className={`pro-rpe-insight ${rpeGap === null ? 'pending' : Math.abs(rpeGap) <= 1 ? 'aligned' : 'different'}`}>
+                  {rpeGap === null
+                    ? 'Faltan valoraciones para comparar.'
+                    : Math.abs(rpeGap) <= 1
+                      ? `Percepción bastante alineada · diferencia ${Math.abs(rpeGap).toFixed(1)}`
+                      : `Diferencia de percepción de ${Math.abs(rpeGap).toFixed(1)} puntos.`}
+                </div>
+              </>
             ) : null}
             <RpeScale value={rpeValue} onChange={setRpeValue} disabled={rpeSaving} />
-            <button className="pro-primary-action" type="button" onClick={() => void saveRpe()} disabled={rpeSaving}><Save size={17} /> {rpeSaving ? 'Guardando…' : isStaff ? 'Guardar RPE entrenador' : 'Guardar mi RPE'}</button>
+            <button className="pro-primary-action" type="button" onClick={() => void saveRpe()} disabled={rpeSaving}><Save size={17} /> {rpeSaving ? 'Guardando…' : isStaff ? 'Guardar RPE' : 'Guardar mi RPE'}</button>
             {rpeSaved ? <p className="pro-success-copy"><Check size={15} /> {rpeSaved}</p> : null}
           </>
         ) : null}
@@ -337,7 +358,7 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
 
       {completed && isStaff ? (
         <>
-          <article className="pro-session-panel tone-slate">
+          <article className="pro-session-panel tone-slate pro-coach-review-panel">
             <div className="pro-panel-title"><NotebookPen size={19} /><span><small>Solo cuerpo técnico</small><strong>Valoración y continuidad</strong></span></div>
             <label className="pro-field"><span>Valoración del entrenamiento</span><textarea rows="4" value={assessment} onChange={(event) => setAssessment(event.target.value)} placeholder="Qué funcionó, qué no y cómo respondió el equipo…" /></label>
             <label className="pro-field"><span>Notas para la próxima sesión</span><textarea rows="4" value={continuity} onChange={(event) => setContinuity(event.target.value)} placeholder="Ajustes, incidencias o ideas para continuar…" /></label>
@@ -345,7 +366,7 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
             {coachSaved ? <p className="pro-success-copy"><Check size={15} /> {coachSaved}</p> : null}
           </article>
 
-          <article className="pro-session-panel tone-violet">
+          <article className="pro-session-panel tone-violet pro-feedback-panel">
             <div className="pro-panel-title"><MessageSquare size={19} /><span><small>Feedback del equipo</small><strong>Comentarios de jugadoras</strong></span></div>
             {playerComments.length ? (
               <div className="pro-player-comments">
