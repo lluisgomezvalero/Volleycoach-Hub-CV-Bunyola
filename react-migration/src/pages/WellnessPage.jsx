@@ -85,7 +85,11 @@ function fatigueTone(value) {
 }
 
 function sleepTone(value) {
-  return fatigueTone(value);
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 'neutral';
+  if (n >= 4) return 'good';
+  if (n === 3) return 'warm';
+  return 'alert';
 }
 
 function painTone(value) {
@@ -130,7 +134,7 @@ function WellnessForm({
   children
 }) {
   const fatigueLabels = ['Muy fresca', 'Bien', 'Moderada', 'Cansada', 'Muy cansada'];
-  const sleepLabels = ['Muy bien', 'Bien', 'Regular', 'Mal', 'Muy mal'];
+  const sleepLabels = ['Muy mal', 'Mal', 'Regular', 'Bien', 'Muy bien'];
 
   return (
     <form className="wellness-form" onSubmit={onSubmit}>
@@ -405,7 +409,7 @@ export default function WellnessPage() {
       const todayEntry = todayByPlayer.get(player.id) || null;
       const load = loadsByPlayer.get(player.id) || { seven: 0, twentyEight: 0, ratio: null, state: loadState(null, 0) };
       const alertScore = todayEntry
-        ? Number(todayEntry.fatigue >= 4) + Number(todayEntry.sleep >= 4) + Number((todayEntry.pain_score || 0) >= 4) + Number(Boolean(String(todayEntry.notes || '').trim()))
+        ? Number(todayEntry.fatigue >= 4) + Number(todayEntry.sleep <= 2) + Number((todayEntry.pain_score || 0) >= 4) + Number(Boolean(String(todayEntry.notes || '').trim()))
         : 0;
       return { player, latest, todayEntry, load, alertScore };
     });
