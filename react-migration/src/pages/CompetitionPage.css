@@ -5,3 +5,6 @@
 
 /* Compactación visual solicitada: resumen + clasificación, sin cabeceras redundantes. */
 .competition-toolbar{display:flex;align-items:center;gap:9px;margin-bottom:12px;min-width:0}.competition-toolbar .competition-search{flex:1;margin-bottom:0}.competition-toolbar .competition-reset-button{flex:0 0 auto}@media(max-width:760px){.competition-toolbar{margin-bottom:9px}.competition-toolbar .competition-search{width:auto}.competition-toolbar .competition-reset-button{width:40px;height:40px;min-width:40px}}
+
+/* La gestión de temporada queda reservada al administrador. */
+.competition-toolbar-admin{justify-content:flex-end}.competition-toolbar-admin .competition-reset-button{margin-left:auto}

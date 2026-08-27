@@ -3,7 +3,6 @@ import {
   LockKeyhole,
   Pencil,
   RefreshCcw,
-  Search,
   ShieldCheck,
   Trophy,
   X
@@ -112,7 +111,7 @@ function TeamLogo({ row }) {
   return <img src={src} alt="" onError={() => setBroken(true)} />;
 }
 
-function EditTeamModal({ row, onClose, onSaved, profileId }) {
+function EditTeamModal({ row, onClose, onSaved, profileId, canRename }) {
   const [form, setForm] = useState(() => ({
     name: row.name || '',
     points: rowNumber(row.points),
@@ -172,7 +171,7 @@ function EditTeamModal({ row, onClose, onSaved, profileId }) {
           <button type="button" onClick={onClose} aria-label="Cerrar"><X size={20} /></button>
         </header>
         <form onSubmit={submit}>
-          <label className="competition-name-field"><span>Equipo</span><input value={form.name} onChange={(event) => update('name', event.target.value)} /></label>
+          {canRename ? <label className="competition-name-field"><span>Equipo</span><input value={form.name} onChange={(event) => update('name', event.target.value)} /></label> : null}
           <div className="competition-editor-grid">
             {[
               ['points', 'Puntos'], ['pj', 'PJ'], ['pg', 'PG'], ['pp', 'PP'], ['sf', 'SF'], ['sc', 'SC']
@@ -199,12 +198,12 @@ export default function CompetitionPage() {
   const teamId = team?.id || identity?.player?.team_id || null;
   const clubId = profile?.club_id || identity?.player?.club_id || team?.club_id || null;
   const isStaff = ['coach', 'administrator'].includes(profile?.role);
+  const isAdmin = profile?.role === 'administrator';
 
   const [rows, setRows] = useState([]);
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
   const [editing, setEditing] = useState(null);
   const [resetting, setResetting] = useState(false);
 
@@ -274,11 +273,7 @@ export default function CompetitionPage() {
   const own = ownIndex >= 0 ? sorted[ownIndex] : null;
   const season = rows.find((row) => row.season)?.season || identity?.season?.name || '2026/27';
 
-  const filtered = useMemo(() => {
-    const term = search.trim().toLocaleLowerCase('es');
-    if (!term) return sorted;
-    return sorted.filter((row) => String(row.name || '').toLocaleLowerCase('es').includes(term));
-  }, [search, sorted]);
+  const filtered = sorted;
 
   function handleSaved(updated) {
     setRows((current) => current.map((row) => row.id === updated.id ? updated : row));
@@ -286,7 +281,7 @@ export default function CompetitionPage() {
   }
 
   async function resetRivals() {
-    if (!isStaff || !rows.length) return;
+    if (!isAdmin || !rows.length) return;
     const ok = window.confirm('¿Reiniciar los datos de todos los rivales? CV Bunyola seguirá calculándose automáticamente a partir de los resultados de Liga.');
     if (!ok) return;
     setResetting(true);
@@ -296,7 +291,6 @@ export default function CompetitionPage() {
       const results = await Promise.all(rivals.map((row) => supabase
         .from('league_standings')
         .update({
-          name: DEFAULT_NAMES[row.team_key] || row.name,
           points: 0,
           pj: 0,
           pg: 0,
@@ -340,12 +334,11 @@ export default function CompetitionPage() {
       ) : null}
 
       <section className="competition-card">
-        <div className="competition-toolbar">
-          <label className="competition-search"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar equipo…" /></label>
-          {isStaff ? (
+        {isAdmin ? (
+          <div className="competition-toolbar competition-toolbar-admin">
             <button type="button" className="competition-reset-button" onClick={resetRivals} disabled={resetting} title="Reiniciar clasificación" aria-label="Reiniciar clasificación"><RefreshCcw size={17} /> <span>{resetting ? 'Reiniciando…' : 'Reiniciar'}</span></button>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
 
         {!filtered.length ? <div className="competition-empty">No hay equipos que coincidan con la búsqueda.</div> : (
           <>
@@ -390,7 +383,7 @@ export default function CompetitionPage() {
         )}
       </section>
 
-      {editing ? <EditTeamModal row={editing} onClose={() => setEditing(null)} onSaved={handleSaved} profileId={profile?.id} /> : null}
+      {editing ? <EditTeamModal row={editing} onClose={() => setEditing(null)} onSaved={handleSaved} profileId={profile?.id} canRename={isAdmin} /> : null}
     </section>
   );
 }

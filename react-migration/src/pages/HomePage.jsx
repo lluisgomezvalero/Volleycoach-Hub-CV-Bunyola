@@ -112,6 +112,32 @@ function completedMatch(event) {
   return new Date(event?.starts_at).getTime() < Date.now() && Boolean(event?.payload?.result);
 }
 
+const HOME_EVENTS_CACHE_PREFIX = 'volleycoach:home-next-events:';
+
+function readHomeEventsCache(teamId) {
+  if (!teamId || typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(`${HOME_EVENTS_CACHE_PREFIX}${teamId}`);
+    if (!raw) return null;
+    const cached = JSON.parse(raw);
+    const age = Date.now() - Number(cached?.cachedAt || 0);
+    if (!Number.isFinite(age) || age > 24 * 60 * 60 * 1000) return null;
+    const keepFuture = (event) => event && new Date(event.starts_at).getTime() > Date.now() - 5 * 60 * 1000 ? event : null;
+    return { training: keepFuture(cached?.training), match: keepFuture(cached?.match) };
+  } catch {
+    return null;
+  }
+}
+
+function writeHomeEventsCache(teamId, training, match) {
+  if (!teamId || typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(`${HOME_EVENTS_CACHE_PREFIX}${teamId}`, JSON.stringify({ cachedAt: Date.now(), training: training || null, match: match || null }));
+  } catch {
+    // La caché es solo una optimización visual; si falla, Supabase sigue siendo la fuente real.
+  }
+}
+
 export default function HomePage() {
   const { identity } = useAuth();
   const profile = identity?.profile;
@@ -119,11 +145,12 @@ export default function HomePage() {
   const seasonName = identity?.season?.name || '2026/27';
   const isStaff = ['coach', 'administrator'].includes(profile?.role);
   const firstName = useMemo(() => String(profile?.full_name || profile?.username || '').trim().split(/\s+/)[0] || 'equipo', [profile]);
+  const initialHomeEvents = useMemo(() => readHomeEventsCache(team?.id), [team?.id]);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !initialHomeEvents);
   const [error, setError] = useState('');
-  const [nextTraining, setNextTraining] = useState(null);
-  const [nextMatch, setNextMatch] = useState(null);
+  const [nextTraining, setNextTraining] = useState(() => initialHomeEvents?.training || null);
+  const [nextMatch, setNextMatch] = useState(() => initialHomeEvents?.match || null);
   const [trainingAttendance, setTrainingAttendance] = useState([]);
   const [gamePlan, setGamePlan] = useState(null);
   const [players, setPlayers] = useState([]);
@@ -148,7 +175,14 @@ export default function HomePage() {
         return;
       }
 
-      setLoading(true);
+      const cachedHomeEvents = readHomeEventsCache(team.id);
+      if (cachedHomeEvents) {
+        setNextTraining(cachedHomeEvents.training);
+        setNextMatch(cachedHomeEvents.match);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
       setError('');
       try {
         const now = new Date();
@@ -180,28 +214,22 @@ export default function HomePage() {
           .order('starts_at', { ascending: false })
           .limit(5);
 
-        // Para jugadoras, la pantalla principal depende solo del calendario futuro.
-        // Historial y tendencias continúan cargándose en segundo plano.
-        let futureResult;
-        let pastTrainingResult;
-        let recentMatchResult;
-        if (!isStaff) {
-          futureResult = await futureRequest;
-          if (futureResult.error) throw futureResult.error;
-          const quickFuture = futureResult.data || [];
-          const quickTraining = quickFuture.find((event) => event.event_type === 'training') || null;
-          const quickMatch = quickFuture.find((event) => ['match', 'friendly', 'tournament'].includes(event.event_type)) || null;
-          if (active) {
-            setNextTraining(quickTraining);
-            setNextMatch(quickMatch);
-            setLoading(false);
-          }
-          [pastTrainingResult, recentMatchResult] = await Promise.all([pastTrainingRequest, recentMatchRequest]);
-        } else {
-          [futureResult, pastTrainingResult, recentMatchResult] = await Promise.all([futureRequest, pastTrainingRequest, recentMatchRequest]);
+        // Próximo entreno y partido son la prioridad para cualquier rol.
+        // Se muestran en cuanto responde el calendario futuro; el resto continúa en segundo plano.
+        const futureResult = await futureRequest;
+        if (futureResult.error) throw futureResult.error;
+        const quickFuture = futureResult.data || [];
+        const quickTraining = quickFuture.find((event) => event.event_type === 'training') || null;
+        const quickMatch = quickFuture.find((event) => ['match', 'friendly', 'tournament'].includes(event.event_type)) || null;
+        writeHomeEventsCache(team.id, quickTraining, quickMatch);
+        if (active) {
+          setNextTraining(quickTraining);
+          setNextMatch(quickMatch);
+          setLoading(false);
         }
 
-        if (futureResult.error) throw futureResult.error;
+        const [pastTrainingResult, recentMatchResult] = await Promise.all([pastTrainingRequest, recentMatchRequest]);
+
         if (pastTrainingResult.error) throw pastTrainingResult.error;
         if (recentMatchResult.error) throw recentMatchResult.error;
 
