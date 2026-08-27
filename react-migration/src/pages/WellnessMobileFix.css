@@ -1,0 +1,114 @@
+/* Mobile width guard for Wellness.
+   Wide technical tables may scroll internally, but must never widen the app viewport. */
+.wellness-page {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.wellness-page > *,
+.wellness-page-head,
+.wellness-card,
+.wellness-form,
+.wellness-player-complete,
+.wellness-kpi-grid,
+.wellness-session-grid,
+.wellness-alert-list,
+.wellness-player-load-grid,
+.wellness-player-history {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 760px) {
+  .wellness-page {
+    overflow-x: clip;
+  }
+
+  .wellness-card,
+  .wellness-form,
+  .wellness-player-complete {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .wellness-card-head,
+  .wellness-form-head,
+  .wellness-question-head,
+  .wellness-detail-modal > header,
+  .wellness-detail-history-head {
+    min-width: 0;
+  }
+
+  .wellness-card-head > div,
+  .wellness-form-head > div,
+  .wellness-question-head > div,
+  .wellness-detail-person,
+  .wellness-detail-person > div {
+    min-width: 0;
+  }
+
+  /* The team table is intentionally wider than the phone, but scrolls only here. */
+  .wellness-player-table {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .wellness-player-table-head,
+  .wellness-player-row {
+    width: 610px;
+    max-width: none;
+  }
+
+  /* Horizontal history carousels must also stay inside their card. */
+  .wellness-player-history {
+    width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .wellness-detail-modal,
+  .wellness-manual-modal {
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+    min-width: 0;
+  }
+
+  .wellness-detail-load,
+  .wellness-detail-history,
+  .wellness-manual-fields {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .wellness-detail-history article {
+    min-width: 0;
+  }
+
+  .wellness-detail-history article > div {
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 430px) {
+  .wellness-head-actions {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .wellness-primary-button,
+  .wellness-secondary-button {
+    min-width: 0;
+    padding-inline: 8px;
+  }
+
+  .wellness-detail-history article {
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
+  }
+}
