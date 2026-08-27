@@ -26,6 +26,7 @@ const CalendarPage = lazy(() => import('./pages/CalendarPage.jsx'));
 const WellnessPage = lazy(() => import('./pages/WellnessPage.jsx'));
 const RosterPage = lazy(() => import('./pages/RosterPage.jsx'));
 const StatsPage = lazy(() => import('./pages/StatisticsPage.jsx'));
+const CompetitionPage = lazy(() => import('./pages/CompetitionPage.jsx'));
 
 function lazyPlaceholder(title, text) {
   return lazy(() => import('./pages/PlaceholderPage.jsx').then(({ default: PlaceholderPage }) => ({
@@ -33,7 +34,6 @@ function lazyPlaceholder(title, text) {
   })));
 }
 
-const CompetitionPage = lazyPlaceholder('Competición', 'Clasificación, partidos y convocatorias leyendo los nombres directamente de los datos.');
 const GamePlanPage = lazyPlaceholder('Plan de juego', 'Plan táctico aislado del resto de la aplicación.');
 const PerformancePage = lazyPlaceholder('Rendimiento', 'Métricas y tests físicos cargados bajo demanda.');
 
