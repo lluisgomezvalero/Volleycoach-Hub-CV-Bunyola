@@ -663,44 +663,13 @@ export default function WellnessPage() {
         <header className="wellness-page-head">
           <div>
             <span className="wellness-eyebrow"><HeartPulse size={14} /> Tu bienestar</span>
-            <h1>¿Cómo estás hoy?</h1>
-            <p>Tu información es personal y la utiliza el cuerpo técnico para adaptar mejor el entrenamiento.</p>
+            <h1>Cómo te has encontrado</h1>
+            <p>Aquí puedes revisar tus sensaciones recientes y cómo han ido cambiando.</p>
           </div>
         </header>
 
         {error ? <div className="wellness-error">{error}</div> : null}
-        {saveMessage ? <div className="wellness-save-message">{saveMessage}</div> : null}
-
-        {currentPlayerToday ? (
-          <section className="wellness-player-complete">
-            <div className="wellness-complete-icon"><CheckCircle2 /></div>
-            <div>
-              <span>Registro de hoy completado</span>
-              <h2>Tu valoración ya está guardada</h2>
-              <p>No necesitas volver a responder hoy. Mañana se abrirá un nuevo check-in.</p>
-            </div>
-            <div className="wellness-complete-grid">
-              <WellnessMetric label="Fatiga" value={currentPlayerToday.fatigue} tone={fatigueTone(currentPlayerToday.fatigue)} suffix="/5" />
-              <WellnessMetric label="Sueño" value={currentPlayerToday.sleep} tone={sleepTone(currentPlayerToday.sleep)} suffix="/5" />
-              <WellnessMetric label="Dolor" value={currentPlayerToday.pain_score ?? 0} tone={painTone(currentPlayerToday.pain_score ?? 0)} suffix="/10" />
-            </div>
-          </section>
-        ) : (
-          <WellnessForm
-            title={`Hola${player ? `, ${playerName(player).split(/\s+/)[0]}` : ''}`}
-            subtitle="Responde una vez al día. Te llevará menos de un minuto."
-            fatigue={fatigue}
-            setFatigue={setFatigue}
-            sleep={sleep}
-            setSleep={setSleep}
-            pain={pain}
-            setPain={setPain}
-            notes={notes}
-            setNotes={setNotes}
-            saving={saving}
-            onSubmit={submitPlayerWellness}
-          />
-        )}
+        {!currentPlayerToday ? <div className="wellness-inline-empty">Tu registro de hoy está pendiente. Puedes completarlo desde el banner de Inicio.</div> : null}
 
         <section className={`wellness-player-snapshot wellness-player-snapshot-${currentPlayerSnapshot.key}`}>
           <div className="wellness-player-snapshot-head">

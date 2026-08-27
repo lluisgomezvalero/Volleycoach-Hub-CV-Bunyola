@@ -131,6 +131,13 @@ export default function HomePage() {
   const [workloadRows, setWorkloadRows] = useState([]);
   const [recentMatches, setRecentMatches] = useState([]);
   const [playerTrainingSummary, setPlayerTrainingSummary] = useState({ weekLoads: [0, 0, 0, 0, 0], recentSessions: 0, recentRpeMean: null, historyCoverageDays: 0, ready: false, label: 'Conociendo tu ritmo', text: 'Estamos empezando a conocer tu ritmo habitual de entrenamiento.' });
+  const [checkinOpen, setCheckinOpen] = useState(false);
+  const [checkinFatigue, setCheckinFatigue] = useState(2);
+  const [checkinSleep, setCheckinSleep] = useState(3);
+  const [checkinPain, setCheckinPain] = useState(0);
+  const [checkinNotes, setCheckinNotes] = useState('');
+  const [checkinSaving, setCheckinSaving] = useState(false);
+  const [checkinError, setCheckinError] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -183,6 +190,15 @@ export default function HomePage() {
         const training = future.find((event) => event.event_type === 'training') || null;
         const match = future.find((event) => ['match', 'friendly', 'tournament'].includes(event.event_type)) || null;
         const pastTrainings = pastTrainingResult.data || [];
+
+        // En jugadoras, no bloqueamos las tarjetas principales mientras termina de
+        // cargarse el resumen personal de las últimas semanas.
+        if (!isStaff && active) {
+          setNextTraining(training);
+          setNextMatch(match);
+          setRecentMatches(recentMatchResult.data || []);
+          setLoading(false);
+        }
 
         let nextPlayers = [];
         let nextWellness = [];
@@ -374,6 +390,52 @@ export default function HomePage() {
   const trainingDate = nextTraining ? dateParts(nextTraining.starts_at) : null;
   const matchDate = nextMatch ? dateParts(nextMatch.starts_at) : null;
   const trainingPlan = nextTraining ? planLines(nextTraining) : [];
+  const localNow = new Date();
+  const todayKey = `${localNow.getFullYear()}-${String(localNow.getMonth() + 1).padStart(2, '0')}-${String(localNow.getDate()).padStart(2, '0')}`;
+  const playerWellnessToday = !isStaff ? wellness.find((row) => row.entry_date === todayKey) || null : null;
+
+  function openDailyCheckin() {
+    setCheckinFatigue(2);
+    setCheckinSleep(3);
+    setCheckinPain(0);
+    setCheckinNotes('');
+    setCheckinError('');
+    setCheckinOpen(true);
+  }
+
+  async function submitDailyCheckin(event) {
+    event.preventDefault();
+    if (!identity?.player?.id || playerWellnessToday || checkinSaving) return;
+    setCheckinSaving(true);
+    setCheckinError('');
+    try {
+      const { data, error: insertError } = await supabase
+        .from('wellness_entries')
+        .insert({
+          player_id: identity.player.id,
+          entry_date: todayKey,
+          general_state: checkinFatigue,
+          fatigue: checkinFatigue,
+          sleep: checkinSleep,
+          pain_score: checkinPain,
+          notes: checkinNotes.trim()
+        })
+        .select('player_id,entry_date,general_state,fatigue,sleep,pain_score,notes')
+        .single();
+      if (insertError) throw insertError;
+      setWellness((rows) => [data, ...rows.filter((row) => row.entry_date !== todayKey)]);
+      setCheckinOpen(false);
+    } catch (saveError) {
+      if (saveError?.code === '23505') {
+        setCheckinOpen(false);
+        setWellness((rows) => rows.some((row) => row.entry_date === todayKey) ? rows : [{ player_id: identity.player.id, entry_date: todayKey, fatigue: checkinFatigue, sleep: checkinSleep, pain_score: checkinPain, notes: checkinNotes.trim() }, ...rows]);
+      } else {
+        setCheckinError(saveError?.message || 'No se pudo guardar tu bienestar.');
+      }
+    } finally {
+      setCheckinSaving(false);
+    }
+  }
 
   return (
     <div className="coach-home">
@@ -395,13 +457,21 @@ export default function HomePage() {
 
       <header className="coach-home-section-head">
         <div>
-          <small>Panel técnico</small>
-          <h2>Lo importante, de un vistazo</h2>
-          <p>Entrenos, competición, bienestar y carga del equipo.</p>
+          <small>{isStaff ? 'Panel técnico' : 'Tu equipo'}</small>
+          <h2>{isStaff ? 'Lo importante, de un vistazo' : 'Lo importante para ti'}</h2>
+          <p>{isStaff ? 'Entrenos, competición, bienestar y carga del equipo.' : 'Próximo entreno, partido y tu seguimiento personal.'}</p>
         </div>
       </header>
 
       {error ? <div className="coach-home-error">{error}</div> : null}
+
+      {!isStaff && !loading && !playerWellnessToday ? (
+        <button type="button" className="player-daily-wellness-banner" onClick={openDailyCheckin}>
+          <span className="player-daily-wellness-icon"><HeartPulse /></span>
+          <span className="player-daily-wellness-copy"><small>Bienestar diario</small><strong>Registrar bienestar de hoy</strong><span>Fatiga, sueño y molestias · menos de 1 minuto</span></span>
+          <ChevronRight />
+        </button>
+      ) : null}
 
       <div className="coach-home-grid">
         {loading ? (
@@ -428,9 +498,11 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="coach-mini-stats">
-              <span>{attendanceModel.confirmed} confirmadas</span>
-              <span>{attendanceModel.pending} pendientes</span>
+            <div className={`coach-mini-stats ${isStaff ? '' : 'coach-mini-stats-player'}`}>
+              {isStaff ? (<>
+                <span>{attendanceModel.confirmed} confirmadas</span>
+                <span>{attendanceModel.pending} pendientes</span>
+              </>) : <span>Tu próxima sesión</span>}
               <span>{eventDuration(nextTraining)} min</span>
             </div>
 
@@ -473,35 +545,37 @@ export default function HomePage() {
           <article className="coach-card coach-card-skeleton">No hay partidos próximos.</article>
         )}
 
-        <article className="coach-card coach-wellness-card">
-          <div className="coach-wellness-head">
-            <div>
-              <span className="coach-card-kicker"><HeartPulse size={13} /> Próximos 7 días</span>
-              <h3>Carga y bienestar</h3>
+        {isStaff ? (<>
+          <article className="coach-card coach-wellness-card">
+            <div className="coach-wellness-head">
+              <div>
+                <span className="coach-card-kicker"><HeartPulse size={13} /> Próximos 7 días</span>
+                <h3>Carga y bienestar</h3>
+              </div>
+              <HeartPulse size={22} color="#7b8798" />
             </div>
-            <HeartPulse size={22} color="#7b8798" />
-          </div>
-          <div className="coach-wellness-grid">
-            <div className="coach-wellness-metric low"><strong>{wellnessModel.low}</strong><span>Fatiga baja</span></div>
-            <div className="coach-wellness-metric medium"><strong>{wellnessModel.medium}</strong><span>Fatiga moderada</span></div>
-            <div className="coach-wellness-metric high"><strong>{wellnessModel.high}</strong><span>Fatiga alta</span></div>
-          </div>
-          <div className="coach-wellness-foot">
-            <span>{wellnessModel.values.length} respuestas recientes</span>
-            <Link to="/wellness">Ver detalle <ChevronRight size={12} /></Link>
-          </div>
-        </article>
+            <div className="coach-wellness-grid">
+              <div className="coach-wellness-metric low"><strong>{wellnessModel.low}</strong><span>Fatiga baja</span></div>
+              <div className="coach-wellness-metric medium"><strong>{wellnessModel.medium}</strong><span>Fatiga moderada</span></div>
+              <div className="coach-wellness-metric high"><strong>{wellnessModel.high}</strong><span>Fatiga alta</span></div>
+            </div>
+            <div className="coach-wellness-foot">
+              <span>{wellnessModel.values.length} respuestas recientes</span>
+              <Link to="/wellness">Ver detalle <ChevronRight size={12} /></Link>
+            </div>
+          </article>
 
-        <article className="coach-card coach-form-card">
-          <span className="coach-card-kicker"><Sparkles size={13} /> En forma esta fase</span>
-          <h3>Últimos partidos</h3>
-          <div className="coach-form-line" />
-          {completedMatches.length ? (
-            <p>{completedMatches.slice(0, 3).map((event) => event.payload?.result).filter(Boolean).join(' · ')}</p>
-          ) : (
-            <p>La temporada todavía no ha comenzado.</p>
-          )}
-        </article>
+          <article className="coach-card coach-form-card">
+            <span className="coach-card-kicker"><Sparkles size={13} /> En forma esta fase</span>
+            <h3>Últimos partidos</h3>
+            <div className="coach-form-line" />
+            {completedMatches.length ? (
+              <p>{completedMatches.slice(0, 3).map((event) => event.payload?.result).filter(Boolean).join(' · ')}</p>
+            ) : (
+              <p>La temporada todavía no ha comenzado.</p>
+            )}
+          </article>
+        </>) : null}
 
         {isStaff ? (
           <article className="coach-card coach-load-card">
@@ -568,6 +642,25 @@ export default function HomePage() {
           </article>
         )}
       </div>
+
+      {checkinOpen && !isStaff ? (
+        <div className="player-checkin-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setCheckinOpen(false); }}>
+          <form className="player-checkin-modal" onSubmit={submitDailyCheckin}>
+            <div className="player-checkin-head">
+              <div><small>Bienestar diario</small><h3>¿Cómo estás hoy?</h3><p>Responde pensando en cómo te encuentras ahora mismo.</p></div>
+              <button type="button" className="player-checkin-close" onClick={() => setCheckinOpen(false)} aria-label="Cerrar">×</button>
+            </div>
+
+            <div className="player-checkin-field"><div><strong>Fatiga</strong><span>1 = muy fresca · 5 = muy cansada</span></div><div className="player-checkin-scale">{[1,2,3,4,5].map((value) => <button key={`f-${value}`} type="button" className={checkinFatigue === value ? 'selected' : ''} onClick={() => setCheckinFatigue(value)}>{value}</button>)}</div></div>
+            <div className="player-checkin-field"><div><strong>Sueño</strong><span>1 = muy mal · 5 = muy bien</span></div><div className="player-checkin-scale">{[1,2,3,4,5].map((value) => <button key={`s-${value}`} type="button" className={checkinSleep === value ? 'selected' : ''} onClick={() => setCheckinSleep(value)}>{value}</button>)}</div></div>
+            <div className="player-checkin-field"><div><strong>Molestias</strong><span>0 = nada · 10 = dolor máximo</span></div><div className="player-checkin-pain"><input type="range" min="0" max="10" step="1" value={checkinPain} onChange={(event) => setCheckinPain(Number(event.target.value))} /><strong>{checkinPain}/10</strong></div></div>
+            <label className="player-checkin-notes"><span>¿Algo que quieras comentar? <small>Opcional</small></span><textarea rows="3" value={checkinNotes} onChange={(event) => setCheckinNotes(event.target.value)} placeholder="Molestia concreta, poco descanso, sensaciones…" /></label>
+            {checkinError ? <div className="player-checkin-error">{checkinError}</div> : null}
+            <button className="player-checkin-submit" type="submit" disabled={checkinSaving}>{checkinSaving ? 'Guardando…' : 'Guardar bienestar'}</button>
+          </form>
+        </div>
+      ) : null}
+
       <div className="coach-mobile-spacer" />
     </div>
   );
