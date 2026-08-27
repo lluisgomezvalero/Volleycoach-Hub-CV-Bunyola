@@ -56,4 +56,4 @@ jobs:
           git commit -m "Publish React migration preview"
           git push origin HEAD:react-preview-publish --force
 
-# Publish marker 2026-08-27: faster player home + compact competition
+# Publish marker 2026-08-28: cached home events + admin league management
