@@ -88,11 +88,14 @@ export function AuthProvider({ children }) {
 
   const hydrate = useCallback(async (user) => {
     if (!user) {
-      setIdentity(null);
+      if (alive.current) setIdentity(null);
       return null;
     }
     const nextIdentity = await loadIdentityForUser(user);
-    if (alive.current) setIdentity(nextIdentity);
+    if (alive.current) {
+      setIdentity(nextIdentity);
+      setAuthError('');
+    }
     return nextIdentity;
   }, []);
 
@@ -122,6 +125,7 @@ export function AuthProvider({ children }) {
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (!alive.current) return;
       setSession(nextSession || null);
+
       if (!nextSession?.user) {
         setIdentity(null);
         setAuthError('');
@@ -129,11 +133,21 @@ export function AuthProvider({ children }) {
         return;
       }
 
+      setAuthError('');
+      setLoading(true);
+
       window.setTimeout(() => {
         if (!alive.current) return;
-        hydrate(nextSession.user).catch((error) => {
-          if (alive.current) setAuthError(error?.message || 'No se pudo cargar el perfil.');
-        });
+        hydrate(nextSession.user)
+          .catch((error) => {
+            if (alive.current) {
+              setIdentity(null);
+              setAuthError(error?.message || 'No se pudo cargar el perfil.');
+            }
+          })
+          .finally(() => {
+            if (alive.current) setLoading(false);
+          });
       }, 0);
     });
 
@@ -160,20 +174,29 @@ export function AuthProvider({ children }) {
     });
     if (error || !data?.session?.user) throw new Error('Usuario o contraseña incorrectos.');
 
-    setSession(data.session);
-    const nextIdentity = await hydrate(data.session.user);
+    if (alive.current) {
+      setLoading(true);
+      setSession(data.session);
+    }
 
-    void supabase
-      .from('profiles')
-      .update({ last_login_at: new Date().toISOString() })
-      .eq('id', data.session.user.id);
+    try {
+      const nextIdentity = await hydrate(data.session.user);
 
-    return nextIdentity;
+      void supabase
+        .from('profiles')
+        .update({ last_login_at: new Date().toISOString() })
+        .eq('id', data.session.user.id);
+
+      return nextIdentity;
+    } finally {
+      if (alive.current) setLoading(false);
+    }
   }, [hydrate]);
 
   const logout = useCallback(async () => {
     setIdentity(null);
     setSession(null);
+    setAuthError('');
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   }, []);
