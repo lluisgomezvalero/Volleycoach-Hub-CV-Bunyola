@@ -13,7 +13,8 @@ import {
   Sparkles,
   Target,
   Trophy,
-  UsersRound
+  UsersRound,
+  XCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider.jsx';
@@ -184,6 +185,9 @@ export default function HomePage() {
   const [nextTraining, setNextTraining] = useState(() => initialHomeEvents?.training || null);
   const [nextMatch, setNextMatch] = useState(() => initialHomeEvents?.match || null);
   const [trainingAttendance, setTrainingAttendance] = useState([]);
+  const [playerAttendanceResponse, setPlayerAttendanceResponse] = useState(null);
+  const [attendanceSaving, setAttendanceSaving] = useState(false);
+  const [attendanceError, setAttendanceError] = useState('');
   const [gamePlan, setGamePlan] = useState(null);
   const [players, setPlayers] = useState([]);
   const [wellness, setWellness] = useState([]);
@@ -441,6 +445,38 @@ export default function HomePage() {
   useEffect(() => {
     let active = true;
 
+    async function loadOwnAttendance() {
+      if (isStaff || !identity?.player?.id || !nextTraining?.id) {
+        if (active) {
+          setPlayerAttendanceResponse(null);
+          setAttendanceError('');
+        }
+        return;
+      }
+
+      const { data, error: ownAttendanceError } = await supabase
+        .from('attendance')
+        .select('player_response')
+        .eq('event_id', nextTraining.id)
+        .eq('player_id', identity.player.id)
+        .maybeSingle();
+
+      if (!active) return;
+      if (ownAttendanceError) {
+        setAttendanceError('No se pudo cargar tu respuesta de asistencia.');
+        return;
+      }
+      setPlayerAttendanceResponse(data?.player_response || null);
+      setAttendanceError('');
+    }
+
+    void loadOwnAttendance();
+    return () => { active = false; };
+  }, [identity?.player?.id, isStaff, nextTraining?.id]);
+
+  useEffect(() => {
+    let active = true;
+
     async function loadLeagueTeams() {
       if (!team?.id) {
         setLeagueTeams([]);
@@ -496,6 +532,29 @@ export default function HomePage() {
   const localNow = new Date();
   const todayKey = `${localNow.getFullYear()}-${String(localNow.getMonth() + 1).padStart(2, '0')}-${String(localNow.getDate()).padStart(2, '0')}`;
   const playerWellnessToday = !isStaff ? wellness.find((row) => row.entry_date === todayKey) || null : null;
+
+  async function saveOwnAttendance(response) {
+    if (isStaff || !identity?.player?.id || !displayNextTraining?.id || attendanceSaving) return;
+    setAttendanceSaving(true);
+    setAttendanceError('');
+    try {
+      const { data, error: saveError } = await supabase
+        .from('attendance')
+        .upsert({
+          event_id: displayNextTraining.id,
+          player_id: identity.player.id,
+          player_response: response
+        }, { onConflict: 'event_id,player_id' })
+        .select('player_response')
+        .single();
+      if (saveError) throw saveError;
+      setPlayerAttendanceResponse(data?.player_response || response);
+    } catch (saveError) {
+      setAttendanceError(saveError?.message || 'No se pudo guardar tu asistencia.');
+    } finally {
+      setAttendanceSaving(false);
+    }
+  }
 
   function openDailyCheckin() {
     setCheckinFatigue(2);
@@ -605,14 +664,24 @@ export default function HomePage() {
               {isStaff ? (<>
                 <span>{attendanceModel.confirmed} confirmadas</span>
                 <span>{attendanceModel.pending} pendientes</span>
-              </>) : <span>Tu próxima sesión</span>}
+              </>) : <span>{playerAttendanceResponse === 'yes' ? 'Asistencia confirmada' : playerAttendanceResponse === 'no' ? 'No asistirás' : 'Confirma tu asistencia'}</span>}
               <span>{eventDuration(displayNextTraining)} min</span>
             </div>
 
-            <div className="coach-card-actions">
-              <Link className="coach-action-primary" to="/training"><Activity size={15} /> Abrir sesión</Link>
-              {isStaff ? <Link className="coach-action-secondary" to="/training"><ClipboardCheck size={15} /> Pasar lista</Link> : <Link className="coach-action-secondary" to="/training"><CheckCircle2 size={15} /> Mi asistencia</Link>}
-            </div>
+            {isStaff ? (
+              <div className="coach-card-actions">
+                <Link className="coach-action-primary" to="/training"><Activity size={15} /> Abrir sesión</Link>
+                <Link className="coach-action-secondary" to="/training"><ClipboardCheck size={15} /> Pasar lista</Link>
+              </div>
+            ) : (
+              <>
+                <div className="player-home-attendance-actions" aria-label="Confirma tu asistencia al próximo entrenamiento">
+                  <button type="button" className={`player-home-attendance-btn yes ${playerAttendanceResponse === 'yes' ? 'active' : ''}`} disabled={attendanceSaving} onClick={() => void saveOwnAttendance('yes')}><CheckCircle2 size={17} /> Asistiré</button>
+                  <button type="button" className={`player-home-attendance-btn no ${playerAttendanceResponse === 'no' ? 'active' : ''}`} disabled={attendanceSaving} onClick={() => void saveOwnAttendance('no')}><XCircle size={17} /> No asistiré</button>
+                </div>
+                {attendanceError ? <div className="player-home-attendance-error">{attendanceError}</div> : null}
+              </>
+            )}
           </article>
         ) : (
           <article className="coach-card coach-card-skeleton">No hay entrenamientos próximos.</article>
