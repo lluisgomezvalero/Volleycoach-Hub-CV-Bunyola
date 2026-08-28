@@ -1,0 +1,52 @@
+name: Patch game plan history preview
+
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-game-plan-history-20260828.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: react-vite-migration
+      - name: Ajustar apertura del historial
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('react-migration/src/pages/GamePlanPage.jsx')
+          text = path.read_text()
+
+          old = """  const readGuardRef = useRef(new Set());\n\n  useEffect(() => { draftRef.current = draft; }, [draft]);"""
+          new = """  const readGuardRef = useRef(new Set());\n  const historyPreviewRef = useRef(false);\n\n  useEffect(() => { draftRef.current = draft; }, [draft]);"""
+          if old not in text:
+              raise SystemExit('No se encontró el bloque de refs')
+          text = text.replace(old, new, 1)
+
+          old = """    setDraft(normalizePlan(sourceRow?.payload?.plan));\n    setDirty(false);\n    setPreview(false);\n    setReadsOpen(false);\n    const preferred = ATTACKS.find(({ key }) => sourceRow?.payload?.plan?.attackers?.[key]?.directions?.length)?.key || 'z4a';\n    setActiveAttack(preferred);\n    hydratedRef.current = sourceKey;"""
+          new = """    const keepHistoryPreview = historyPreviewRef.current;\n    setDraft(normalizePlan(sourceRow?.payload?.plan));\n    setDirty(false);\n    setPreview(keepHistoryPreview);\n    historyPreviewRef.current = false;\n    setReadsOpen(false);\n    const preferred = ATTACKS.find(({ key }) => sourceRow?.payload?.plan?.attackers?.[key]?.directions?.length)?.key || 'z4a';\n    setActiveAttack(preferred);\n    hydratedRef.current = sourceKey;"""
+          if old not in text:
+              raise SystemExit('No se encontró el bloque de hidratación')
+          text = text.replace(old, new, 1)
+
+          old = """            <button key={event.id} type=\"button\" onClick={() => { hydratedRef.current = ''; setSelectedEventId(event.id); setPreview(true); setHistoryOpen(false); }}>"""
+          new = """            <button key={event.id} type=\"button\" onClick={() => { historyPreviewRef.current = true; hydratedRef.current = ''; setSelectedEventId(event.id); setHistoryOpen(false); }}>"""
+          if old not in text:
+              raise SystemExit('No se encontró el botón del historial')
+          text = text.replace(old, new, 1)
+
+          path.write_text(text)
+          PY
+      - name: Guardar ajuste
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add react-migration/src/pages/GamePlanPage.jsx
+          git commit -m 'Corregir apertura de planes anteriores' || exit 0
+          git push origin HEAD:react-vite-migration
