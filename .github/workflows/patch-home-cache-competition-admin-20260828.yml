@@ -1,0 +1,95 @@
+name: Patch Home cache and competition admin
+
+on:
+  push:
+    branches:
+      - react-vite-migration
+    paths:
+      - .github/workflows/patch-home-cache-competition-admin-20260828.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: react-vite-migration
+          fetch-depth: 0
+      - name: Aplicar ajustes
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          home = Path('react-migration/src/pages/HomePage.jsx')
+          text = home.read_text()
+
+          marker = '''function completedMatch(event) {\n  return new Date(event?.starts_at).getTime() < Date.now() && Boolean(event?.payload?.result);\n}\n'''
+          helper = '''function completedMatch(event) {\n  return new Date(event?.starts_at).getTime() < Date.now() && Boolean(event?.payload?.result);\n}\n\nconst HOME_FUTURE_CACHE_MAX_AGE = 24 * 60 * 60 * 1000;\n\nfunction homeFutureCacheKey(teamId) {\n  return `volleycoach-home-future-v1:${teamId}`;\n}\n\nfunction readHomeFutureCache(teamId) {\n  if (!teamId || typeof window === 'undefined') return [];\n  try {\n    const raw = window.localStorage.getItem(homeFutureCacheKey(teamId));\n    if (!raw) return [];\n    const parsed = JSON.parse(raw);\n    if (!parsed?.savedAt || Date.now() - Number(parsed.savedAt) > HOME_FUTURE_CACHE_MAX_AGE) return [];\n    const now = Date.now();\n    return Array.isArray(parsed.events)\n      ? parsed.events.filter((event) => new Date(event?.starts_at).getTime() >= now)\n      : [];\n  } catch {\n    return [];\n  }\n}\n\nfunction writeHomeFutureCache(teamId, events) {\n  if (!teamId || typeof window === 'undefined') return;\n  try {\n    window.localStorage.setItem(homeFutureCacheKey(teamId), JSON.stringify({ savedAt: Date.now(), events: events || [] }));\n  } catch {\n    // La caché es solo una mejora visual; la app sigue funcionando sin ella.\n  }\n}\n'''
+          if marker not in text:
+              raise SystemExit('No se encontró completedMatch')
+          text = text.replace(marker, helper, 1)
+
+          old_start = '''      setLoading(true);\n      setError('');\n      try {\n        const now = new Date();\n'''
+          new_start = '''      const cachedFuture = readHomeFutureCache(team.id);\n      if (cachedFuture.length) {\n        setNextTraining(cachedFuture.find((event) => event.event_type === 'training') || null);\n        setNextMatch(cachedFuture.find((event) => ['match', 'friendly', 'tournament'].includes(event.event_type)) || null);\n        setLoading(false);\n      } else {\n        setLoading(true);\n      }\n      setError('');\n      try {\n        const now = new Date();\n'''
+          if old_start not in text:
+              raise SystemExit('No se encontró inicio de loadDashboard')
+          text = text.replace(old_start, new_start, 1)
+
+          old_branch = '''        // Para jugadoras, la pantalla principal depende solo del calendario futuro.\n        // Historial y tendencias continúan cargándose en segundo plano.\n        let futureResult;\n        let pastTrainingResult;\n        let recentMatchResult;\n        if (!isStaff) {\n          futureResult = await futureRequest;\n          if (futureResult.error) throw futureResult.error;\n          const quickFuture = futureResult.data || [];\n          const quickTraining = quickFuture.find((event) => event.event_type === 'training') || null;\n          const quickMatch = quickFuture.find((event) => ['match', 'friendly', 'tournament'].includes(event.event_type)) || null;\n          if (active) {\n            setNextTraining(quickTraining);\n            setNextMatch(quickMatch);\n            setLoading(false);\n          }\n          [pastTrainingResult, recentMatchResult] = await Promise.all([pastTrainingRequest, recentMatchRequest]);\n        } else {\n          [futureResult, pastTrainingResult, recentMatchResult] = await Promise.all([futureRequest, pastTrainingRequest, recentMatchRequest]);\n        }\n'''
+          new_branch = '''        // Las dos tarjetas principales dependen solo del calendario futuro para TODOS los roles.\n        // El resto del panel termina de cargar en segundo plano.\n        const secondaryRequests = Promise.all([pastTrainingRequest, recentMatchRequest]);\n        const futureResult = await futureRequest;\n        if (futureResult.error) throw futureResult.error;\n        const quickFuture = futureResult.data || [];\n        const quickTraining = quickFuture.find((event) => event.event_type === 'training') || null;\n        const quickMatch = quickFuture.find((event) => ['match', 'friendly', 'tournament'].includes(event.event_type)) || null;\n        writeHomeFutureCache(team.id, quickFuture);\n        if (active) {\n          setNextTraining(quickTraining);\n          setNextMatch(quickMatch);\n          setLoading(false);\n        }\n        const [pastTrainingResult, recentMatchResult] = await secondaryRequests;\n'''
+          if old_branch not in text:
+              raise SystemExit('No se encontró rama de carga rápida')
+          text = text.replace(old_branch, new_branch, 1)
+          home.write_text(text)
+
+          competition = Path('react-migration/src/pages/CompetitionPage.jsx')
+          text = competition.read_text()
+          text = text.replace('  Search,\n', '', 1)
+
+          text = text.replace('function EditTeamModal({ row, onClose, onSaved, profileId }) {', 'function EditTeamModal({ row, onClose, onSaved, profileId, canRename }) {', 1)
+          text = text.replace("        name: String(form.name || '').trim() || row.name,", "        name: canRename ? (String(form.name || '').trim() || row.name) : row.name,", 1)
+          old_name_field = '''          <label className="competition-name-field"><span>Equipo</span><input value={form.name} onChange={(event) => update('name', event.target.value)} /></label>\n'''
+          new_name_field = '''          {canRename ? <label className="competition-name-field"><span>Equipo</span><input value={form.name} onChange={(event) => update('name', event.target.value)} /></label> : null}\n'''
+          if old_name_field not in text:
+              raise SystemExit('No se encontró campo de nombre')
+          text = text.replace(old_name_field, new_name_field, 1)
+
+          text = text.replace("  const isStaff = ['coach', 'administrator'].includes(profile?.role);", "  const isStaff = ['coach', 'administrator'].includes(profile?.role);\n  const isAdmin = profile?.role === 'administrator';", 1)
+          text = text.replace("  const [search, setSearch] = useState('');\n", '', 1)
+
+          filtered_block = '''  const filtered = useMemo(() => {\n    const term = search.trim().toLocaleLowerCase('es');\n    if (!term) return sorted;\n    return sorted.filter((row) => String(row.name || '').toLocaleLowerCase('es').includes(term));\n  }, [search, sorted]);\n\n'''
+          if filtered_block not in text:
+              raise SystemExit('No se encontró filtered')
+          text = text.replace(filtered_block, '', 1)
+
+          text = text.replace('    if (!isStaff || !rows.length) return;', '    if (!isAdmin || !rows.length) return;', 1)
+          text = text.replace("    const ok = window.confirm('¿Reiniciar los datos de todos los rivales? CV Bunyola seguirá calculándose automáticamente a partir de los resultados de Liga.');", "    const ok = window.confirm('¿Reiniciar a cero la clasificación de los rivales? Los nombres actuales se mantendrán y después podrás cambiarlos para preparar una temporada nueva. CV Bunyola seguirá calculándose automáticamente desde sus partidos de Liga.');", 1)
+          text = text.replace("          name: DEFAULT_NAMES[row.team_key] || row.name,\n", '', 1)
+
+          toolbar = '''        <div className="competition-toolbar">\n          <label className="competition-search"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar equipo…" /></label>\n          {isStaff ? (\n            <button type="button" className="competition-reset-button" onClick={resetRivals} disabled={resetting} title="Reiniciar clasificación" aria-label="Reiniciar clasificación"><RefreshCcw size={17} /> <span>{resetting ? 'Reiniciando…' : 'Reiniciar'}</span></button>\n          ) : null}\n        </div>\n\n'''
+          admin_toolbar = '''        {isAdmin ? (\n          <div className="competition-admin-actions">\n            <button type="button" className="competition-reset-button" onClick={resetRivals} disabled={resetting} title="Reiniciar clasificación" aria-label="Reiniciar clasificación"><RefreshCcw size={17} /> <span>{resetting ? 'Reiniciando…' : 'Reiniciar clasificación'}</span></button>\n          </div>\n        ) : null}\n\n'''
+          if toolbar not in text:
+              raise SystemExit('No se encontró toolbar')
+          text = text.replace(toolbar, admin_toolbar, 1)
+          text = text.replace("        {!filtered.length ? <div className=\"competition-empty\">No hay equipos que coincidan con la búsqueda.</div> : (", "        {!sorted.length ? <div className=\"competition-empty\">No hay equipos en la clasificación.</div> : (", 1)
+          text = text.replace('{filtered.map((row) => {', '{sorted.map((row) => {', 2)
+          text = text.replace('      {editing ? <EditTeamModal row={editing} onClose={() => setEditing(null)} onSaved={handleSaved} profileId={profile?.id} /> : null}', '      {editing ? <EditTeamModal row={editing} onClose={() => setEditing(null)} onSaved={handleSaved} profileId={profile?.id} canRename={isAdmin} /> : null}', 1)
+          competition.write_text(text)
+
+          css = Path('react-migration/src/pages/CompetitionPage.css')
+          styles = css.read_text()
+          styles += '''\n/* Herramientas de temporada reservadas al administrador. */\n.competition-admin-actions{display:flex;justify-content:flex-end;margin-bottom:10px}.competition-admin-actions .competition-reset-button{width:auto}@media(max-width:760px){.competition-admin-actions{margin-bottom:8px}.competition-admin-actions .competition-reset-button{width:auto;min-width:0;padding:0 12px}}\n'''
+          css.write_text(styles)
+          PY
+      - name: Guardar cambios
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add react-migration/src/pages/HomePage.jsx react-migration/src/pages/CompetitionPage.jsx react-migration/src/pages/CompetitionPage.css
+          git commit -m "Acelerar tarjetas de Inicio y limitar gestión de Liga"
+          git push origin HEAD:react-vite-migration
