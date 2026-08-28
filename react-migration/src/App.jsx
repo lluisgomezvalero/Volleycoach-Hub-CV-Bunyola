@@ -61,7 +61,7 @@ function Navigation({ onNavigate, items = nav }) {
       key={to}
       to={to}
       end={to === '/'}
-      className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`
+      className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
       onClick={onNavigate}
     >
       <Icon size={19} strokeWidth={2.1} />
