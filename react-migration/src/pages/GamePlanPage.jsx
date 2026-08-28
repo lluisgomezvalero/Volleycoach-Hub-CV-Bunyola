@@ -134,6 +134,46 @@ function eventLabel(event) {
   return `${opponentName(event)} · ${dateLabel}`;
 }
 
+
+function normalizeTeamName(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\bclub\s+voleibol\b/g, '')
+    .replace(/\bcv\b/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function resolveLogo(path) {
+  const raw = String(path || '').trim();
+  if (!raw) return '';
+  if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
+  return `../${raw.replace(/^\.?\//, '')}`;
+}
+
+function leagueTeamForEvent(event, leagueTeams) {
+  const target = normalizeTeamName(opponentName(event));
+  if (!target) return null;
+  return (leagueTeams || []).find((row) => {
+    const name = normalizeTeamName(row?.name);
+    return name && (name === target || name.includes(target) || target.includes(name));
+  }) || null;
+}
+
+function MatchLogo({ event, leagueTeams }) {
+  const [broken, setBroken] = useState(false);
+  const team = leagueTeamForEvent(event, leagueTeams);
+  const src = resolveLogo(team?.logo);
+  if (src && !broken) return <img src={src} alt="" onError={() => setBroken(true)} />;
+  if (team?.name) {
+    const letters = String(team.name).split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+    return <span className="gp-match-logo-fallback">{letters || 'CV'}</span>;
+  }
+  return <span className="gp-match-logo-fallback is-generic"><Trophy size={18} /></span>;
+}
+
 function detailedDate(event) {
   const date = new Date(event?.starts_at || 0);
   if (Number.isNaN(date.getTime())) return 'Fecha por confirmar';
@@ -361,6 +401,7 @@ export default function GamePlanPage() {
   const [events, setEvents] = useState([]);
   const [plans, setPlans] = useState([]);
   const [players, setPlayers] = useState([]);
+  const [leagueTeams, setLeagueTeams] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState('');
   const [draft, setDraft] = useState(() => blankPlan());
   const [dirty, setDirty] = useState(false);
@@ -438,7 +479,11 @@ export default function GamePlanPage() {
         const playerRequest = isStaff
           ? supabase.from('players').select('id,legacy_id,dorsal,position,profiles:profile_id(full_name,username)').eq('team_id', team.id).eq('active', true).order('dorsal', { ascending: true, nullsFirst: false })
           : Promise.resolve({ data: [], error: null });
-        const [eventResult, planResult, playerResult] = await Promise.all([eventRequest, planRequest, playerRequest]);
+        const standingRequest = supabase
+          .from('league_standings')
+          .select('id,name,logo,is_own')
+          .eq('context_team_id', team.id);
+        const [eventResult, planResult, playerResult, standingResult] = await Promise.all([eventRequest, planRequest, playerRequest, standingRequest]);
         if (eventResult.error) throw eventResult.error;
         if (planResult.error) throw planResult.error;
         if (playerResult.error) throw playerResult.error;
@@ -448,6 +493,7 @@ export default function GamePlanPage() {
         setEvents(nextEvents);
         setPlans(nextPlans);
         setPlayers(playerResult.data || []);
+        setLeagueTeams(standingResult.error ? [] : (standingResult.data || []));
         setSelectedEventId((current) => {
           if (current && nextEvents.some((event) => event.id === current)) return current;
           const next = nextEvents.find((event) => new Date(event.starts_at).getTime() >= Date.now()) || nextEvents[nextEvents.length - 1];
@@ -739,12 +785,33 @@ export default function GamePlanPage() {
           <p>{detailedDate(selectedEvent)}{selectedEvent?.location ? ` · ${selectedEvent.location}` : ''}</p>
         </div>
         <div className="gp-header-tools">
-          <label>
-            <span>Partido</span>
-            <select value={selectedEventId} onChange={(event) => void changeEvent(event.target.value)}>
-              {events.map((event) => <option key={event.id} value={event.id}>{eventLabel(event)}</option>)}
-            </select>
-          </label>
+          <details className="gp-match-picker">
+            <summary>
+              <span className="gp-match-picker-logo"><MatchLogo key={selectedEvent?.id || 'selected'} event={selectedEvent} leagueTeams={leagueTeams} /></span>
+              <span className="gp-match-picker-copy">
+                <small>Partido</small>
+                <strong>{opponentName(selectedEvent)}</strong>
+                <em>{detailedDate(selectedEvent)}</em>
+              </span>
+            </summary>
+            <div className="gp-match-menu">
+              {events.map((event) => (
+                <button
+                  key={event.id}
+                  type="button"
+                  className={event.id === selectedEventId ? 'active' : ''}
+                  onClick={(clickEvent) => {
+                    clickEvent.currentTarget.closest('details')?.removeAttribute('open');
+                    void changeEvent(event.id);
+                  }}
+                >
+                  <span className="gp-match-menu-logo"><MatchLogo event={event} leagueTeams={leagueTeams} /></span>
+                  <span className="gp-match-menu-copy"><strong>{opponentName(event)}</strong><small>{detailedDate(event)}</small></span>
+                  {event.id === selectedEventId ? <Check size={17} /> : null}
+                </button>
+              ))}
+            </div>
+          </details>
           <button type="button" className="gp-history-button" onClick={() => setHistoryOpen((value) => !value)}><History size={16} /> Historial</button>
         </div>
       </header>

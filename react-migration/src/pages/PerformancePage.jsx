@@ -195,6 +195,7 @@ export default function PerformancePage() {
   const { identity } = useAuth();
   const profile = identity?.profile;
   const team = identity?.teams?.[0] || null;
+  const teamId = team?.id || identity?.player?.team_id || null;
   const isStaff = ['coach', 'administrator'].includes(profile?.role);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -214,7 +215,7 @@ export default function PerformancePage() {
   const [historyTest, setHistoryTest] = useState('CMJ');
 
   async function loadData({ silent = false } = {}) {
-    if (!team?.id) {
+    if (!teamId) {
       setLoading(false);
       return;
     }
@@ -222,7 +223,7 @@ export default function PerformancePage() {
     setError('');
     try {
       const playerRequest = isStaff
-        ? supabase.from('players').select('id,legacy_id,dorsal,position,avatar_path,profiles:profile_id(full_name,username)').eq('team_id', team.id).eq('active', true).order('dorsal', { ascending: true, nullsFirst: false })
+        ? supabase.from('players').select('id,legacy_id,dorsal,position,avatar_path,profiles:profile_id(full_name,username)').eq('team_id', teamId).eq('active', true).order('dorsal', { ascending: true, nullsFirst: false })
         : identity?.player?.id
           ? supabase.from('players').select('id,legacy_id,dorsal,position,avatar_path,profiles:profile_id(full_name,username)').eq('id', identity.player.id).single()
           : Promise.resolve({ data: null, error: null });
@@ -246,7 +247,7 @@ export default function PerformancePage() {
     }
   }
 
-  useEffect(() => { void loadData(); }, [identity?.player?.id, isStaff, team?.id]);
+  useEffect(() => { void loadData(); }, [identity?.player?.id, isStaff, teamId]);
 
   const visiblePlayerIds = useMemo(() => new Set(players.map((player) => player.id)), [players]);
   const visibleRecords = useMemo(() => records.filter((row) => visiblePlayerIds.has(row.player_id)), [records, visiblePlayerIds]);
@@ -316,7 +317,7 @@ export default function PerformancePage() {
     return <div className="perf-page"><div className="perf-loading"><LoaderCircle className="perf-spin" /> Cargando rendimiento…</div></div>;
   }
 
-  if (!team?.id) {
+  if (!teamId) {
     return <div className="perf-page"><section className="perf-empty-state"><CircleGauge size={32} /><h2>No hay un equipo activo</h2><p>Necesitamos un equipo para mostrar los tests de rendimiento.</p></section></div>;
   }
 
@@ -336,6 +337,16 @@ export default function PerformancePage() {
 
       {error ? <div className="perf-error">{error}<button type="button" onClick={() => setError('')}>×</button></div> : null}
       {notice ? <div className="perf-notice"><Sparkles size={16} /> {notice}</div> : null}
+
+
+      {!visibleRecords.length ? (
+        <section className="perf-empty-state">
+          <CircleGauge size={32} />
+          <h2>Aún no hay tests de rendimiento</h2>
+          <p>{isStaff ? 'Registra el primer SJ, CMJ, Abalakov o Drop Jump para empezar el seguimiento del equipo.' : 'Cuando el cuerpo técnico registre tu primer test, aparecerá aquí tu evolución.'}</p>
+          {isStaff ? <button type="button" className="perf-new" onClick={() => { setError(''); setFormOpen(true); }}><Plus size={17} /> Registrar primer test</button> : null}
+        </section>
+      ) : null}
 
       <nav className="perf-tabs" aria-label="Tests de rendimiento">
         {TABS.map((tab) => <button key={tab} type="button" className={activeTab === tab ? 'active' : ''} onClick={() => { setActiveTab(tab); if (tab !== 'Histórico') setHistoryTest(tab); }}>{tab === 'Histórico' ? <History size={15} /> : null}{tab}</button>)}
