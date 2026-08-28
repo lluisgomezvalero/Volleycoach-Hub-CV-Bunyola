@@ -12,3 +12,12 @@
 
 /* Confirmación directa de asistencia para jugadoras desde Inicio */
 .player-home-attendance-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.player-home-attendance-btn{min-height:42px;border:1px solid rgba(255,255,255,.72);border-radius:11px;background:#fff;color:#263348;font:inherit;font-size:.69rem;font-weight:900;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;transition:transform .12s ease,background .12s ease,border-color .12s ease,color .12s ease}.player-home-attendance-btn:active{transform:scale(.985)}.player-home-attendance-btn:disabled{cursor:wait;opacity:.65}.player-home-attendance-btn.yes.active{border-color:#86efac;background:#dcfce7;color:#166534}.player-home-attendance-btn.no.active{border-color:#fca5a5;background:#fee2e2;color:#991b1b}.player-home-attendance-error{margin-top:7px;padding:7px 9px;border-radius:9px;background:rgba(127,29,29,.26);color:#fecaca;font-size:.61rem;line-height:1.35}@media(max-width:430px){.player-home-attendance-btn{min-height:41px;font-size:.65rem}}
+
+
+/* Asistencia jugadora: acciones semánticas */
+.coach-mini-stats-player{grid-template-columns:1fr;max-width:120px}
+.player-home-attendance-btn.yes{background:#16a34a!important;border-color:#16a34a!important;color:#fff!important}
+.player-home-attendance-btn.no{background:#dc2626!important;border-color:#dc2626!important;color:#fff!important}
+.player-home-attendance-btn.yes.active{background:#15803d!important;border-color:#15803d!important;box-shadow:0 0 0 3px rgba(34,197,94,.22)}
+.player-home-attendance-btn.no.active{background:#b91c1c!important;border-color:#b91c1c!important;box-shadow:0 0 0 3px rgba(239,68,68,.20)}
+.player-home-attendance-btn:disabled{opacity:.7}

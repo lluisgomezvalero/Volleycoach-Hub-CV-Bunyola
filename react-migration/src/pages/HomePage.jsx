@@ -664,7 +664,7 @@ export default function HomePage() {
               {isStaff ? (<>
                 <span>{attendanceModel.confirmed} confirmadas</span>
                 <span>{attendanceModel.pending} pendientes</span>
-              </>) : <span>{playerAttendanceResponse === 'yes' ? 'Asistencia confirmada' : playerAttendanceResponse === 'no' ? 'No asistirás' : 'Confirma tu asistencia'}</span>}
+              </>) : null}
               <span>{eventDuration(displayNextTraining)} min</span>
             </div>
 
@@ -676,7 +676,7 @@ export default function HomePage() {
             ) : (
               <>
                 <div className="player-home-attendance-actions" aria-label="Confirma tu asistencia al próximo entrenamiento">
-                  <button type="button" className={`player-home-attendance-btn yes ${playerAttendanceResponse === 'yes' ? 'active' : ''}`} disabled={attendanceSaving} onClick={() => void saveOwnAttendance('yes')}><CheckCircle2 size={17} /> Asistiré</button>
+                  <button type="button" className={`player-home-attendance-btn yes ${playerAttendanceResponse === 'yes' ? 'active' : ''}`} disabled={attendanceSaving} onClick={() => void saveOwnAttendance('yes')}><CheckCircle2 size={17} /> Sí, asistiré</button>
                   <button type="button" className={`player-home-attendance-btn no ${playerAttendanceResponse === 'no' ? 'active' : ''}`} disabled={attendanceSaving} onClick={() => void saveOwnAttendance('no')}><XCircle size={17} /> No asistiré</button>
                 </div>
                 {attendanceError ? <div className="player-home-attendance-error">{attendanceError}</div> : null}
