@@ -375,6 +375,7 @@ export default function GamePlanPage() {
   const savingRef = useRef(false);
   const draftRef = useRef(draft);
   const readGuardRef = useRef(new Set());
+  const historyPreviewRef = useRef(false);
 
   useEffect(() => { draftRef.current = draft; }, [draft]);
 
@@ -478,9 +479,11 @@ export default function GamePlanPage() {
     const sourceKey = `${selectedEventId}:${sourceRow?.id || 'empty'}:${sourceRow?.updated_at || sourceRow?.published_at || ''}`;
     if (hydratedRef.current === sourceKey) return;
     if (dirty && hydratedRef.current.startsWith(`${selectedEventId}:`)) return;
+    const keepHistoryPreview = historyPreviewRef.current;
     setDraft(normalizePlan(sourceRow?.payload?.plan));
     setDirty(false);
-    setPreview(false);
+    setPreview(keepHistoryPreview);
+    historyPreviewRef.current = false;
     setReadsOpen(false);
     const preferred = ATTACKS.find(({ key }) => sourceRow?.payload?.plan?.attackers?.[key]?.directions?.length)?.key || 'z4a';
     setActiveAttack(preferred);
@@ -776,7 +779,7 @@ export default function GamePlanPage() {
         <section className="gp-history-panel">
           <div className="gp-panel-heading"><div><small>Archivo</small><h3>Planes anteriores</h3></div><History size={19} /></div>
           {history.length ? <div className="gp-history-list">{history.map(({ event, publication }) => (
-            <button key={event.id} type="button" onClick={() => { hydratedRef.current = ''; setSelectedEventId(event.id); setPreview(true); setHistoryOpen(false); }}>
+            <button key={event.id} type="button" onClick={() => { historyPreviewRef.current = true; hydratedRef.current = ''; setSelectedEventId(event.id); setHistoryOpen(false); }}>
               <span><small>{eventLabel(event)}</small><strong>{opponentName(event)}</strong></span><em>v{publication.version} · Ver</em>
             </button>
           ))}</div> : <div className="gp-history-empty">Todavía no hay planes publicados de partidos anteriores.</div>}
