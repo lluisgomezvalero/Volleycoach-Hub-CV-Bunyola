@@ -12,7 +12,6 @@ import {
   MoreHorizontal,
   Shield,
   Trophy,
-  UserRound,
   Users,
   X
 } from 'lucide-react';
@@ -28,14 +27,7 @@ const RosterPage = lazy(() => import('./pages/RosterPage.jsx'));
 const StatsPage = lazy(() => import('./pages/StatisticsPage.jsx'));
 const CompetitionPage = lazy(() => import('./pages/CompetitionPage.jsx'));
 const GamePlanPage = lazy(() => import('./pages/GamePlanPage.jsx'));
-
-function lazyPlaceholder(title, text) {
-  return lazy(() => import('./pages/PlaceholderPage.jsx').then(({ default: PlaceholderPage }) => ({
-    default: () => <PlaceholderPage title={title} text={text} />
-  })));
-}
-
-const PerformancePage = lazyPlaceholder('Rendimiento', 'Métricas y tests físicos cargados bajo demanda.');
+const PerformancePage = lazy(() => import('./pages/PerformancePage.jsx'));
 
 const nav = [
   ['/', 'Inicio', Home],
