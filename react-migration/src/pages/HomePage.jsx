@@ -42,6 +42,38 @@ function initials(value) {
     .toUpperCase();
 }
 
+function resolveLogo(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
+  const normalized = raw.replace(/^\.?\//, '');
+  if (normalized.startsWith('assets/')) return `../${normalized}`;
+  return raw;
+}
+
+function normalizedTeamName(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function teamMatchKey(value) {
+  return normalizedTeamName(value)
+    .replace(/^(cv|c v|club voleibol|club volei|volei)\s+/, '')
+    .trim();
+}
+
+function MatchTeamLogo({ name, src }) {
+  const [broken, setBroken] = useState(false);
+  useEffect(() => setBroken(false), [src]);
+  const resolved = resolveLogo(src);
+  if (!resolved || broken) return <>{initials(name)}</>;
+  return <img src={resolved} alt="" onError={() => setBroken(true)} />;
+}
+
 function eventDuration(event) {
   if (event?.starts_at && event?.ends_at) {
     const minutes = Math.round((new Date(event.ends_at) - new Date(event.starts_at)) / 60000);
@@ -157,6 +189,7 @@ export default function HomePage() {
   const [wellness, setWellness] = useState([]);
   const [workloadRows, setWorkloadRows] = useState([]);
   const [recentMatches, setRecentMatches] = useState([]);
+  const [leagueTeams, setLeagueTeams] = useState([]);
   const [playerTrainingSummary, setPlayerTrainingSummary] = useState({ weekLoads: [0, 0, 0, 0, 0], recentSessions: 0, recentRpeMean: null, historyCoverageDays: 0, ready: false, label: 'Conociendo tu ritmo', text: 'Estamos empezando a conocer tu ritmo habitual de entrenamiento.' });
   const [checkinOpen, setCheckinOpen] = useState(false);
   const [checkinFatigue, setCheckinFatigue] = useState(2);
@@ -405,6 +438,25 @@ export default function HomePage() {
     return () => { active = false; };
   }, [identity?.player?.id, isStaff, team?.id]);
 
+  useEffect(() => {
+    let active = true;
+
+    async function loadLeagueTeams() {
+      if (!team?.id) {
+        setLeagueTeams([]);
+        return;
+      }
+      const { data, error: standingsError } = await supabase
+        .from('league_standings')
+        .select('id,name,logo,team_key,is_own')
+        .eq('context_team_id', team.id);
+      if (active && !standingsError) setLeagueTeams(data || []);
+    }
+
+    void loadLeagueTeams();
+    return () => { active = false; };
+  }, [team?.id]);
+
   const wellnessModel = useMemo(() => {
     const latest = latestWellnessByPlayer(wellness);
     const values = [...latest.values()];
@@ -426,6 +478,16 @@ export default function HomePage() {
   const primaryLoading = loading && !initialHomeEvents;
   const displayNextTraining = loading ? (nextTraining || initialHomeEvents?.training || null) : nextTraining;
   const displayNextMatch = loading ? (nextMatch || initialHomeEvents?.match || null) : nextMatch;
+  const matchOpponentName = opponentName(displayNextMatch);
+  const directOpponentLogo = displayNextMatch?.payload?.opponent_logo || displayNextMatch?.payload?.rival_logo || displayNextMatch?.payload?.opponentLogo || '';
+  const opponentTeamKey = String(displayNextMatch?.payload?.opponent_key || displayNextMatch?.payload?.rival_key || '').trim().toLowerCase();
+  const opponentNameKey = teamMatchKey(matchOpponentName);
+  const opponentStanding = leagueTeams.find((row) => !row.is_own && (
+    (opponentTeamKey && String(row.team_key || '').trim().toLowerCase() === opponentTeamKey) ||
+    teamMatchKey(row.name) === opponentNameKey ||
+    normalizedTeamName(row.name) === normalizedTeamName(matchOpponentName)
+  )) || null;
+  const opponentLogo = directOpponentLogo || opponentStanding?.logo || '';
   const trainingCountdown = displayNextTraining ? daysUntil(displayNextTraining.starts_at) : null;
   const matchCountdown = displayNextMatch ? daysUntil(displayNextMatch.starts_at) : null;
   const trainingDate = displayNextTraining ? dateParts(displayNextTraining.starts_at) : null;
@@ -544,7 +606,7 @@ export default function HomePage() {
                 <span>{attendanceModel.confirmed} confirmadas</span>
                 <span>{attendanceModel.pending} pendientes</span>
               </>) : <span>Tu próxima sesión</span>}
-              <span>{eventDuration(nextTraining)} min</span>
+              <span>{eventDuration(displayNextTraining)} min</span>
             </div>
 
             <div className="coach-card-actions">
@@ -556,9 +618,9 @@ export default function HomePage() {
           <article className="coach-card coach-card-skeleton">No hay entrenamientos próximos.</article>
         )}
 
-        {loading ? (
+        {primaryLoading ? (
           <article className="coach-card coach-card-skeleton">Cargando próximo partido…</article>
-        ) : nextMatch ? (
+        ) : displayNextMatch ? (
           <article className="coach-card coach-match-card">
             <div className="coach-card-top">
               <span className="coach-card-kicker"><Trophy size={13} /> Próximo partido</span>
@@ -571,13 +633,13 @@ export default function HomePage() {
               </div>
               <div className="coach-match-vs">VS</div>
               <div className="coach-team-mark">
-                <span>{initials(opponentName(nextMatch))}</span>
-                <strong>{opponentName(nextMatch)}</strong>
+                <span><MatchTeamLogo name={matchOpponentName} src={opponentLogo} /></span>
+                <strong>{matchOpponentName}</strong>
               </div>
             </div>
             <div className="coach-match-date">
               <strong>{matchDate?.weekday} · {matchDate?.time}</strong>
-              <span>{nextMatch.location || 'Lugar por confirmar'}</span>
+              <span>{displayNextMatch.location || 'Lugar por confirmar'}</span>
             </div>
             <div className="coach-status-pill">{planReady ? 'Plan de juego publicado' : 'Plan de juego pendiente'}</div>
             <Link className="coach-inline-link" to="/game-plan">Ver plan de juego <ChevronRight size={14} /></Link>
