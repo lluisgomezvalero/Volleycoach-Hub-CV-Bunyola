@@ -1,0 +1,31 @@
+name: Apply gameplan performance UI 20260828
+
+on:
+  push:
+    paths:
+      - 'react-migration/.apply-gameplan-performance-ui-20260828'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: react-vite-migration
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply patch
+        run: python scripts/patch_gameplan_performance_20260828.py
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add react-migration/src/pages/GamePlanPage.jsx react-migration/src/pages/GamePlanPage.css react-migration/src/pages/PerformancePage.jsx
+          git diff --cached --quiet && exit 0
+          git commit -m "Ajustar Plan de juego y Rendimiento"
+          git push origin react-vite-migration
