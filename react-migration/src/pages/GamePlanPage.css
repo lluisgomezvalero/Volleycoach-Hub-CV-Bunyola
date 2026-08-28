@@ -191,9 +191,9 @@
 .gp-court>em{position:absolute;z-index:3;left:50%;top:65%;transform:translate(-50%,-50%);font-style:normal;color:#7d6d55;font-size:.72rem;font-weight:700;text-align:center;width:80%}
 .gp-court-caption{margin:.42rem 0 0;text-align:center;color:#677386;font-size:.73rem;min-height:1.1rem}
 
-.gp-serve-court{position:relative;border:1px solid #d8caae;border-radius:16px;overflow:hidden;background:#ead9b8;padding-top:25px}
+.gp-serve-court{position:relative;aspect-ratio:1/1;display:flex;flex-direction:column;border:1px solid #d8caae;border-radius:16px;overflow:hidden;background:#ead9b8;padding-top:25px}
 .gp-serve-net{position:absolute;left:0;right:0;top:10px;text-align:center;border-top:3px solid #1d2939;color:#6e604d;font-size:.55rem;font-weight:900;letter-spacing:.11em;padding-top:3px}
-.gp-zone-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:rgba(255,255,255,.72);border-top:1px solid rgba(255,255,255,.75)}
+.gp-zone-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));flex:1;min-height:0;gap:1px;background:rgba(255,255,255,.72);border-top:1px solid rgba(255,255,255,.75)}
 .gp-zone{position:relative;min-height:72px;border:0;background:#ead9b8;color:#6a5b47;display:grid;place-content:center;text-align:center;gap:.1rem;padding:.25rem;transition:.15s}
 button.gp-zone{cursor:pointer}
 button.gp-zone:hover{filter:brightness(.98)}
