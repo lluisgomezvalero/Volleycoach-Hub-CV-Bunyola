@@ -670,8 +670,8 @@ export default function HomePage() {
 
             {isStaff ? (
               <div className="coach-card-actions">
-                <Link className="coach-action-primary" to="/training"><Activity size={15} /> Abrir sesión</Link>
-                <Link className="coach-action-secondary" to="/training"><ClipboardCheck size={15} /> Pasar lista</Link>
+                <Link className="coach-action-primary" to={`/training?event=${encodeURIComponent(displayNextTraining.id)}&mode=session`}><Activity size={15} /> Abrir sesión</Link>
+                <Link className="coach-action-secondary" to={`/training?event=${encodeURIComponent(displayNextTraining.id)}&mode=attendance`}><ClipboardCheck size={15} /> Pasar lista</Link>
               </div>
             ) : (
               <>

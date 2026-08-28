@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
   AlarmClock,
@@ -24,6 +24,7 @@ import {
   UsersRound,
   X
 } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider.jsx';
 import { supabase } from '../lib/supabase.js';
 import TeamAttendancePanel from './TeamAttendancePanel.jsx';
@@ -407,6 +408,8 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
 
 export default function TrainingPageProfessional() {
   const { identity } = useAuth();
+  const location = useLocation();
+  const deepLinkHandled = useRef('');
   const teams = identity?.teams || [];
   const isStaff = ['coach', 'administrator'].includes(identity?.profile?.role);
   const isPlayer = identity?.profile?.role === 'player';
@@ -473,6 +476,28 @@ export default function TrainingPageProfessional() {
   }
 
   useEffect(() => { void loadEvents(); }, [teamId]);
+
+  useEffect(() => {
+    if (loading || !events.length) return;
+    const params = new URLSearchParams(location.search);
+    const eventId = params.get('event');
+    const mode = params.get('mode') || 'session';
+    if (!eventId) return;
+    const key = `${eventId}:${mode}`;
+    if (deepLinkHandled.current === key) return;
+    const target = events.find((event) => event.id === eventId);
+    if (!target) {
+      deepLinkHandled.current = key;
+      setError('No se encontró el entrenamiento solicitado.');
+      return;
+    }
+    deepLinkHandled.current = key;
+    if (mode === 'attendance' && isStaff) {
+      void openRollCall(target);
+      return;
+    }
+    setSelected(target);
+  }, [events, isStaff, loading, location.search]);
 
   const now = Date.now();
   const upcoming = useMemo(() => events.filter((event) => new Date(event.starts_at).getTime() >= now - 3 * 60 * 60 * 1000).sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at)), [events, now]);
