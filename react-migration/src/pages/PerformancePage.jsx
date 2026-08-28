@@ -12,7 +12,6 @@ import {
   LoaderCircle,
   Medal,
   Plus,
-  RefreshCw,
   Sparkles,
   Target,
   TrendingUp,
@@ -329,10 +328,11 @@ export default function PerformancePage() {
           <h1>{isStaff ? 'Tests físicos del equipo' : 'Tu rendimiento'}</h1>
           <p>{isStaff ? 'Seguimiento de salto y fuerza reactiva, con evolución individual.' : 'Consulta tu evolución en los tests registrados por el cuerpo técnico.'}</p>
         </div>
-        <div className="perf-header-actions">
-          <button type="button" className="perf-refresh" onClick={() => void loadData({ silent: true })}><RefreshCw size={16} /> Actualizar</button>
-          {isStaff ? <button type="button" className="perf-new" onClick={() => { setError(''); setFormOpen(true); }}><Plus size={17} /> Nuevo test</button> : null}
-        </div>
+        {isStaff ? (
+          <div className="perf-header-actions">
+            <button type="button" className="perf-new" onClick={() => { setError(''); setFormOpen(true); }}><Plus size={17} /> Nuevo test</button>
+          </div>
+        ) : null}
       </header>
 
       {error ? <div className="perf-error">{error}<button type="button" onClick={() => setError('')}>×</button></div> : null}
