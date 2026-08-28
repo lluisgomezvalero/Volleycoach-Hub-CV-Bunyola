@@ -1,0 +1,1 @@
+Trigger de build y preview para la corrección del escudo visitante en Inicio.
