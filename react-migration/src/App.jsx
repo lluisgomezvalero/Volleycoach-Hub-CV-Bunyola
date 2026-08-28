@@ -27,6 +27,7 @@ const WellnessPage = lazy(() => import('./pages/WellnessPage.jsx'));
 const RosterPage = lazy(() => import('./pages/RosterPage.jsx'));
 const StatsPage = lazy(() => import('./pages/StatisticsPage.jsx'));
 const CompetitionPage = lazy(() => import('./pages/CompetitionPage.jsx'));
+const GamePlanPage = lazy(() => import('./pages/GamePlanPage.jsx'));
 
 function lazyPlaceholder(title, text) {
   return lazy(() => import('./pages/PlaceholderPage.jsx').then(({ default: PlaceholderPage }) => ({
@@ -34,7 +35,6 @@ function lazyPlaceholder(title, text) {
   })));
 }
 
-const GamePlanPage = lazyPlaceholder('Plan de juego', 'Plan táctico aislado del resto de la aplicación.');
 const PerformancePage = lazyPlaceholder('Rendimiento', 'Métricas y tests físicos cargados bajo demanda.');
 
 const nav = [
@@ -61,7 +61,7 @@ function Navigation({ onNavigate, items = nav }) {
       key={to}
       to={to}
       end={to === '/'}
-      className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
+      className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`
       onClick={onNavigate}
     >
       <Icon size={19} strokeWidth={2.1} />
