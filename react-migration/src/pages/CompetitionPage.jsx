@@ -134,7 +134,7 @@ function EditTeamModal({ row, onClose, onSaved, profileId, canRename }) {
     setError('');
     try {
       const payload = {
-        name: String(form.name || '').trim() || row.name,
+        name: canRename ? (String(form.name || '').trim() || row.name) : row.name,
         points: rowNumber(form.points),
         pj: rowNumber(form.pj),
         pg: rowNumber(form.pg),
@@ -282,7 +282,7 @@ export default function CompetitionPage() {
 
   async function resetRivals() {
     if (!isAdmin || !rows.length) return;
-    const ok = window.confirm('¿Reiniciar los datos de todos los rivales? CV Bunyola seguirá calculándose automáticamente a partir de los resultados de Liga.');
+    const ok = window.confirm('¿Reiniciar a cero la clasificación de los rivales? Los nombres actuales se mantendrán y después podrás cambiarlos para preparar una temporada nueva. CV Bunyola seguirá calculándose automáticamente desde sus partidos de Liga.');
     if (!ok) return;
     setResetting(true);
     setError('');
@@ -340,7 +340,7 @@ export default function CompetitionPage() {
           </div>
         ) : null}
 
-        {!filtered.length ? <div className="competition-empty">No hay equipos que coincidan con la búsqueda.</div> : (
+        {!filtered.length ? <div className="competition-empty">No hay equipos en la clasificación.</div> : (
           <>
             <div className="competition-table-wrap">
               <table className="competition-table">

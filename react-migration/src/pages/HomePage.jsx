@@ -423,11 +423,14 @@ export default function HomePage() {
 
   const completedMatches = recentMatches.filter(completedMatch);
   const planReady = gamePlan?.status === 'published';
-  const trainingCountdown = nextTraining ? daysUntil(nextTraining.starts_at) : null;
-  const matchCountdown = nextMatch ? daysUntil(nextMatch.starts_at) : null;
-  const trainingDate = nextTraining ? dateParts(nextTraining.starts_at) : null;
-  const matchDate = nextMatch ? dateParts(nextMatch.starts_at) : null;
-  const trainingPlan = nextTraining ? planLines(nextTraining) : [];
+  const primaryLoading = loading && !initialHomeEvents;
+  const displayNextTraining = loading ? (nextTraining || initialHomeEvents?.training || null) : nextTraining;
+  const displayNextMatch = loading ? (nextMatch || initialHomeEvents?.match || null) : nextMatch;
+  const trainingCountdown = displayNextTraining ? daysUntil(displayNextTraining.starts_at) : null;
+  const matchCountdown = displayNextMatch ? daysUntil(displayNextMatch.starts_at) : null;
+  const trainingDate = displayNextTraining ? dateParts(displayNextTraining.starts_at) : null;
+  const matchDate = displayNextMatch ? dateParts(displayNextMatch.starts_at) : null;
+  const trainingPlan = displayNextTraining ? planLines(displayNextTraining) : [];
   const localNow = new Date();
   const todayKey = `${localNow.getFullYear()}-${String(localNow.getMonth() + 1).padStart(2, '0')}-${String(localNow.getDate()).padStart(2, '0')}`;
   const playerWellnessToday = !isStaff ? wellness.find((row) => row.entry_date === todayKey) || null : null;
@@ -512,21 +515,21 @@ export default function HomePage() {
       ) : null}
 
       <div className="coach-home-grid">
-        {loading ? (
+        {primaryLoading ? (
           <article className="coach-card coach-card-skeleton">Cargando próximo entrenamiento…</article>
-        ) : nextTraining ? (
+        ) : displayNextTraining ? (
           <article className="coach-card coach-card-dark coach-card-pad">
             <div className="coach-card-top">
               <div>
                 <span className="coach-card-kicker"><Dumbbell size={13} /> Próximo entrenamiento</span>
-                <h3 className="coach-training-title">{nextTraining.title || 'Entrenamiento'}</h3>
+                <h3 className="coach-training-title">{displayNextTraining.title || 'Entrenamiento'}</h3>
               </div>
               {trainingCountdown !== null ? <span className="coach-countdown">{trainingCountdown === 0 ? 'Hoy' : `Dentro de ${trainingCountdown} día${trainingCountdown === 1 ? '' : 's'}`}</span> : null}
             </div>
 
             <div className="coach-event-meta">
               <span><CalendarDays size={13} /> {trainingDate?.weekday} · {trainingDate?.time}</span>
-              {nextTraining.location ? <span><MapPin size={13} /> {nextTraining.location}</span> : null}
+              {displayNextTraining.location ? <span><MapPin size={13} /> {displayNextTraining.location}</span> : null}
             </div>
 
             <div className="coach-plan-box">
