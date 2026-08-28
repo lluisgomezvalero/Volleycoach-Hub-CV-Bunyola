@@ -18,7 +18,7 @@ jobs:
         with:
           ref: react-vite-migration
           fetch-depth: 0
-      - name: Aplicar ajustes
+      - name: Aplicar ajustes finales
         shell: bash
         run: |
           python3 - <<'PY'
@@ -26,12 +26,12 @@ jobs:
 
           home = Path('react-migration/src/pages/HomePage.jsx')
           text = home.read_text()
-
-          old_metrics = '''  const completedMatches = recentMatches.filter(completedMatch);\n  const planReady = gamePlan?.status === 'published';\n  const trainingCountdown = nextTraining ? daysUntil(nextTraining.starts_at) : null;\n  const matchCountdown = nextMatch ? daysUntil(nextMatch.starts_at) : null;\n  const trainingDate = nextTraining ? dateParts(nextTraining.starts_at) : null;\n  const matchDate = nextMatch ? dateParts(nextMatch.starts_at) : null;\n  const trainingPlan = nextTraining ? planLines(nextTraining) : [];\n'''
-          new_metrics = '''  const completedMatches = recentMatches.filter(completedMatch);\n  const planReady = gamePlan?.status === 'published';\n  // Si el equipo llega después del primer render del login, usamos la caché también\n  // durante ese render para evitar un frame de skeleton antes del useEffect.\n  const primaryLoading = loading && !initialHomeEvents;\n  const displayNextTraining = loading ? (nextTraining || initialHomeEvents?.training || null) : nextTraining;\n  const displayNextMatch = loading ? (nextMatch || initialHomeEvents?.match || null) : nextMatch;\n  const trainingCountdown = displayNextTraining ? daysUntil(displayNextTraining.starts_at) : null;\n  const matchCountdown = displayNextMatch ? daysUntil(displayNextMatch.starts_at) : null;\n  const trainingDate = displayNextTraining ? dateParts(displayNextTraining.starts_at) : null;\n  const matchDate = displayNextMatch ? dateParts(displayNextMatch.starts_at) : null;\n  const trainingPlan = displayNextTraining ? planLines(displayNextTraining) : [];\n'''
-          if old_metrics not in text:
+          old = '''  const completedMatches = recentMatches.filter(completedMatch);\n  const planReady = gamePlan?.status === 'published';\n  const trainingCountdown = nextTraining ? daysUntil(nextTraining.starts_at) : null;\n  const matchCountdown = nextMatch ? daysUntil(nextMatch.starts_at) : null;\n  const trainingDate = nextTraining ? dateParts(nextTraining.starts_at) : null;\n  const matchDate = nextMatch ? dateParts(nextMatch.starts_at) : null;\n  const trainingPlan = nextTraining ? planLines(nextTraining) : [];\n'''
+          new = '''  const completedMatches = recentMatches.filter(completedMatch);\n  const planReady = gamePlan?.status === 'published';\n  const primaryLoading = loading && !initialHomeEvents;\n  const displayNextTraining = loading ? (nextTraining || initialHomeEvents?.training || null) : nextTraining;\n  const displayNextMatch = loading ? (nextMatch || initialHomeEvents?.match || null) : nextMatch;\n  const trainingCountdown = displayNextTraining ? daysUntil(displayNextTraining.starts_at) : null;\n  const matchCountdown = displayNextMatch ? daysUntil(displayNextMatch.starts_at) : null;\n  const trainingDate = displayNextTraining ? dateParts(displayNextTraining.starts_at) : null;\n  const matchDate = displayNextMatch ? dateParts(displayNextMatch.starts_at) : null;\n  const trainingPlan = displayNextTraining ? planLines(displayNextTraining) : [];\n'''
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif 'const primaryLoading = loading && !initialHomeEvents;' not in text:
               raise SystemExit('No se encontró bloque de métricas de Inicio')
-          text = text.replace(old_metrics, new_metrics, 1)
 
           start = text.index('      <div className="coach-home-grid">')
           end = text.index('        {isStaff ? (<>', start)
@@ -39,7 +39,8 @@ jobs:
           grid = grid.replace('{loading ? (', '{primaryLoading ? (', 2)
           grid = grid.replace(') : nextTraining ? (', ') : displayNextTraining ? (', 1)
           grid = grid.replace(') : nextMatch ? (', ') : displayNextMatch ? (', 1)
-          grid = grid.replace('nextTraining.', 'displayNextTraining.')
+          grid = grid.replace('nextTraining.title', 'displayNextTraining.title')
+          grid = grid.replace('nextTraining.location', 'displayNextTraining.location')
           grid = grid.replace('eventDuration(nextTraining)', 'eventDuration(displayNextTraining)')
           grid = grid.replace('opponentName(nextMatch)', 'opponentName(displayNextMatch)')
           grid = grid.replace('nextMatch.location', 'displayNextMatch.location')
@@ -48,43 +49,20 @@ jobs:
 
           competition = Path('react-migration/src/pages/CompetitionPage.jsx')
           text = competition.read_text()
-          text = text.replace('  Search,\n', '', 1)
-          text = text.replace('function EditTeamModal({ row, onClose, onSaved, profileId }) {', 'function EditTeamModal({ row, onClose, onSaved, profileId, canRename }) {', 1)
           text = text.replace("        name: String(form.name || '').trim() || row.name,", "        name: canRename ? (String(form.name || '').trim() || row.name) : row.name,", 1)
-          text = text.replace('          <label className="competition-name-field"><span>Equipo</span><input value={form.name} onChange={(event) => update(\'name\', event.target.value)} /></label>\n', '          {canRename ? <label className="competition-name-field"><span>Equipo</span><input value={form.name} onChange={(event) => update(\'name\', event.target.value)} /></label> : null}\n', 1)
-          text = text.replace("  const isStaff = ['coach', 'administrator'].includes(profile?.role);", "  const isStaff = ['coach', 'administrator'].includes(profile?.role);\n  const isAdmin = profile?.role === 'administrator';", 1)
-          text = text.replace("  const [search, setSearch] = useState('');\n", '', 1)
-
-          filtered = '''  const filtered = useMemo(() => {\n    const term = search.trim().toLocaleLowerCase('es');\n    if (!term) return sorted;\n    return sorted.filter((row) => String(row.name || '').toLocaleLowerCase('es').includes(term));\n  }, [search, sorted]);\n\n'''
-          if filtered not in text:
-              raise SystemExit('No se encontró filtro de clasificación')
-          text = text.replace(filtered, '', 1)
-
-          text = text.replace('    if (!isStaff || !rows.length) return;', '    if (!isAdmin || !rows.length) return;', 1)
           text = text.replace("    const ok = window.confirm('¿Reiniciar los datos de todos los rivales? CV Bunyola seguirá calculándose automáticamente a partir de los resultados de Liga.');", "    const ok = window.confirm('¿Reiniciar a cero la clasificación de los rivales? Los nombres actuales se mantendrán y después podrás cambiarlos para preparar una temporada nueva. CV Bunyola seguirá calculándose automáticamente desde sus partidos de Liga.');", 1)
-          text = text.replace("          name: DEFAULT_NAMES[row.team_key] || row.name,\n", '', 1)
-
-          toolbar = '''        <div className="competition-toolbar">\n          <label className="competition-search"><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar equipo…" /></label>\n          {isStaff ? (\n            <button type="button" className="competition-reset-button" onClick={resetRivals} disabled={resetting} title="Reiniciar clasificación" aria-label="Reiniciar clasificación"><RefreshCcw size={17} /> <span>{resetting ? 'Reiniciando…' : 'Reiniciar'}</span></button>\n          ) : null}\n        </div>\n\n'''
-          admin_toolbar = '''        {isAdmin ? (\n          <div className="competition-admin-actions">\n            <button type="button" className="competition-reset-button" onClick={resetRivals} disabled={resetting} title="Reiniciar clasificación" aria-label="Reiniciar clasificación"><RefreshCcw size={17} /> <span>{resetting ? 'Reiniciando…' : 'Reiniciar clasificación'}</span></button>\n          </div>\n        ) : null}\n\n'''
-          if toolbar not in text:
-              raise SystemExit('No se encontró buscador/botón de clasificación')
-          text = text.replace(toolbar, admin_toolbar, 1)
-          text = text.replace('        {!filtered.length ? <div className="competition-empty">No hay equipos que coincidan con la búsqueda.</div> : (', '        {!sorted.length ? <div className="competition-empty">No hay equipos en la clasificación.</div> : (', 1)
-          text = text.replace('{filtered.map((row) => {', '{sorted.map((row) => {', 2)
-          text = text.replace('      {editing ? <EditTeamModal row={editing} onClose={() => setEditing(null)} onSaved={handleSaved} profileId={profile?.id} /> : null}', '      {editing ? <EditTeamModal row={editing} onClose={() => setEditing(null)} onSaved={handleSaved} profileId={profile?.id} canRename={isAdmin} /> : null}', 1)
+          text = text.replace('No hay equipos que coincidan con la búsqueda.', 'No hay equipos en la clasificación.', 1)
           competition.write_text(text)
-
-          css = Path('react-migration/src/pages/CompetitionPage.css')
-          styles = css.read_text()
-          if '.competition-admin-actions{' not in styles:
-              styles += '\n/* Herramientas de temporada reservadas al administrador. */\n.competition-admin-actions{display:flex;justify-content:flex-end;margin-bottom:10px}.competition-admin-actions .competition-reset-button{width:auto}@media(max-width:760px){.competition-admin-actions{margin-bottom:8px}.competition-admin-actions .competition-reset-button{width:auto;min-width:0;padding:0 12px}}\n'
-          css.write_text(styles)
           PY
       - name: Guardar cambios
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add react-migration/src/pages/HomePage.jsx react-migration/src/pages/CompetitionPage.jsx react-migration/src/pages/CompetitionPage.css
-          git commit -m "Pulir carga inmediata y permisos de clasificación"
+          git add react-migration/src/pages/HomePage.jsx react-migration/src/pages/CompetitionPage.jsx
+          if git diff --cached --quiet; then
+            echo "Sin cambios pendientes"
+            exit 0
+          fi
+          git commit -m "Eliminar frame de carga y cerrar permisos de Liga"
           git push origin HEAD:react-vite-migration
