@@ -1,0 +1,77 @@
+name: Fix Home opponent logo
+
+on:
+  push:
+    branches:
+      - react-vite-migration
+    paths:
+      - .github/workflows/fix-home-opponent-logo-20260828.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: react-vite-migration
+          fetch-depth: 0
+
+      - name: Aplicar corrección
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('react-migration/src/pages/HomePage.jsx')
+          text = path.read_text()
+
+          initials = '''function initials(value) {\n  return String(value || 'VB')\n    .split(/\\s+/)\n    .filter(Boolean)\n    .slice(0, 2)\n    .map((part) => part[0])\n    .join('')\n    .toUpperCase();\n}\n'''
+          helpers = '''function initials(value) {\n  return String(value || 'VB')\n    .split(/\\s+/)\n    .filter(Boolean)\n    .slice(0, 2)\n    .map((part) => part[0])\n    .join('')\n    .toUpperCase();\n}\n\nfunction resolveLogo(value) {\n  const raw = String(value || '').trim();\n  if (!raw) return '';\n  if (/^(https?:|data:|blob:)/i.test(raw)) return raw;\n  const normalized = raw.replace(/^\\.?\\//, '');\n  if (normalized.startsWith('assets/')) return `../${normalized}`;\n  return raw;\n}\n\nfunction normalizedTeamName(value) {\n  return String(value || '')\n    .normalize('NFD')\n    .replace(/[\\u0300-\\u036f]/g, '')\n    .toLowerCase()\n    .replace(/[^a-z0-9]+/g, ' ')\n    .trim();\n}\n\nfunction teamMatchKey(value) {\n  return normalizedTeamName(value)\n    .replace(/^(cv|c v|club voleibol|club volei|volei)\\s+/, '')\n    .trim();\n}\n\nfunction MatchTeamLogo({ name, src }) {\n  const [broken, setBroken] = useState(false);\n  useEffect(() => setBroken(false), [src]);\n  const resolved = resolveLogo(src);\n  if (!resolved || broken) return <>{initials(name)}</>;\n  return <img src={resolved} alt=\"\" onError={() => setBroken(true)} />;\n}\n'''
+          if 'function resolveLogo(value)' not in text:
+              if initials not in text:
+                  raise SystemExit('No se encontró helper initials')
+              text = text.replace(initials, helpers, 1)
+
+          state_marker = '''  const [recentMatches, setRecentMatches] = useState([]);\n'''
+          if 'const [leagueTeams, setLeagueTeams]' not in text:
+              if state_marker not in text:
+                  raise SystemExit('No se encontró estado recentMatches')
+              text = text.replace(state_marker, state_marker + "  const [leagueTeams, setLeagueTeams] = useState([]);\n", 1)
+
+          effect_marker = '''  const wellnessModel = useMemo(() => {\n'''
+          logo_effect = '''  useEffect(() => {\n    let active = true;\n\n    async function loadLeagueTeams() {\n      if (!team?.id) {\n        setLeagueTeams([]);\n        return;\n      }\n      const { data, error: standingsError } = await supabase\n        .from('league_standings')\n        .select('id,name,logo,team_key,is_own')\n        .eq('context_team_id', team.id);\n      if (active && !standingsError) setLeagueTeams(data || []);\n    }\n\n    void loadLeagueTeams();\n    return () => { active = false; };\n  }, [team?.id]);\n\n'''
+          if 'async function loadLeagueTeams()' not in text:
+              if effect_marker not in text:
+                  raise SystemExit('No se encontró punto de inserción del efecto')
+              text = text.replace(effect_marker, logo_effect + effect_marker, 1)
+
+          derived_marker = '''  const displayNextMatch = loading ? (nextMatch || initialHomeEvents?.match || null) : nextMatch;\n  const trainingCountdown = displayNextTraining ? daysUntil(displayNextTraining.starts_at) : null;\n'''
+          derived_replacement = '''  const displayNextMatch = loading ? (nextMatch || initialHomeEvents?.match || null) : nextMatch;\n  const matchOpponentName = opponentName(displayNextMatch);\n  const directOpponentLogo = displayNextMatch?.payload?.opponent_logo || displayNextMatch?.payload?.rival_logo || displayNextMatch?.payload?.opponentLogo || '';\n  const opponentTeamKey = String(displayNextMatch?.payload?.opponent_key || displayNextMatch?.payload?.rival_key || '').trim().toLowerCase();\n  const opponentNameKey = teamMatchKey(matchOpponentName);\n  const opponentStanding = leagueTeams.find((row) => !row.is_own && (\n    (opponentTeamKey && String(row.team_key || '').trim().toLowerCase() === opponentTeamKey) ||\n    teamMatchKey(row.name) === opponentNameKey ||\n    normalizedTeamName(row.name) === normalizedTeamName(matchOpponentName)\n  )) || null;\n  const opponentLogo = directOpponentLogo || opponentStanding?.logo || '';\n  const trainingCountdown = displayNextTraining ? daysUntil(displayNextTraining.starts_at) : null;\n'''
+          if 'const matchOpponentName = opponentName(displayNextMatch);' not in text:
+              if derived_marker not in text:
+                  raise SystemExit('No se encontró bloque derivado del próximo partido')
+              text = text.replace(derived_marker, derived_replacement, 1)
+
+          text = text.replace('<span>{eventDuration(nextTraining)} min</span>', '<span>{eventDuration(displayNextTraining)} min</span>', 1)
+
+          old_match = '''        {loading ? (\n          <article className=\"coach-card coach-card-skeleton\">Cargando próximo partido…</article>\n        ) : nextMatch ? (\n          <article className=\"coach-card coach-match-card\">\n            <div className=\"coach-card-top\">\n              <span className=\"coach-card-kicker\"><Trophy size={13} /> Próximo partido</span>\n              {matchCountdown !== null ? <span className=\"coach-countdown\">{matchCountdown === 0 ? 'Hoy' : `${matchCountdown} días`}</span> : null}\n            </div>\n            <div className=\"coach-match-main\">\n              <div className=\"coach-team-mark\">\n                <span><img src={CLUB_LOGO} alt=\"\" /></span>\n                <strong>CV Bunyola</strong>\n              </div>\n              <div className=\"coach-match-vs\">VS</div>\n              <div className=\"coach-team-mark\">\n                <span>{initials(opponentName(nextMatch))}</span>\n                <strong>{opponentName(nextMatch)}</strong>\n              </div>\n            </div>\n            <div className=\"coach-match-date\">\n              <strong>{matchDate?.weekday} · {matchDate?.time}</strong>\n              <span>{nextMatch.location || 'Lugar por confirmar'}</span>\n            </div>\n'''
+          new_match = '''        {primaryLoading ? (\n          <article className=\"coach-card coach-card-skeleton\">Cargando próximo partido…</article>\n        ) : displayNextMatch ? (\n          <article className=\"coach-card coach-match-card\">\n            <div className=\"coach-card-top\">\n              <span className=\"coach-card-kicker\"><Trophy size={13} /> Próximo partido</span>\n              {matchCountdown !== null ? <span className=\"coach-countdown\">{matchCountdown === 0 ? 'Hoy' : `${matchCountdown} días`}</span> : null}\n            </div>\n            <div className=\"coach-match-main\">\n              <div className=\"coach-team-mark\">\n                <span><img src={CLUB_LOGO} alt=\"\" /></span>\n                <strong>CV Bunyola</strong>\n              </div>\n              <div className=\"coach-match-vs\">VS</div>\n              <div className=\"coach-team-mark\">\n                <span><MatchTeamLogo name={matchOpponentName} src={opponentLogo} /></span>\n                <strong>{matchOpponentName}</strong>\n              </div>\n            </div>\n            <div className=\"coach-match-date\">\n              <strong>{matchDate?.weekday} · {matchDate?.time}</strong>\n              <span>{displayNextMatch.location || 'Lugar por confirmar'}</span>\n            </div>\n'''
+          if old_match in text:
+              text = text.replace(old_match, new_match, 1)
+          elif '<MatchTeamLogo name={matchOpponentName} src={opponentLogo} />' not in text:
+              raise SystemExit('No se encontró bloque de próximo partido')
+
+          path.write_text(text)
+          PY
+
+      - name: Guardar cambios
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add react-migration/src/pages/HomePage.jsx
+          git commit -m "Mostrar escudo del rival en Inicio"
+          git push origin HEAD:react-vite-migration
