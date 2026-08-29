@@ -192,6 +192,7 @@ export default function HomePage() {
   const [gamePlan, setGamePlan] = useState(null);
   const [players, setPlayers] = useState([]);
   const [wellness, setWellness] = useState([]);
+  const [playerWellnessLoaded, setPlayerWellnessLoaded] = useState(false);
   const [workloadRows, setWorkloadRows] = useState([]);
   const [recentMatches, setRecentMatches] = useState([]);
   const [leagueTeams, setLeagueTeams] = useState([]);
@@ -212,6 +213,8 @@ export default function HomePage() {
         setLoading(false);
         return;
       }
+
+      setPlayerWellnessLoaded(isStaff || !identity?.player?.id);
 
       const cachedHomeEvents = readHomeEventsCache(team.id);
       if (cachedHomeEvents) {
@@ -445,6 +448,7 @@ export default function HomePage() {
         setNextMatch(match);
         setPlayers(nextPlayers);
         setWellness(nextWellness);
+        setPlayerWellnessLoaded(true);
         setWorkloadRows(nextWorkloads);
         setTrainingAttendance(nextAttendance);
         setGamePlan(nextPlan);
@@ -645,7 +649,7 @@ export default function HomePage() {
 
       {error ? <div className="coach-home-error">{error}</div> : null}
 
-      {!isStaff && !loading && !playerWellnessToday ? (
+      {!isStaff && !loading && playerWellnessLoaded && !playerWellnessToday ? (
         <button type="button" className="player-daily-wellness-banner" onClick={openDailyCheckin}>
           <span className="player-daily-wellness-icon"><HeartPulse /></span>
           <span className="player-daily-wellness-copy"><small>Bienestar diario</small><strong>Registrar bienestar de hoy</strong><span>Fatiga, sueño y molestias · menos de 1 minuto</span></span>
