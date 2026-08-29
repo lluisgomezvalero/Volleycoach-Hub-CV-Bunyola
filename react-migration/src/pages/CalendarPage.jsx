@@ -37,6 +37,39 @@ const TYPE_OPTIONS = [
   ['tournament', 'Torneo']
 ];
 
+const LOCAL_TEAM_LOGOS = {
+  cvbunyola: '/images/logos/logo_cvbunyola.png',
+  cvportol: '/images/logos/logo_cvportol.png',
+  cvmanacor: '/images/logos/logo_cvmanacor.png',
+  cvsonferrer: '/images/logos/logo_cvsonferrer.png',
+  cvalaro: '/images/logos/logo_cvalaro.png',
+  cvsoller: '/images/logos/logo_cvsoller.png',
+  palmavoley: '/images/logos/logo_palmavoley.png'
+};
+
+function normalizeAssetUrl(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+  if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
+  return raw.startsWith('/') ? raw : `/${raw}`;
+}
+
+function resolveTeamLogo(row) {
+  return normalizeAssetUrl(row?.logo) || LOCAL_TEAM_LOGOS[row?.team_key] || null;
+}
+
+function teamInitials(name) {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  return (parts.slice(0, 2).map((part) => part[0]).join('') || 'EQ').toUpperCase();
+}
+
+function TeamBadge({ src, name, compact = false }) {
+  const [failed, setFailed] = useState(false);
+  const url = normalizeAssetUrl(src);
+  if (!url || failed) return <span className={`calendar-team-fallback${compact ? ' compact' : ''}`}>{teamInitials(name)}</span>;
+  return <img className={`calendar-team-logo${compact ? ' compact' : ''}`} src={url} alt={`Escudo ${name || 'rival'}`} onError={() => setFailed(true)} />;
+}
+
 function dateKey(date) {
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -103,7 +136,10 @@ function defaultForm(teamId = '') {
     duration: 120,
     location: 'Pabellón Municipal de Bunyola',
     description: '',
-    plan: ''
+    plan: '',
+    opponent: '',
+    opponent_key: '',
+    opponent_logo: ''
   };
 }
 
@@ -118,7 +154,10 @@ function formFromEvent(event) {
     duration: durationMinutes(event),
     location: event.location || '',
     description: event.payload?.description || '',
-    plan: event.payload?.plan || ''
+    plan: event.payload?.plan || '',
+    opponent: event.payload?.opponent || '',
+    opponent_key: event.payload?.opponent_key || '',
+    opponent_logo: event.payload?.opponent_logo || ''
   };
 }
 
@@ -128,10 +167,13 @@ function EventCard({ event, onOpen }) {
   const Icon = meta.icon;
   const time = event.isBirthday ? 'Todo el día' : formatTime(event.starts_at);
   const planItems = String(event?.payload?.plan || '').split('\n').map((item) => item.trim()).filter(Boolean);
+  const isMatchLike = ['match', 'friendly'].includes(type);
+  const opponentName = event?.payload?.opponent || event.title || meta.label;
+  const opponentLogo = event?.payload?.opponent_logo || '';
 
   const content = (
     <>
-      <span className={`calendar-event-icon type-${type}`}><Icon size={18} /></span>
+      <span className={`calendar-event-icon type-${type}`}>{isMatchLike && opponentLogo ? <TeamBadge src={opponentLogo} name={opponentName} compact /> : <Icon size={18} />}</span>
       <span className="calendar-event-copy">
         <span className="calendar-event-topline"><small>{meta.label}</small><time>{time}</time></span>
         <strong>{event.title || meta.label}</strong>
@@ -182,8 +224,16 @@ function EventModal({ event, isStaff, onClose, onEdit, onDelete }) {
   );
 }
 
-function EventEditor({ open, teams, form, setForm, saving, error, editing, onClose, onSubmit }) {
+function EventEditor({ open, teams, leagueTeams, form, setForm, saving, error, editing, onClose, onSubmit }) {
   if (!open) return null;
+  const isMatchLike = ['match', 'friendly'].includes(form.type);
+  const rivals = (leagueTeams || []).filter((row) => !row.is_own && (!form.team_id || row.context_team_id === form.team_id));
+
+  function chooseOpponent(row) {
+    const logo = resolveTeamLogo(row) || '';
+    setForm((prev) => ({ ...prev, opponent: row.name || '', opponent_key: row.team_key || '', opponent_logo: logo }));
+  }
+
   return (
     <div className="calendar-modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <section className="calendar-modal calendar-editor-modal" role="dialog" aria-modal="true" aria-label={editing ? 'Editar evento' : 'Crear evento'}>
@@ -198,9 +248,24 @@ function EventEditor({ open, teams, form, setForm, saving, error, editing, onClo
             <label><span>Equipo</span><select value={form.team_id} onChange={(e) => setForm((prev) => ({ ...prev, team_id: e.target.value }))} required>{teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label>
           ) : null}
           <div className="calendar-form-grid two">
-            <label><span>Tipo</span><select value={form.type} onChange={(e) => setForm((prev) => ({ ...prev, type: e.target.value, title: prev.title === 'Entrenamiento' ? eventTypePayload(e.target.value) : prev.title }))}>{TYPE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+            <label><span>Tipo</span><select value={form.type} onChange={(e) => { const nextType = e.target.value; setForm((prev) => ({ ...prev, type: nextType, title: prev.title === 'Entrenamiento' ? eventTypePayload(nextType) : prev.title, ...(!['match', 'friendly'].includes(nextType) ? { opponent: '', opponent_key: '', opponent_logo: '' } : {}) })); }}>{TYPE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
             <label><span>Título</span><input value={form.title} onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))} required /></label>
           </div>
+          {isMatchLike ? (
+            <div className="calendar-opponent-picker">
+              <span className="calendar-opponent-label">Rival</span>
+              {rivals.length ? (
+                <div className="calendar-opponent-grid">
+                  {rivals.map((row) => {
+                    const logo = resolveTeamLogo(row);
+                    const selected = form.opponent_key === row.team_key;
+                    return <button key={`${row.context_team_id}-${row.team_key}`} type="button" className={`calendar-opponent-option${selected ? ' selected' : ''}`} onClick={() => chooseOpponent(row)}><TeamBadge src={logo} name={row.name} /><strong>{row.name}</strong></button>;
+                  })}
+                </div>
+              ) : <small className="calendar-opponent-help">No hay rivales registrados para este equipo.</small>}
+              <label className="calendar-opponent-manual"><span>Otro rival</span><input value={form.opponent} onChange={(e) => setForm((prev) => ({ ...prev, opponent: e.target.value, opponent_key: '', opponent_logo: '' }))} placeholder="Escribe el nombre si no está en la lista…" /></label>
+            </div>
+          ) : null}
           <div className="calendar-form-grid three">
             <label><span>Fecha</span><input type="date" value={form.date} onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))} required /></label>
             <label><span>Hora</span><input type="time" value={form.time} onChange={(e) => setForm((prev) => ({ ...prev, time: e.target.value }))} required /></label>
@@ -227,6 +292,7 @@ export default function CalendarPage() {
   const [selectedKey, setSelectedKey] = useState(() => dateKey(today));
   const [events, setEvents] = useState([]);
   const [birthdays, setBirthdays] = useState([]);
+  const [leagueTeams, setLeagueTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [detailEvent, setDetailEvent] = useState(null);
@@ -239,6 +305,18 @@ export default function CalendarPage() {
   useEffect(() => {
     if (!form.team_id && teamIds[0]) setForm((prev) => ({ ...prev, team_id: teamIds[0] }));
   }, [form.team_id, teamIds]);
+
+  useEffect(() => {
+    let active = true;
+    async function loadLeagueTeams() {
+      if (!teamIds.length) { setLeagueTeams([]); return; }
+      const { data, error } = await supabase.from('league_standings').select('context_team_id,team_key,name,logo,is_own').in('context_team_id', teamIds).order('name');
+      if (!active) return;
+      if (!error) setLeagueTeams(data || []);
+    }
+    void loadLeagueTeams();
+    return () => { active = false; };
+  }, [teamIds]);
 
   useEffect(() => {
     let active = true;
@@ -351,6 +429,7 @@ export default function CalendarPage() {
       const minutes = Math.max(15, Number(form.duration) || 120);
       const end = new Date(start.getTime() + minutes * 60000);
       const previousPayload = editingEvent?.payload || {};
+      const isMatchLike = ['match', 'friendly'].includes(form.type);
       const payload = {
         ...previousPayload,
         type: eventTypePayload(form.type),
@@ -358,6 +437,9 @@ export default function CalendarPage() {
         duration: minutes,
         description: form.description.trim(),
         plan: form.plan.trim(),
+        opponent: isMatchLike && form.opponent.trim() ? form.opponent.trim() : null,
+        opponent_key: isMatchLike && form.opponent_key ? form.opponent_key : null,
+        opponent_logo: isMatchLike && form.opponent_logo ? form.opponent_logo : null,
         status: editingEvent?.status || 'Próximo'
       };
       const row = {
@@ -452,7 +534,7 @@ export default function CalendarPage() {
       </div>
 
       <EventModal event={detailEvent} isStaff={isStaff} onClose={() => setDetailEvent(null)} onEdit={openEdit} onDelete={deleteEvent} />
-      <EventEditor open={editorOpen} teams={teams} form={form} setForm={setForm} saving={saving} error={formError} editing={Boolean(editingEvent)} onClose={() => { if (!saving) { setEditorOpen(false); setEditingEvent(null); } }} onSubmit={saveEvent} />
+      <EventEditor open={editorOpen} teams={teams} leagueTeams={leagueTeams} form={form} setForm={setForm} saving={saving} error={formError} editing={Boolean(editingEvent)} onClose={() => { if (!saving) { setEditorOpen(false); setEditingEvent(null); } }} onSubmit={saveEvent} />
     </div>
   );
 }
