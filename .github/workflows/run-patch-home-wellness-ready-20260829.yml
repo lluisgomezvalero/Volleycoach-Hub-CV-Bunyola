@@ -1,0 +1,31 @@
+name: Run patch home wellness ready 20260829
+
+on:
+  push:
+    branches:
+      - react-vite-migration
+    paths:
+      - 'react-migration/patch_home_wellness_ready_20260829.py'
+      - '.github/workflows/run-patch-home-wellness-ready-20260829.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: react-vite-migration
+          fetch-depth: 0
+      - name: Patch HomePage wellness readiness
+        run: python react-migration/patch_home_wellness_ready_20260829.py
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add react-migration/src/pages/HomePage.jsx
+          git diff --cached --quiet && exit 0
+          git commit -m "Evitar falso aviso de bienestar ya contestado"
+          git push origin HEAD:react-vite-migration
