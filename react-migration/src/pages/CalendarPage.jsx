@@ -327,7 +327,7 @@ export default function CalendarPage() {
 
   function openCreate() {
     setEditingEvent(null);
-    setForm(defaultForm(teamIds[0] || ''));
+    setForm({ ...defaultForm(teamIds[0] || ''), date: selectedKey || dateKey(new Date()) });
     setFormError('');
     setEditorOpen(true);
   }
@@ -446,7 +446,7 @@ export default function CalendarPage() {
         <section className="calendar-agenda-card">
           <header className="calendar-agenda-head"><div><span>AGENDA</span><h2>{formatLongDate(selectedDate)}</h2></div><small>{selectedEvents.length} {selectedEvents.length === 1 ? 'evento' : 'eventos'}</small></header>
           <div className="calendar-agenda-list">
-            {loading ? <div className="calendar-empty-state"><span className="calendar-loading-dot" /><strong>Cargando calendario…</strong></div> : selectedEvents.length ? selectedEvents.map((event) => <EventCard key={event.id} event={event} onOpen={setDetailEvent} />) : <div className="calendar-empty-state"><CalendarCheck size={24} /><strong>Sin eventos este día</strong><span>Pulsa otra fecha para consultar su agenda.</span></div>}
+            {loading ? <div className="calendar-empty-state"><span className="calendar-loading-dot" /><strong>Cargando calendario…</strong></div> : selectedEvents.length ? selectedEvents.map((event) => <EventCard key={event.id} event={event} onOpen={setDetailEvent} />) : <div className="calendar-empty-state"><CalendarCheck size={24} /><strong>Sin eventos este día</strong><span>{isStaff ? 'Puedes añadir un evento directamente en esta fecha.' : 'Pulsa otra fecha para consultar su agenda.'}</span>{isStaff ? <button type="button" className="calendar-empty-add" onClick={openCreate}><Plus size={17} />Añadir evento</button> : null}</div>}
           </div>
         </section>
       </div>
