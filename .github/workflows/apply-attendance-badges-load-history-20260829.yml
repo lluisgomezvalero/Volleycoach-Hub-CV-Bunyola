@@ -1,0 +1,131 @@
+name: Apply attendance badges and load history 20260829
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-attendance-badges-load-history-20260829.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: react-vite-migration
+      - name: Patch React source
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          home_path = Path('react-migration/src/pages/HomePage.jsx')
+          home = home_path.read_text()
+
+          old = """function loadTone(load) {
+            if (load >= 1200) return { key: 'high', label: 'Alta' };
+            if (load >= 600) return { key: 'optimal', label: 'Moderada' };
+            return { key: 'low', label: 'Baja' };
+          }"""
+          new = """function loadTone(load, ready = false) {
+            if (!ready) return { key: 'learning', label: 'Sin historial suficiente' };
+            if (load >= 1200) return { key: 'high', label: 'Alta' };
+            if (load >= 600) return { key: 'optimal', label: 'Moderada' };
+            return { key: 'low', label: 'Baja' };
+          }"""
+          if old not in home:
+              raise SystemExit('loadTone anchor not found')
+          home = home.replace(old, new, 1)
+
+          recent_pattern = re.compile(r"(        const recentMatchRequest = supabase\n(?:.*\n)*?          \.limit\(5\);)")
+          m = recent_pattern.search(home)
+          if not m:
+              raise SystemExit('recentMatchRequest anchor not found')
+          addition = m.group(1) + """
+
+                let firstTrainingRequest = supabase
+                  .from('events')
+                  .select('starts_at')
+                  .eq('team_id', team.id)
+                  .eq('event_type', 'training')
+                  .lte('starts_at', now.toISOString());
+                if (identity?.season?.id) firstTrainingRequest = firstTrainingRequest.eq('season_id', identity.season.id);
+                firstTrainingRequest = firstTrainingRequest.order('starts_at', { ascending: true }).limit(1);"""
+          home = home[:m.start()] + addition + home[m.end():]
+
+          old = "const [pastTrainingResult, recentMatchResult] = await Promise.all([pastTrainingRequest, recentMatchRequest]);"
+          new = "const [pastTrainingResult, recentMatchResult, firstTrainingResult] = await Promise.all([pastTrainingRequest, recentMatchRequest, isStaff ? firstTrainingRequest : Promise.resolve({ data: [], error: null })]);"
+          if old not in home:
+              raise SystemExit('Promise.all anchor not found')
+          home = home.replace(old, new, 1)
+
+          old = """        if (pastTrainingResult.error) throw pastTrainingResult.error;
+                  if (recentMatchResult.error) throw recentMatchResult.error;"""
+          new = """        if (pastTrainingResult.error) throw pastTrainingResult.error;
+                  if (recentMatchResult.error) throw recentMatchResult.error;
+                  if (firstTrainingResult.error) throw firstTrainingResult.error;"""
+          if old not in home:
+              raise SystemExit('result errors anchor not found')
+          home = home.replace(old, new, 1)
+
+          old = """          const eventMap = new Map(pastTrainings.map((event) => [event.id, event]));"""
+          new = """          const firstTrainingAt = firstTrainingResult.data?.[0]?.starts_at || null;
+                    const firstTrainingTime = firstTrainingAt ? new Date(firstTrainingAt).getTime() : NaN;
+                    const historyCoverageDays = Number.isFinite(firstTrainingTime)
+                      ? Math.min(35, Math.max(1, Math.floor((now.getTime() - firstTrainingTime) / 86400000) + 1))
+                      : 0;
+                    const workloadReady = historyCoverageDays >= 35;
+
+                    const eventMap = new Map(pastTrainings.map((event) => [event.id, event]));"""
+          if old not in home:
+              raise SystemExit('eventMap anchor not found')
+          home = home.replace(old, new, 1)
+
+          old = ".map((player) => ({ player, ...(loads.get(player.id) || { seven: 0, twentyEight: 0 }) }))"
+          new = ".map((player) => ({ player, ...(loads.get(player.id) || { seven: 0, twentyEight: 0 }), historyCoverageDays, ready: workloadReady }))"
+          if old not in home:
+              raise SystemExit('workload mapping anchor not found')
+          home = home.replace(old, new, 1)
+
+          old = "const tone = loadTone(row.seven);"
+          new = "const tone = loadTone(row.seven, row.ready);"
+          if old not in home:
+              raise SystemExit('loadTone render anchor not found')
+          home = home.replace(old, new, 1)
+
+          home_path.write_text(home)
+
+          training_path = Path('react-migration/src/pages/TrainingPageProfessional.jsx')
+          training = training_path.read_text()
+          old = """<div className=\"rollcall-player-id\"><span className=\"rollcall-avatar\">{initials(playerName(player))}</span><span><strong>{playerName(player)}</strong><small>{player.dorsal != null ? `#${player.dorsal}` : 'Sin dorsal'} · {player.position || 'Sin posición'} {response ? `· ${response === 'yes' ? 'Confirmó asistencia' : 'Avisó ausencia'}` : ''}</small></span></div>"""
+          new = """<div className=\"rollcall-player-id\"><span className=\"rollcall-avatar\">{initials(playerName(player))}</span><span><span className=\"rollcall-player-name-line\"><strong>{playerName(player)}</strong>{response ? <span className={`rollcall-rsvp-badge ${response === 'yes' ? 'yes' : 'no'}`}>{response === 'yes' ? 'Asistirá' : 'No asistirá'}</span> : null}</span><small>{player.dorsal != null ? `#${player.dorsal}` : 'Sin dorsal'} · {player.position || 'Sin posición'}</small></span></div>"""
+          if old not in training:
+              raise SystemExit('rollcall player identity anchor not found')
+          training = training.replace(old, new, 1)
+          training_path.write_text(training)
+
+          training_css_path = Path('react-migration/src/pages/TrainingPageProfessional.css')
+          training_css = training_css_path.read_text()
+          if '.rollcall-rsvp-badge{' not in training_css:
+              training_css += """
+
+          /* Confirmación previa visible al pasar lista */
+          .rollcall-player-name-line{display:flex;align-items:center;gap:6px;min-width:0;flex-wrap:wrap}.rollcall-player-name-line>strong{min-width:0}.rollcall-rsvp-badge{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;font-size:.56rem;font-weight:900;line-height:1.15;white-space:nowrap}.rollcall-rsvp-badge.yes{background:#e8f7ee;color:#177245;border:1px solid #b9e0c9}.rollcall-rsvp-badge.no{background:#fff0f1;color:#a83d49;border:1px solid #f1c0c5}
+          """
+          training_css_path.write_text(training_css)
+
+          home_css_path = Path('react-migration/src/pages/HomePageDashboard.css')
+          home_css = home_css_path.read_text()
+          if '.coach-load-state.learning{' not in home_css:
+              home_css += """
+
+          /* No clasificar carga hasta disponer de 35 días de historial */
+          .coach-load-state.learning{background:#f2f4f7;color:#667085;white-space:nowrap}
+          """
+          home_css_path.write_text(home_css)
+          PY
+          rm .github/workflows/apply-attendance-badges-load-history-20260829.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Mostrar confirmaciones y esperar historial para clasificar carga'
+          git push origin HEAD:react-vite-migration
