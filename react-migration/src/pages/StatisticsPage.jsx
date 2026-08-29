@@ -284,19 +284,22 @@ export default function StatisticsPage() {
     setLoading(true);
     setError('');
     try {
-      const [eventResult, statsResult] = await Promise.all([
-        supabase
-          .from('events')
-          .select('id,event_type,title,starts_at,ends_at,location,status,payload')
-          .eq('team_id', teamId)
-          .in('event_type', ['match', 'friendly', 'tournament'])
-          .order('starts_at', { ascending: false }),
-        supabase
-          .from('match_statistics')
-          .select('id,event_id,club_id,team_id,status,visible_metrics,payload,published_at,created_by,updated_at')
-          .eq('team_id', teamId)
-          .order('updated_at', { ascending: false })
-      ]);
+      const eventRequest = supabase
+        .from('events')
+        .select('id,event_type,title,starts_at,ends_at,location,status,payload')
+        .eq('team_id', teamId)
+        .in('event_type', ['match', 'friendly', 'tournament'])
+        .order('starts_at', { ascending: false });
+
+      const statsRequest = isStaff
+        ? supabase
+            .from('match_statistics')
+            .select('id,event_id,club_id,team_id,status,visible_metrics,payload,published_at,created_by,updated_at')
+            .eq('team_id', teamId)
+            .order('updated_at', { ascending: false })
+        : supabase.rpc('get_published_match_statistics');
+
+      const [eventResult, statsResult] = await Promise.all([eventRequest, statsRequest]);
       if (eventResult.error) throw eventResult.error;
       if (statsResult.error) throw statsResult.error;
       setEvents(eventResult.data || []);
@@ -306,7 +309,7 @@ export default function StatisticsPage() {
     } finally {
       setLoading(false);
     }
-  }, [teamId]);
+  }, [isStaff, teamId]);
 
   useEffect(() => { void loadData(); }, [loadData]);
 
