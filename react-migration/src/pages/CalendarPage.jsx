@@ -232,8 +232,7 @@ function EventCard({ event, leagueTeams, onOpen }) {
   const meta = EVENT_META[type] || EVENT_META.training;
   const Icon = meta.icon;
   const time = event.isBirthday ? 'Todo el día' : formatTime(event.starts_at);
-  const planItems = String(event?.payload?.plan || '').split('
-').map((item) => item.trim()).filter(Boolean);
+  const planItems = String(event?.payload?.plan || '').split('\n').map((item) => item.trim()).filter(Boolean);
   const isMatchLike = ['match', 'friendly'].includes(type);
   const matchup = isMatchLike ? resolveMatchup(event, leagueTeams) : null;
 
