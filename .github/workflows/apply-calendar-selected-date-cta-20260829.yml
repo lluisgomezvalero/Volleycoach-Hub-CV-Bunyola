@@ -1,0 +1,50 @@
+name: Apply calendar selected date CTA 20260829
+on:
+  push:
+    branches: [react-vite-migration]
+    paths: ['.github/workflows/apply-calendar-selected-date-cta-20260829.yml']
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: react-vite-migration
+      - name: Patch calendar
+        shell: python
+        run: |
+          from pathlib import Path
+
+          jsx = Path('react-migration/src/pages/CalendarPage.jsx')
+          text = jsx.read_text()
+
+          old = """  function openCreate() {\n    setEditingEvent(null);\n    setForm(defaultForm(teamIds[0] || ''));\n    setFormError('');\n    setEditorOpen(true);\n  }"""
+          new = """  function openCreate() {\n    setEditingEvent(null);\n    setForm({ ...defaultForm(teamIds[0] || ''), date: selectedKey || dateKey(new Date()) });\n    setFormError('');\n    setEditorOpen(true);\n  }"""
+          if old not in text:
+              raise SystemExit('openCreate block not found')
+          text = text.replace(old, new, 1)
+
+          old_empty = """{loading ? <div className=\"calendar-empty-state\"><span className=\"calendar-loading-dot\" /><strong>Cargando calendario…</strong></div> : selectedEvents.length ? selectedEvents.map((event) => <EventCard key={event.id} event={event} onOpen={setDetailEvent} />) : <div className=\"calendar-empty-state\"><CalendarCheck size={24} /><strong>Sin eventos este día</strong><span>Pulsa otra fecha para consultar su agenda.</span></div>}"""
+          new_empty = """{loading ? <div className=\"calendar-empty-state\"><span className=\"calendar-loading-dot\" /><strong>Cargando calendario…</strong></div> : selectedEvents.length ? selectedEvents.map((event) => <EventCard key={event.id} event={event} onOpen={setDetailEvent} />) : <div className=\"calendar-empty-state\"><CalendarCheck size={24} /><strong>Sin eventos este día</strong><span>{isStaff ? 'Puedes añadir un evento directamente en esta fecha.' : 'Pulsa otra fecha para consultar su agenda.'}</span>{isStaff ? <button type=\"button\" className=\"calendar-empty-add\" onClick={openCreate}><Plus size={17} />Añadir evento</button> : null}</div>}"""
+          if old_empty not in text:
+              raise SystemExit('empty state block not found')
+          text = text.replace(old_empty, new_empty, 1)
+          jsx.write_text(text)
+
+          css = Path('react-migration/src/pages/CalendarPage.css')
+          styles = css.read_text()
+          anchor = ".calendar-empty-state span{font-size:.72rem}"
+          addition = ".calendar-empty-state span{font-size:.72rem}.calendar-empty-add{margin-top:8px;min-height:42px;padding:0 16px;border:0;border-radius:12px;background:#f0a400;color:#1b2432;display:inline-flex;align-items:center;justify-content:center;gap:7px;font:inherit;font-size:.72rem;font-weight:850;cursor:pointer;box-shadow:0 7px 16px rgba(224,153,20,.16)}.calendar-empty-add:active{transform:translateY(1px)}"
+          if anchor not in styles:
+              raise SystemExit('CSS anchor not found')
+          styles = styles.replace(anchor, addition, 1)
+          css.write_text(styles)
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add react-migration/src/pages/CalendarPage.jsx react-migration/src/pages/CalendarPage.css
+          git commit -m "Añadir eventos desde la fecha seleccionada" || exit 0
+          git push origin react-vite-migration
