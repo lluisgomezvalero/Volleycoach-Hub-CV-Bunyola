@@ -125,7 +125,8 @@ function opponentName(event) {
   return title || 'Rival por confirmar';
 }
 
-function loadTone(load) {
+function loadTone(load, ready = false) {
+  if (!ready) return { key: 'learning', label: 'Sin historial suficiente' };
   if (load >= 1200) return { key: 'high', label: 'Alta' };
   if (load >= 600) return { key: 'optimal', label: 'Moderada' };
   return { key: 'low', label: 'Baja' };
@@ -251,6 +252,15 @@ export default function HomePage() {
           .order('starts_at', { ascending: false })
           .limit(5);
 
+      let firstTrainingRequest = supabase
+        .from('events')
+        .select('starts_at')
+        .eq('team_id', team.id)
+        .eq('event_type', 'training')
+        .lte('starts_at', now.toISOString());
+      if (identity?.season?.id) firstTrainingRequest = firstTrainingRequest.eq('season_id', identity.season.id);
+      firstTrainingRequest = firstTrainingRequest.order('starts_at', { ascending: true }).limit(1);
+
         // Próximo entreno y partido son la prioridad para cualquier rol.
         // Se muestran en cuanto responde el calendario futuro; el resto continúa en segundo plano.
         const futureResult = await futureRequest;
@@ -265,10 +275,11 @@ export default function HomePage() {
           setLoading(false);
         }
 
-        const [pastTrainingResult, recentMatchResult] = await Promise.all([pastTrainingRequest, recentMatchRequest]);
+        const [pastTrainingResult, recentMatchResult, firstTrainingResult] = await Promise.all([pastTrainingRequest, recentMatchRequest, isStaff ? firstTrainingRequest : Promise.resolve({ data: [], error: null })]);
 
         if (pastTrainingResult.error) throw pastTrainingResult.error;
         if (recentMatchResult.error) throw recentMatchResult.error;
+        if (firstTrainingResult.error) throw firstTrainingResult.error;
 
         const future = futureResult.data || [];
         const training = future.find((event) => event.event_type === 'training') || null;
@@ -318,6 +329,13 @@ export default function HomePage() {
           nextAttendance = attendanceResult.data || [];
           nextPlan = planResult.data?.[0] || null;
 
+          const firstTrainingAt = firstTrainingResult.data?.[0]?.starts_at || null;
+          const firstTrainingTime = firstTrainingAt ? new Date(firstTrainingAt).getTime() : NaN;
+          const historyCoverageDays = Number.isFinite(firstTrainingTime)
+            ? Math.min(35, Math.max(1, Math.floor((now.getTime() - firstTrainingTime) / 86400000) + 1))
+            : 0;
+          const workloadReady = historyCoverageDays >= 35;
+
           const eventMap = new Map(pastTrainings.map((event) => [event.id, event]));
           const loads = new Map(nextPlayers.map((player) => [player.id, { seven: 0, twentyEight: 0 }]));
           const sevenCutoff = now.getTime() - 7 * 86400000;
@@ -333,7 +351,7 @@ export default function HomePage() {
           });
 
           nextWorkloads = nextPlayers
-            .map((player) => ({ player, ...(loads.get(player.id) || { seven: 0, twentyEight: 0 }) }))
+            .map((player) => ({ player, ...(loads.get(player.id) || { seven: 0, twentyEight: 0 }), historyCoverageDays, ready: workloadReady }))
             .sort((a, b) => b.seven - a.seven || playerName(a.player).localeCompare(playerName(b.player), 'es'));
         } else if (identity?.player?.id) {
           const wellnessResult = await supabase
@@ -767,7 +785,7 @@ export default function HomePage() {
                   <thead><tr><th>Jugadora</th><th>Carga 7 días</th><th>Estado</th></tr></thead>
                   <tbody>
                     {workloadRows.map((row) => {
-                      const tone = loadTone(row.seven);
+                      const tone = loadTone(row.seven, row.ready);
                       const name = playerName(row.player);
                       return (
                         <tr key={row.player.id}>

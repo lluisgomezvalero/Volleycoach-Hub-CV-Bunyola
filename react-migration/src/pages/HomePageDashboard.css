@@ -21,3 +21,7 @@
 .player-home-attendance-btn.yes.active{background:#15803d!important;border-color:#15803d!important;box-shadow:0 0 0 3px rgba(34,197,94,.22)}
 .player-home-attendance-btn.no.active{background:#b91c1c!important;border-color:#b91c1c!important;box-shadow:0 0 0 3px rgba(239,68,68,.20)}
 .player-home-attendance-btn:disabled{opacity:.7}
+
+
+/* No clasificar carga hasta disponer de 35 días de historial */
+.coach-load-state.learning{background:#f2f4f7;color:#667085;white-space:nowrap}
