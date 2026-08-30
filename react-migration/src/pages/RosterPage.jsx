@@ -17,7 +17,7 @@ import './RosterPage.css';
 const STATUS_LABELS = ['Disponible', 'Lesionada', 'Baja'];
 
 function displayName(player) {
-  return player.profiles?.full_name || player.profiles?.username || player.legacy_id || 'Jugadora';
+  return player.display_name || player.profiles?.full_name || player.profiles?.username || player.legacy_id || 'Jugadora';
 }
 
 function initials(player) {
@@ -58,6 +58,7 @@ export default function RosterPage() {
   const [teamId, setTeamId] = useState(teams[0]?.id || '');
   const [players, setPlayers] = useState([]);
   const [avatars, setAvatars] = useState({});
+  const [directoryRevision, setDirectoryRevision] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
@@ -69,6 +70,12 @@ export default function RosterPage() {
   useEffect(() => {
     if (!teamId && teams[0]?.id) setTeamId(teams[0].id);
   }, [teamId, teams]);
+
+  useEffect(() => {
+    const refreshDirectory = () => setDirectoryRevision((value) => value + 1);
+    window.addEventListener('volleycoach:player-directory-updated', refreshDirectory);
+    return () => window.removeEventListener('volleycoach:player-directory-updated', refreshDirectory);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -83,7 +90,7 @@ export default function RosterPage() {
       try {
         const { data, error: rosterError } = await supabase
           .from('players')
-          .select('id,legacy_id,profile_id,team_id,dorsal,birth_date,position,status,active,avatar_path,profiles:profile_id(id,username,full_name,avatar_path,active,last_login_at)')
+          .select('id,legacy_id,display_name,profile_id,team_id,dorsal,birth_date,position,status,active,avatar_path,profiles:profile_id(id,username,full_name,avatar_path,active,last_login_at)')
           .eq('team_id', teamId)
           .eq('active', true)
           .order('dorsal', { ascending: true, nullsFirst: false });
@@ -113,7 +120,7 @@ export default function RosterPage() {
     }
     loadRoster();
     return () => { active = false; };
-  }, [teamId]);
+  }, [teamId, directoryRevision]);
 
   const positions = useMemo(() => {
     const values = [...new Set(players.map((player) => normalizePosition(player.position)))].sort((a, b) => a.localeCompare(b, 'es'));

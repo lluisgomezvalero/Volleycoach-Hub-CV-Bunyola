@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Minus, Plus, X } from 'lucide-react';
 import './AvatarCropDialog.css';
 
-const STAGE_SIZE = 280;
+const STAGE_SIZE = 260;
 const OUTPUT_SIZE = 640;
 
 function clamp(value, min, max) {

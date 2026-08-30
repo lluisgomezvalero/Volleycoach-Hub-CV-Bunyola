@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../auth/AuthProvider.jsx';
 import { loadPlayerEngagement } from '../lib/engagement.js';
 import { supabase } from '../lib/supabase.js';
+import AvatarCropDialog from './AvatarCropDialog.jsx';
 import './ProfilePassport.css';
 
 const ROLE_LABELS = {
@@ -69,6 +70,7 @@ export default function ProfileModal({ open, onClose }) {
   const [engagement, setEngagement] = useState(null);
   const [passportLoading, setPassportLoading] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [avatarCropFile, setAvatarCropFile] = useState(null);
   const [latestCmj, setLatestCmj] = useState(null);
 
   useEffect(() => {
@@ -136,7 +138,7 @@ export default function ProfileModal({ open, onClose }) {
 
   if (!open) return null;
 
-  async function uploadAvatar(event) {
+  function chooseAvatar(event) {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file || !player?.id || !player?.club_id || profile?.role !== 'player') return;
@@ -144,17 +146,27 @@ export default function ProfileModal({ open, onClose }) {
       setError('Selecciona una imagen válida.');
       return;
     }
-    if (file.size > 6 * 1024 * 1024) {
-      setError('La foto no puede superar 6 MB.');
+    if (file.size > 8 * 1024 * 1024) {
+      setError('La foto no puede superar 8 MB.');
       return;
     }
+    setError('');
+    setAvatarCropFile(file);
+  }
+
+  async function saveCroppedAvatar(blob) {
+    if (!blob || !player?.id || !player?.club_id || profile?.role !== 'player' || avatarSaving) return;
     setAvatarSaving(true);
     setError('');
+    setSaved(false);
     try {
-      const extension = file.type.includes('png') ? 'png' : file.type.includes('webp') ? 'webp' : 'jpg';
-      const nextPath = `${player.club_id}/${player.id}/avatar-${Date.now()}.${extension}`;
+      const nextPath = `${player.club_id}/${player.id}/avatar-${Date.now()}.jpg`;
       const previousPath = player.avatar_path || profile.avatar_path || '';
-      const { error: uploadError } = await supabase.storage.from('avatars').upload(nextPath, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(nextPath, blob, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: 'image/jpeg'
+      });
       if (uploadError) throw uploadError;
 
       const [{ error: playerError }, { error: profileError }] = await Promise.all([
@@ -163,10 +175,13 @@ export default function ProfileModal({ open, onClose }) {
       ]);
       if (playerError || profileError) throw playerError || profileError;
 
-      const { data } = await supabase.storage.from('avatars').createSignedUrl(nextPath, 3600);
+      const { data, error: signedError } = await supabase.storage.from('avatars').createSignedUrl(nextPath, 3600);
+      if (signedError) throw signedError;
       setAvatarUrl(data?.signedUrl || '');
-      if (previousPath && previousPath !== nextPath) void supabase.storage.from('avatars').remove([previousPath]);
+      setAvatarCropFile(null);
+      window.dispatchEvent(new CustomEvent('volleycoach:player-directory-updated', { detail: { playerId: player.id } }));
       await refreshIdentity();
+      if (previousPath && previousPath !== nextPath) void supabase.storage.from('avatars').remove([previousPath]);
       setSaved(true);
     } catch (nextError) {
       setError(nextError?.message || 'No se pudo actualizar la foto.');
@@ -190,7 +205,7 @@ export default function ProfileModal({ open, onClose }) {
       if (profile.role === 'player' && player?.id) {
         const nextDorsal = dorsal === '' ? null : Number(dorsal);
         if (nextDorsal !== null && (!Number.isInteger(nextDorsal) || nextDorsal < 0 || nextDorsal > 99)) throw new Error('El dorsal debe ser un número entre 0 y 99.');
-        const { error: playerError } = await supabase.from('players').update({ dorsal: nextDorsal, birth_date: birthDate || null, position: position.trim() }).eq('id', player.id);
+        const { error: playerError } = await supabase.from('players').update({ display_name: cleanName, dorsal: nextDorsal, birth_date: birthDate || null, position: position.trim() }).eq('id', player.id);
         if (playerError) throw playerError;
       }
 
@@ -207,6 +222,9 @@ export default function ProfileModal({ open, onClose }) {
       }
 
       await refreshIdentity();
+      if (profile.role === 'player' && player?.id) {
+        window.dispatchEvent(new CustomEvent('volleycoach:player-directory-updated', { detail: { playerId: player.id } }));
+      }
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -243,7 +261,7 @@ export default function ProfileModal({ open, onClose }) {
                     <span className="profile-passport-camera"><Camera size={15} /></span>
                     {avatarSaving ? <span className="profile-passport-uploading"><LoaderCircle className="spin" size={22} /></span> : null}
                   </button>
-                  <input ref={avatarInput} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={uploadAvatar} />
+                  <input ref={avatarInput} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={chooseAvatar} />
                   <div className="profile-passport-identity">
                     <p className="eyebrow">Player Passport · {season?.name || 'Temporada actual'}</p>
                     <h2>{profile?.full_name || profile?.username}</h2>
@@ -350,6 +368,12 @@ export default function ProfileModal({ open, onClose }) {
           )}
         </div>
       </section>
+      <AvatarCropDialog
+        file={avatarCropFile}
+        saving={avatarSaving}
+        onCancel={() => { if (!avatarSaving) setAvatarCropFile(null); }}
+        onConfirm={saveCroppedAvatar}
+      />
     </div>
   );
 }
