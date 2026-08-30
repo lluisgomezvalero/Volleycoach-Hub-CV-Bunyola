@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CalendarDays,
+  Camera,
   Download,
   Hash,
+  LoaderCircle,
   Pencil,
   Search,
   ShieldCheck,
@@ -11,6 +13,7 @@ import {
   X
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider.jsx';
+import AvatarCropDialog from '../components/AvatarCropDialog.jsx';
 import { supabase } from '../lib/supabase.js';
 import './RosterPage.css';
 
@@ -55,6 +58,7 @@ export default function RosterPage() {
   const { identity } = useAuth();
   const teams = identity?.teams || [];
   const canEdit = ['coach', 'administrator'].includes(identity?.profile?.role);
+  const avatarInput = useRef(null);
   const [teamId, setTeamId] = useState(teams[0]?.id || '');
   const [players, setPlayers] = useState([]);
   const [avatars, setAvatars] = useState({});
@@ -65,6 +69,8 @@ export default function RosterPage() {
   const [position, setPosition] = useState('Todas');
   const [selected, setSelected] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [avatarSaving, setAvatarSaving] = useState(false);
+  const [avatarCropFile, setAvatarCropFile] = useState(null);
   const [formError, setFormError] = useState('');
 
   useEffect(() => {
@@ -90,7 +96,7 @@ export default function RosterPage() {
       try {
         const { data, error: rosterError } = await supabase
           .from('players')
-          .select('id,legacy_id,display_name,profile_id,team_id,dorsal,birth_date,position,status,active,avatar_path,profiles:profile_id(id,username,full_name,avatar_path,active,last_login_at)')
+          .select('id,legacy_id,display_name,profile_id,club_id,team_id,dorsal,birth_date,position,status,active,avatar_path,profiles:profile_id(id,username,full_name,avatar_path,active,last_login_at)')
           .eq('team_id', teamId)
           .eq('active', true)
           .order('dorsal', { ascending: true, nullsFirst: false });
@@ -145,7 +151,66 @@ export default function RosterPage() {
 
   function openPlayer(player) {
     setSelected({ ...player });
+    setAvatarCropFile(null);
     setFormError('');
+  }
+
+  function selectRosterAvatar(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || !canEdit || !selected?.id) return;
+    if (!file.type.startsWith('image/')) {
+      setFormError('Selecciona una imagen válida.');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setFormError('La foto no puede superar 8 MB.');
+      return;
+    }
+    setFormError('');
+    setAvatarCropFile(file);
+  }
+
+  async function uploadRosterAvatar(blob) {
+    if (!canEdit || !selected?.id || !selected?.club_id || avatarSaving) return;
+    setAvatarSaving(true);
+    setFormError('');
+    try {
+      const nextPath = `${selected.club_id}/${selected.id}/avatar-${Date.now()}.jpg`;
+      const previousPlayerPath = selected.avatar_path || '';
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(nextPath, blob, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: 'image/jpeg'
+      });
+      if (uploadError) throw uploadError;
+
+      const { error: playerError } = await supabase
+        .from('players')
+        .update({ avatar_path: nextPath, updated_at: new Date().toISOString() })
+        .eq('id', selected.id);
+      if (playerError) throw playerError;
+
+      const { data: signed, error: signedError } = await supabase.storage.from('avatars').createSignedUrl(nextPath, 3600);
+      if (signedError) throw signedError;
+      const rawUrl = signed?.signedUrl || '';
+      const freshUrl = rawUrl ? `${rawUrl}${rawUrl.includes('?') ? '&' : '?'}v=${Date.now()}` : '';
+      if (freshUrl) setAvatars((current) => ({ ...current, [nextPath]: freshUrl }));
+      setPlayers((current) => current.map((player) => player.id === selected.id ? { ...player, avatar_path: nextPath } : player));
+      setSelected((current) => current ? { ...current, avatar_path: nextPath } : current);
+      setAvatarCropFile(null);
+
+      if (previousPlayerPath && previousPlayerPath !== nextPath) {
+        void supabase.storage.from('avatars').remove([previousPlayerPath]);
+      }
+      window.dispatchEvent(new CustomEvent('volleycoach:player-directory-updated', {
+        detail: { playerId: selected.id, avatarPath: nextPath }
+      }));
+    } catch (nextError) {
+      setFormError(nextError?.message || 'No se pudo actualizar la foto.');
+    } finally {
+      setAvatarSaving(false);
+    }
   }
 
   async function savePlayer() {
@@ -281,11 +346,21 @@ export default function RosterPage() {
       ) : null}
 
       {selected ? (
-        <div className="roster-detail-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelected(null); }}>
+        <div className="roster-detail-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !avatarSaving && !avatarCropFile) setSelected(null); }}>
           <section className="roster-detail" role="dialog" aria-modal="true" aria-label={`Ficha de ${displayName(selected)}`}>
             <header className="roster-detail-header">
               <div className="roster-detail-identity">
-                {avatarUrl(selected) ? <img src={avatarUrl(selected)} alt="" className="roster-detail-avatar" /> : <div className="roster-detail-avatar fallback">{initials(selected)}</div>}
+                <div className="roster-detail-avatar-edit">
+                  {avatarUrl(selected) ? <img src={avatarUrl(selected)} alt="" className="roster-detail-avatar" /> : <div className="roster-detail-avatar fallback">{initials(selected)}</div>}
+                  {canEdit ? (
+                    <>
+                      <button className="roster-avatar-edit-button" type="button" onClick={() => avatarInput.current?.click()} disabled={avatarSaving} aria-label="Cambiar foto de jugadora">
+                        {avatarSaving ? <LoaderCircle className="spin" size={15} /> : <Camera size={15} />}
+                      </button>
+                      <input ref={avatarInput} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={selectRosterAvatar} />
+                    </>
+                  ) : null}
+                </div>
                 <div><p className="eyebrow">Ficha de jugadora</p><h2>{displayName(selected)}</h2><span>{selected.profiles?.username ? `@${selected.profiles.username}` : 'Sin cuenta vinculada'}</span></div>
               </div>
               <button className="icon-button" type="button" onClick={() => setSelected(null)} aria-label="Cerrar ficha"><X /></button>
@@ -321,6 +396,13 @@ export default function RosterPage() {
           </section>
         </div>
       ) : null}
+
+      <AvatarCropDialog
+        file={avatarCropFile}
+        busy={avatarSaving}
+        onCancel={() => setAvatarCropFile(null)}
+        onConfirm={uploadRosterAvatar}
+      />
     </div>
   );
 }
