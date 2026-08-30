@@ -89,11 +89,13 @@ export default function ProfileModal({ open, onClose }) {
   useEffect(() => {
     if (!open) return undefined;
     const onKeyDown = (event) => {
-      if (event.key === 'Escape' && !saving && !avatarSaving) onClose();
+      if (event.key !== 'Escape' || saving || avatarSaving) return;
+      if (avatarCropFile) setAvatarCropFile(null);
+      else onClose();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose, saving, avatarSaving]);
+  }, [open, onClose, saving, avatarSaving, avatarCropFile]);
 
   useEffect(() => {
     let active = true;

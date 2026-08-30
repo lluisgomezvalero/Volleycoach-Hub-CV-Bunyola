@@ -21,7 +21,7 @@ async function loadIdentityForUser(user) {
   if (profile.role === 'player') {
     const { data, error } = await supabase
       .from('players')
-      .select('id, legacy_id, profile_id, club_id, team_id, dorsal, birth_date, position, status, private_data, active, avatar_path')
+      .select('id, legacy_id, display_name, profile_id, club_id, team_id, dorsal, birth_date, position, status, private_data, active, avatar_path')
       .eq('profile_id', user.id)
       .maybeSingle();
     if (error) throw error;
@@ -134,6 +134,7 @@ export function AuthProvider({ children }) {
       }
 
       setAuthError('');
+      if (_event === 'TOKEN_REFRESHED') return;
       setLoading(true);
 
       window.setTimeout(() => {
