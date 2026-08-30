@@ -1,0 +1,32 @@
+name: Apply roster avatar crop
+
+on:
+  push:
+    branches:
+      - react-vite-migration
+    paths:
+      - .github/workflows/apply-roster-avatar-crop-20260830.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: react-vite-migration
+          fetch-depth: 0
+      - name: Aplicar editor de foto
+        run: python3 .github/scripts/apply_roster_avatar_crop_20260830.py
+      - name: Limpiar temporales y guardar
+        shell: bash
+        run: |
+          rm .github/scripts/apply_roster_avatar_crop_20260830.py
+          rm .github/workflows/apply-roster-avatar-crop-20260830.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Añadir zoom y recorte de foto en Plantilla"
+          git push origin HEAD:react-vite-migration
