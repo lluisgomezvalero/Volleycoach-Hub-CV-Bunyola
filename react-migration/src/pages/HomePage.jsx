@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider.jsx';
+import PlayerGamificationCard from '../components/PlayerGamificationCard.jsx';
 import { supabase } from '../lib/supabase.js';
 import './HomePageDashboard.css';
 
@@ -656,6 +657,8 @@ export default function HomePage() {
           <ChevronRight />
         </button>
       ) : null}
+
+      {!isStaff ? <PlayerGamificationCard /> : null}
 
       <div className="coach-home-grid">
         {primaryLoading ? (
