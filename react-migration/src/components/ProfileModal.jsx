@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
+  ArrowLeft,
   Award,
   CalendarCheck2,
   Camera,
   CheckCircle2,
+  ChevronRight,
   Dumbbell,
   Flame,
   HeartPulse,
@@ -72,6 +74,7 @@ export default function ProfileModal({ open, onClose }) {
   const [avatarUrl, setAvatarUrl] = useState('');
   const [avatarCropFile, setAvatarCropFile] = useState(null);
   const [latestCmj, setLatestCmj] = useState(null);
+  const [profileView, setProfileView] = useState('main');
 
   useEffect(() => {
     if (!open) return;
@@ -84,18 +87,29 @@ export default function ProfileModal({ open, onClose }) {
     setConfirmPassword('');
     setError('');
     setSaved(false);
+    setProfileView('main');
   }, [open, profile, player]);
 
   useEffect(() => {
     if (!open) return undefined;
     const onKeyDown = (event) => {
       if (event.key !== 'Escape' || saving || avatarSaving) return;
-      if (avatarCropFile) setAvatarCropFile(null);
-      else onClose();
+      if (avatarCropFile) {
+        setAvatarCropFile(null);
+      } else if (profile?.role !== 'player' && profileView === 'password') {
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setError('');
+        setSaved(false);
+        setProfileView('main');
+      } else {
+        onClose();
+      }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [open, onClose, saving, avatarSaving, avatarCropFile]);
+  }, [open, onClose, saving, avatarSaving, avatarCropFile, profile?.role, profileView]);
 
   useEffect(() => {
     let active = true;
@@ -140,10 +154,32 @@ export default function ProfileModal({ open, onClose }) {
 
   if (!open) return null;
 
+  function resetPasswordFields() {
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+  }
+
+  function openPasswordView() {
+    resetPasswordFields();
+    setError('');
+    setSaved(false);
+    setProfileView('password');
+  }
+
+  function closePasswordView() {
+    resetPasswordFields();
+    setError('');
+    setSaved(false);
+    setProfileView('main');
+  }
+
   function chooseAvatar(event) {
     const file = event.target.files?.[0];
     event.target.value = '';
-    if (!file || !player?.id || !player?.club_id || profile?.role !== 'player') return;
+    const avatarClubId = player?.club_id || profile?.club_id;
+    const avatarOwnerId = profile?.role === 'player' ? player?.id : profile?.id;
+    if (!file || !avatarClubId || !avatarOwnerId) return;
     if (!file.type.startsWith('image/')) {
       setError('Selecciona una imagen válida.');
       return;
@@ -153,17 +189,21 @@ export default function ProfileModal({ open, onClose }) {
       return;
     }
     setError('');
+    setSaved(false);
     setAvatarCropFile(file);
   }
 
   async function saveCroppedAvatar(blob) {
-    if (!blob || !player?.id || !player?.club_id || profile?.role !== 'player' || avatarSaving) return;
+    const isPlayerProfile = profile?.role === 'player';
+    const avatarClubId = player?.club_id || profile?.club_id;
+    const avatarOwnerId = isPlayerProfile ? player?.id : profile?.id;
+    if (!blob || !profile?.id || !avatarClubId || !avatarOwnerId || avatarSaving) return;
     setAvatarSaving(true);
     setError('');
     setSaved(false);
     try {
-      const nextPath = `${player.club_id}/${player.id}/avatar-${Date.now()}.jpg`;
-      const previousPath = player.avatar_path || profile.avatar_path || '';
+      const nextPath = `${avatarClubId}/${avatarOwnerId}/avatar-${Date.now()}.jpg`;
+      const previousPath = (isPlayerProfile ? player?.avatar_path : profile?.avatar_path) || profile?.avatar_path || '';
       const { error: uploadError } = await supabase.storage.from('avatars').upload(nextPath, blob, {
         cacheControl: '3600',
         upsert: false,
@@ -171,17 +211,24 @@ export default function ProfileModal({ open, onClose }) {
       });
       if (uploadError) throw uploadError;
 
-      const [{ error: playerError }, { error: profileError }] = await Promise.all([
-        supabase.from('players').update({ avatar_path: nextPath }).eq('id', player.id),
-        supabase.from('profiles').update({ avatar_path: nextPath }).eq('id', profile.id)
-      ]);
-      if (playerError || profileError) throw playerError || profileError;
+      if (isPlayerProfile && player?.id) {
+        const [{ error: playerError }, { error: profileError }] = await Promise.all([
+          supabase.from('players').update({ avatar_path: nextPath }).eq('id', player.id),
+          supabase.from('profiles').update({ avatar_path: nextPath }).eq('id', profile.id)
+        ]);
+        if (playerError || profileError) throw playerError || profileError;
+      } else {
+        const { error: profileError } = await supabase.from('profiles').update({ avatar_path: nextPath }).eq('id', profile.id);
+        if (profileError) throw profileError;
+      }
 
       const { data, error: signedError } = await supabase.storage.from('avatars').createSignedUrl(nextPath, 3600);
       if (signedError) throw signedError;
       setAvatarUrl(data?.signedUrl || '');
       setAvatarCropFile(null);
-      window.dispatchEvent(new CustomEvent('volleycoach:player-directory-updated', { detail: { playerId: player.id } }));
+      if (isPlayerProfile && player?.id) {
+        window.dispatchEvent(new CustomEvent('volleycoach:player-directory-updated', { detail: { playerId: player.id } }));
+      }
       await refreshIdentity();
       if (previousPath && previousPath !== nextPath) void supabase.storage.from('avatars').remove([previousPath]);
       setSaved(true);
@@ -211,7 +258,7 @@ export default function ProfileModal({ open, onClose }) {
         if (playerError) throw playerError;
       }
 
-      if (newPassword || currentPassword || confirmPassword) {
+      if (profile.role === 'player' && (newPassword || currentPassword || confirmPassword)) {
         if (!currentPassword) throw new Error('Introduce tu contraseña actual para cambiarla.');
         if (newPassword.length < 6) throw new Error('La nueva contraseña debe tener al menos 6 caracteres.');
         if (newPassword !== confirmPassword) throw new Error('Las contraseñas nuevas no coinciden.');
@@ -227,12 +274,35 @@ export default function ProfileModal({ open, onClose }) {
       if (profile.role === 'player' && player?.id) {
         window.dispatchEvent(new CustomEvent('volleycoach:player-directory-updated', { detail: { playerId: player.id } }));
       }
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
+      resetPasswordFields();
       setSaved(true);
     } catch (nextError) {
       setError(nextError?.message || 'No se pudieron guardar los cambios.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function changePassword(event) {
+    event.preventDefault();
+    if (saving || !profile?.id) return;
+    setSaving(true);
+    setError('');
+    setSaved(false);
+    try {
+      if (!currentPassword) throw new Error('Introduce tu contraseña actual para cambiarla.');
+      if (newPassword.length < 6) throw new Error('La nueva contraseña debe tener al menos 6 caracteres.');
+      if (newPassword !== confirmPassword) throw new Error('Las contraseñas nuevas no coinciden.');
+      const email = identity?.authUser?.email;
+      if (!email) throw new Error('No se pudo verificar tu cuenta.');
+      const { error: verifyError } = await supabase.auth.signInWithPassword({ email, password: currentPassword });
+      if (verifyError) throw new Error('La contraseña actual no es correcta.');
+      const { error: passwordError } = await supabase.auth.updateUser({ password: newPassword });
+      if (passwordError) throw passwordError;
+      resetPasswordFields();
+      setSaved(true);
+    } catch (nextError) {
+      setError(nextError?.message || 'No se pudo cambiar la contraseña.');
     } finally {
       setSaving(false);
     }
@@ -242,6 +312,7 @@ export default function ProfileModal({ open, onClose }) {
   const unlocked = engagement?.achievements?.filter((item) => item.unlocked) || [];
   const nextAchievement = engagement?.achievements?.find((item) => !item.unlocked) || null;
   const habitsDone = engagement?.missions?.filter((mission) => mission.done).length || 0;
+  const showStaffPasswordView = profile?.role !== 'player' && profileView === 'password';
 
   return (
     <div className="profile-backdrop" role="presentation" onMouseDown={(event) => {
@@ -249,7 +320,7 @@ export default function ProfileModal({ open, onClose }) {
     }}>
       <section className={`profile-modal ${profile?.role === 'player' ? 'profile-passport-modal' : ''}`} role="dialog" aria-modal="true" aria-labelledby="profile-title">
         <header className="profile-modal-header">
-          <div><p className="eyebrow">Cuenta personal</p><h2 id="profile-title">Mi Perfil</h2></div>
+          <div><p className="eyebrow">Cuenta personal</p><h2 id="profile-title">{showStaffPasswordView ? 'Cambiar contraseña' : 'Mi Perfil'}</h2></div>
           <button className="icon-button" type="button" onClick={onClose} disabled={saving || avatarSaving} aria-label="Cerrar perfil"><X /></button>
         </header>
 
@@ -356,15 +427,48 @@ export default function ProfileModal({ open, onClose }) {
                 </form>
               </details>
             </>
+          ) : showStaffPasswordView ? (
+            <div className="profile-password-screen">
+              <button className="profile-password-back" type="button" onClick={closePasswordView} disabled={saving}>
+                <ArrowLeft size={18} /> Volver a mi perfil
+              </button>
+              <form className="profile-form" onSubmit={changePassword}>
+                <div className="form-section profile-password-panel">
+                  <div className="form-section-title"><LockKeyhole size={18} /><span>Cambiar contraseña</span></div>
+                  <p className="profile-password-help">Confirma tu contraseña actual y escribe la nueva contraseña que quieres utilizar.</p>
+                  <div className="profile-password-grid">
+                    <label><span>Contraseña actual</span><input type="password" autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} disabled={saving} /></label>
+                    <label><span>Nueva contraseña</span><input type="password" autoComplete="new-password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} disabled={saving} /></label>
+                    <label><span>Repetir nueva contraseña</span><input type="password" autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} disabled={saving} /></label>
+                  </div>
+                </div>
+                {error ? <p className="form-error" role="alert">{error}</p> : null}
+                {saved ? <p className="form-success" role="status">Contraseña actualizada correctamente.</p> : null}
+                <div className="profile-actions"><button className="secondary-button" type="button" onClick={closePasswordView} disabled={saving}>Volver</button><button className="primary-button" type="submit" disabled={saving}>{saving ? <LoaderCircle className="spin" size={18} /> : <LockKeyhole size={18} />}{saving ? 'Guardando…' : 'Guardar contraseña'}</button></div>
+              </form>
+            </div>
           ) : (
             <>
-              <div className="profile-identity-card"><span className="profile-avatar">{initials}</span><div><strong>{profile?.full_name || profile?.username}</strong><span>@{profile?.username}</span><small><ShieldCheck size={14} /> {ROLE_LABELS[profile?.role] || profile?.role}</small></div></div>
-              <div className="coach-profile-note profile-passport-staff-note"><ShieldCheck size={19} /><div><strong>Perfil de {ROLE_LABELS[profile?.role]?.toLowerCase() || 'staff'}</strong><span>La gamificación se reserva a las jugadoras y premia hábitos de participación.</span></div></div>
+              <div className="profile-identity-card profile-staff-identity-card">
+                <button className="profile-staff-avatar-button" type="button" onClick={() => avatarInput.current?.click()} disabled={avatarSaving} title="Cambiar foto" aria-label="Cambiar foto de perfil">
+                  {avatarUrl ? <img src={avatarUrl} alt="" /> : <span className="profile-staff-avatar-fallback">{initials}</span>}
+                  <span className="profile-staff-avatar-camera"><Camera size={14} /></span>
+                  {avatarSaving ? <span className="profile-staff-avatar-uploading"><LoaderCircle className="spin" size={20} /></span> : null}
+                </button>
+                <input ref={avatarInput} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={chooseAvatar} />
+                <div><strong>{profile?.full_name || profile?.username}</strong><span>@{profile?.username}</span><small><ShieldCheck size={14} /> {ROLE_LABELS[profile?.role] || profile?.role}</small></div>
+              </div>
               <form className="profile-form" onSubmit={saveProfile}>
-                <div className="form-section"><div className="form-section-title"><UserRound size={18} /><span>Datos personales</span></div><label><span>Nombre completo</span><input value={fullName} onChange={(event) => setFullName(event.target.value)} /></label><label><span>Equipo</span><input value={team?.category || team?.name || 'Sin equipo asignado'} disabled /></label></div>
-                <div className="form-section"><div className="form-section-title"><LockKeyhole size={18} /><span>Cambiar contraseña</span></div><div className="profile-password-grid"><label><span>Contraseña actual</span><input type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} /></label><label><span>Nueva contraseña</span><input type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} /></label><label><span>Repetir nueva contraseña</span><input type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} /></label></div></div>
-                {error ? <p className="form-error">{error}</p> : null}{saved ? <p className="form-success">Cambios guardados correctamente.</p> : null}
-                <div className="profile-actions"><button className="secondary-button" type="button" onClick={onClose}>Cancelar</button><button className="primary-button" type="submit" disabled={saving}>{saving ? <LoaderCircle className="spin" size={18} /> : <Save size={18} />}{saving ? 'Guardando…' : 'Guardar cambios'}</button></div>
+                <div className="form-section"><div className="form-section-title"><UserRound size={18} /><span>Datos personales</span></div><label><span>Nombre completo</span><input value={fullName} onChange={(event) => setFullName(event.target.value)} disabled={saving} /></label><label><span>Equipo</span><input value={team?.category || team?.name || 'Sin equipo asignado'} disabled /></label></div>
+                <div className="form-section profile-security-section">
+                  <div className="form-section-title"><LockKeyhole size={18} /><span>Seguridad</span></div>
+                  <button className="profile-password-entry" type="button" onClick={openPasswordView} disabled={saving || avatarSaving}>
+                    <span><strong>Quiero cambiar la contraseña</strong><small>Abre una pantalla segura para modificarla.</small></span>
+                    <ChevronRight size={20} />
+                  </button>
+                </div>
+                {error ? <p className="form-error" role="alert">{error}</p> : null}{saved ? <p className="form-success" role="status">Cambios guardados correctamente.</p> : null}
+                <div className="profile-actions"><button className="secondary-button" type="button" onClick={onClose} disabled={saving || avatarSaving}>Cancelar</button><button className="primary-button" type="submit" disabled={saving || avatarSaving}>{saving ? <LoaderCircle className="spin" size={18} /> : <Save size={18} />}{saving ? 'Guardando…' : 'Guardar cambios'}</button></div>
               </form>
             </>
           )}
