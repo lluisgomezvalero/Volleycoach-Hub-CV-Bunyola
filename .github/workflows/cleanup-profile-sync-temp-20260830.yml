@@ -1,0 +1,31 @@
+name: Cleanup profile sync temp
+
+on:
+  push:
+    branches:
+      - react-vite-migration
+    paths:
+      - .github/workflows/cleanup-profile-sync-temp-20260830.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: react-vite-migration
+          fetch-depth: 0
+      - name: Limpiar archivos temporales
+        shell: bash
+        run: |
+          rm -f .github/scripts/sync_profile_display_name_20260830.py
+          rm -f .github/workflows/sync-profile-display-name-20260830.yml
+          rm -f .github/workflows/cleanup-profile-sync-temp-20260830.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Limpiar temporales de QA de perfil"
+          git push origin HEAD:react-vite-migration
