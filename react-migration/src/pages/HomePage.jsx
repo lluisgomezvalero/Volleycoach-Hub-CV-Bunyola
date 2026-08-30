@@ -658,7 +658,6 @@ export default function HomePage() {
         </button>
       ) : null}
 
-      {!isStaff ? <PlayerGamificationCard /> : null}
 
       <div className="coach-home-grid">
         {primaryLoading ? (
@@ -741,6 +740,8 @@ export default function HomePage() {
         ) : (
           <article className="coach-card coach-card-skeleton">No hay partidos próximos.</article>
         )}
+
+        {!isStaff ? <PlayerGamificationCard /> : null}
 
         {isStaff ? (<>
           <article className="coach-card coach-wellness-card">

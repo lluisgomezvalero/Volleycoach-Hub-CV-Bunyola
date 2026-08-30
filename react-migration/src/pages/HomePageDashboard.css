@@ -25,3 +25,5 @@
 
 /* No clasificar carga hasta disponer de 35 días de historial */
 .coach-load-state.learning{background:#f2f4f7;color:#667085;white-space:nowrap}
+/* Gamificación: después de las próximas actividades y a ancho completo */
+.coach-home-grid>.player-game-card{grid-column:1/-1}
