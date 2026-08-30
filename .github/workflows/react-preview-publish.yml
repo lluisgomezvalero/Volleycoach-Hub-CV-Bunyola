@@ -31,7 +31,7 @@ jobs:
           npm install --no-audit --no-fund
           npm run build
 
-      - name: Prepare preview branch from main
+      - name: Publish preview into main for GitHub Pages
         run: |
           rm -rf /tmp/react-preview-dist
           mkdir -p /tmp/react-preview-dist
@@ -40,7 +40,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin main
-          git checkout -B react-preview-publish origin/main
+          git checkout -B main origin/main
 
           rm -rf react-preview
           mkdir -p react-preview
@@ -54,6 +54,6 @@ jobs:
           fi
 
           git commit -m "Publish React migration preview"
-          git push origin HEAD:react-preview-publish --force
+          git push origin HEAD:main
 
-# Publish marker 2026-08-28: cached home events + admin league management
+# Publish marker 2026-08-31: GitHub Pages main sync
