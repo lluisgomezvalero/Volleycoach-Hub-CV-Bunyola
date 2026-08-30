@@ -630,7 +630,7 @@ export default function TrainingPageProfessional() {
           if (minutes > duration) throw new Error(`${playerName(player)} no puede superar ${duration} min.`);
           effectiveMinutes = Math.round(minutes);
         }
-        return { event_id: rollCall.event.id, player_id: player.id, official_status: status, effective_minutes: effectiveMinutes, validated_by: status ? identity.profile.id : null, validated_at: status ? nowIso : null, updated_at: nowIso };
+        return { event_id: rollCall.event.id, player_id: player.id, player_response: rollCall.responses[player.id] || null, official_status: status, effective_minutes: effectiveMinutes, validated_by: status ? identity.profile.id : null, validated_at: status ? nowIso : null, updated_at: nowIso };
       });
       const { data, error: saveError } = await supabase.from('attendance').upsert(rows, { onConflict: 'event_id,player_id' }).select('event_id,player_id,player_response,official_status,effective_minutes,validated_at');
       if (saveError) throw saveError;
