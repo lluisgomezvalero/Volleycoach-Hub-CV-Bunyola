@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { ChevronDown, UsersRound } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider.jsx';
 import { supabase } from '../lib/supabase.js';
 import './TodayWellnessAlerts.css';
@@ -12,14 +13,41 @@ function displayName(player) {
   return player?.profiles?.full_name || player?.profiles?.username || player?.legacy_id || 'Jugadora';
 }
 
-function compactName(value) {
-  const parts = String(value || 'Jugadora').trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return 'Jugadora';
-  if (parts.length === 1) return parts[0];
-  return `${parts[0]} ${parts[1][0]}.`;
+function initials(value) {
+  return String(value || 'VB')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
 }
 
-function useAlertKpiHost(enabled) {
+function fatigueTone(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 'neutral';
+  if (n <= 2) return 'good';
+  if (n === 3) return 'warm';
+  return 'alert';
+}
+
+function sleepTone(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 'neutral';
+  if (n >= 4) return 'good';
+  if (n === 3) return 'warm';
+  return 'alert';
+}
+
+function painTone(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 'neutral';
+  if (n <= 2) return 'good';
+  if (n <= 5) return 'warm';
+  return 'alert';
+}
+
+function useDailyResponsesHost(enabled) {
   const [host, setHost] = useState(null);
 
   useEffect(() => {
@@ -33,8 +61,8 @@ function useAlertKpiHost(enabled) {
 
     const sync = () => {
       frame = null;
-      const card = document.querySelector('.wellness-coach-page .wellness-kpi.alert');
-      if (!card) {
+      const grid = document.querySelector('.wellness-coach-page .wellness-kpi-grid');
+      if (!grid) {
         if (currentHost && !currentHost.isConnected) {
           currentHost = null;
           setHost(null);
@@ -46,9 +74,9 @@ function useAlertKpiHost(enabled) {
       if (!nextHost || !nextHost.isConnected) {
         nextHost = document.createElement('div');
         nextHost.id = 'today-wellness-alerts-host';
-        card.appendChild(nextHost);
-      } else if (nextHost.parentElement !== card) {
-        card.appendChild(nextHost);
+        grid.appendChild(nextHost);
+      } else if (nextHost.parentElement !== grid) {
+        grid.appendChild(nextHost);
       }
 
       if (currentHost !== nextHost) {
@@ -83,10 +111,11 @@ export default function TodayWellnessAlerts() {
   const profile = identity?.profile;
   const team = identity?.teams?.[0] || null;
   const isStaff = ['coach', 'administrator'].includes(profile?.role);
-  const host = useAlertKpiHost(Boolean(isStaff && team?.id));
+  const host = useDailyResponsesHost(Boolean(isStaff && team?.id));
 
   const [players, setPlayers] = useState([]);
   const [rows, setRows] = useState([]);
+  const [open, setOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!isStaff || !team?.id) return;
@@ -105,7 +134,7 @@ export default function TodayWellnessAlerts() {
     if (ids.length) {
       const wellnessResult = await supabase
         .from('wellness_entries')
-        .select('player_id,entry_date,fatigue,pain_score')
+        .select('player_id,entry_date,fatigue,sleep,pain_score,notes')
         .in('player_id', ids)
         .eq('entry_date', localDateKey());
       if (!wellnessResult.error) nextRows = wellnessResult.data || [];
@@ -127,44 +156,94 @@ export default function TodayWellnessAlerts() {
     };
   }, [isStaff, load, team?.id]);
 
-  const model = useMemo(() => {
+  const responses = useMemo(() => {
     const playerById = new Map(players.map((player) => [player.id, player]));
-    const enriched = rows.map((row) => ({
-      ...row,
-      name: compactName(displayName(playerById.get(row.player_id)))
-    }));
-
-    const fatigue = enriched
-      .filter((row) => Number(row.fatigue) >= 4)
-      .sort((a, b) => Number(b.fatigue) - Number(a.fatigue) || a.name.localeCompare(b.name, 'es'));
-
-    const pain = enriched
-      .filter((row) => Number(row.pain_score || 0) >= 4)
-      .sort((a, b) => Number(b.pain_score || 0) - Number(a.pain_score || 0) || a.name.localeCompare(b.name, 'es'));
-
-    return { fatigue, pain };
+    return rows
+      .map((row) => ({
+        ...row,
+        name: displayName(playerById.get(row.player_id))
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'es'));
   }, [players, rows]);
+
+  const highFatigueCount = useMemo(
+    () => responses.filter((row) => Number(row.fatigue) >= 4).length,
+    [responses]
+  );
+
+  useEffect(() => {
+    if (!isStaff || !team?.id) return undefined;
+    let frame = null;
+
+    const applyFatigueCard = () => {
+      frame = null;
+      const card = document.querySelector('.wellness-coach-page .wellness-kpi.alert');
+      if (!card) return;
+      const label = card.querySelector('small');
+      const value = card.querySelector('strong');
+      if (label && label.textContent !== 'Fatiga alta') label.textContent = 'Fatiga alta';
+      const nextValue = String(highFatigueCount);
+      if (value && value.textContent !== nextValue) value.textContent = nextValue;
+    };
+
+    const schedule = () => {
+      if (frame !== null) return;
+      frame = window.requestAnimationFrame(applyFatigueCard);
+    };
+
+    applyFatigueCard();
+    const root = document.getElementById('root');
+    const observer = new MutationObserver(schedule);
+    if (root) observer.observe(root, { childList: true, subtree: true, characterData: true });
+
+    return () => {
+      observer.disconnect();
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
+  }, [highFatigueCount, isStaff, team?.id]);
 
   if (!isStaff || !team?.id || !host) return null;
 
-  const fatigueText = model.fatigue.length
-    ? model.fatigue.map((row) => `${row.name} ${Number(row.fatigue)}/5`).join(' · ')
-    : 'Ninguna';
-  const painText = model.pain.length
-    ? model.pain.map((row) => `${row.name} ${Number(row.pain_score || 0)}/10`).join(' · ')
-    : 'Ninguna';
+  const pending = Math.max(0, players.length - responses.length);
 
   return createPortal(
-    <div className="today-wellness-alerts-detail" aria-label="Detalle de fatiga alta y dolor de hoy">
-      <div>
-        <span>Fatiga alta</span>
-        <strong title={fatigueText}>{fatigueText}</strong>
-      </div>
-      <div>
-        <span>Dolor ≥4</span>
-        <strong title={painText}>{painText}</strong>
-      </div>
-    </div>,
+    <section className={`today-wellness-responses ${open ? 'is-open' : ''}`}>
+      <button
+        type="button"
+        className="today-wellness-responses-toggle"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+      >
+        <span className="today-wellness-responses-icon"><UsersRound size={17} /></span>
+        <span className="today-wellness-responses-copy">
+          <strong>Respuestas de hoy</strong>
+          <small>{responses.length}/{players.length} jugadoras · {pending} pendiente{pending === 1 ? '' : 's'}</small>
+        </span>
+        <span className="today-wellness-responses-action">{open ? 'Ocultar' : 'Ver detalle'} <ChevronDown size={16} /></span>
+      </button>
+
+      {open ? (
+        <div className="today-wellness-responses-panel">
+          {responses.length ? responses.map((row) => (
+            <article key={row.player_id} className="today-wellness-response-row">
+              <span className="today-wellness-response-avatar">{initials(row.name)}</span>
+              <div className="today-wellness-response-person">
+                <strong>{row.name}</strong>
+                {String(row.notes || '').trim() ? <small>{row.notes}</small> : null}
+              </div>
+              <div className="today-wellness-response-metrics">
+                <span className={fatigueTone(row.fatigue)}><small>F</small><b>{row.fatigue ?? '—'}</b></span>
+                <span className={sleepTone(row.sleep)}><small>S</small><b>{row.sleep ?? '—'}</b></span>
+                <span className={painTone(row.pain_score ?? 0)}><small>D</small><b>{row.pain_score ?? 0}</b></span>
+              </div>
+            </article>
+          )) : (
+            <div className="today-wellness-responses-empty">Aún no hay respuestas de bienestar hoy.</div>
+          )}
+          <div className="today-wellness-responses-legend">F = fatiga /5 · S = sueño /5 · D = dolor /10</div>
+        </div>
+      ) : null}
+    </section>,
     host
   );
 }
