@@ -1,4 +1,4 @@
-import { lazy, Suspense, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { NavLink, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import {
   CalendarDays,
@@ -16,6 +16,7 @@ import {
   X
 } from 'lucide-react';
 import { useAuth } from './auth/AuthProvider.jsx';
+import { supabase } from './lib/supabase.js';
 import LoginPage from './pages/LoginPage.jsx';
 import ProfileModal from './components/ProfileModal.jsx';
 
@@ -77,11 +78,30 @@ export default function App() {
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState('');
   const shellClass = useMemo(() => `app-shell${menuOpen ? ' menu-open' : ''}`, [menuOpen]);
   const pageTitle = useMemo(() => {
     const exact = nav.find(([to]) => to === location.pathname);
     return exact?.[1] || 'VolleyCoach Hub';
   }, [location.pathname]);
+
+  const avatarPath = identity?.player?.avatar_path || identity?.profile?.avatar_path || '';
+
+  useEffect(() => {
+    let active = true;
+    if (!avatarPath) {
+      setAvatarUrl('');
+      return () => { active = false; };
+    }
+
+    supabase.storage.from('avatars').createSignedUrl(avatarPath, 3600).then(({ data }) => {
+      if (active) setAvatarUrl(data?.signedUrl || '');
+    }).catch(() => {
+      if (active) setAvatarUrl('');
+    });
+
+    return () => { active = false; };
+  }, [avatarPath]);
 
   if (loading) return <LoadingScreen />;
   if (!session) return <LoginPage />;
@@ -108,6 +128,8 @@ export default function App() {
     .map((part) => part[0])
     .join('')
     .toUpperCase();
+  const moreActive = nav.slice(4).some(([to]) => to === location.pathname);
+  const avatarImage = avatarUrl ? <img src={avatarUrl} alt="" onError={() => setAvatarUrl('')} /> : initials;
 
   async function handleLogout() {
     setMenuOpen(false);
@@ -120,7 +142,7 @@ export default function App() {
       <header className="mobile-header">
         <button className="icon-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menú"><Menu /></button>
         <div className="mobile-brand"><strong>{pageTitle}</strong><span>CV Bunyola</span></div>
-        <button className="avatar-button" type="button" onClick={() => setProfileOpen(true)} aria-label="Abrir mi perfil">{initials}</button>
+        <button className="avatar-button" type="button" onClick={() => setProfileOpen(true)} aria-label="Abrir mi perfil">{avatarImage}</button>
       </header>
 
       <aside className="sidebar">
@@ -128,7 +150,7 @@ export default function App() {
         <nav><Navigation onNavigate={() => setMenuOpen(false)} /></nav>
         <div className="sidebar-user">
           <button className="sidebar-profile" type="button" onClick={() => setProfileOpen(true)}>
-            <span className="avatar-button">{initials}</span>
+            <span className="avatar-button">{avatarImage}</span>
             <span><strong>{profile.full_name || profile.username}</strong><small>{ROLE_LABELS[profile.role] || profile.role}</small></span>
           </button>
           <button className="logout-button" type="button" onClick={handleLogout} aria-label="Cerrar sesión"><LogOut size={18} /></button>
@@ -139,7 +161,7 @@ export default function App() {
       <aside className="mobile-drawer" aria-hidden={!menuOpen}>
         <div className="drawer-head"><strong>Menú</strong><button className="icon-button" onClick={() => setMenuOpen(false)} aria-label="Cerrar menú"><X /></button></div>
         <button className="drawer-profile" type="button" onClick={() => { setMenuOpen(false); setProfileOpen(true); }}>
-          <span className="avatar-button">{initials}</span>
+          <span className="avatar-button">{avatarImage}</span>
           <span><strong>{profile.full_name || profile.username}</strong><small>{ROLE_LABELS[profile.role] || profile.role}</small></span>
         </button>
         <nav><Navigation onNavigate={() => setMenuOpen(false)} /></nav>
@@ -165,7 +187,7 @@ export default function App() {
 
       <nav className="bottom-nav" aria-label="Navegación principal móvil">
         <Navigation items={nav.slice(0, 4)} onNavigate={() => setMenuOpen(false)} />
-        <button className="bottom-more" type="button" onClick={() => setMenuOpen(true)}><MoreHorizontal size={20} /><span>Más</span></button>
+        <button className={`bottom-more${moreActive ? ' active' : ''}`} type="button" onClick={() => setMenuOpen(true)} aria-current={moreActive ? 'page' : undefined}><MoreHorizontal size={20} /><span>Más</span></button>
       </nav>
 
       <ProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
