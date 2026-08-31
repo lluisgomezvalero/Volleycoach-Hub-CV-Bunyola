@@ -16,6 +16,8 @@ html,body,#root{background:#f8fafc;color:var(--cvb-ink)}
   color:#3b2503;
   box-shadow:0 5px 14px rgba(217,119,6,.18);
 }
+.avatar-button{overflow:hidden}
+.avatar-button img{display:block;width:100%;height:100%;object-fit:cover}
 
 .sidebar{border-right-color:#f0e4cc}
 .brand small,.mobile-brand span{color:#8b6b39}
@@ -87,4 +89,6 @@ html,body,#root{background:#f8fafc;color:var(--cvb-ink)}
   .bottom-nav .nav-link.active{background:#fff4d7;color:var(--cvb-gold-dark);box-shadow:none}
   .bottom-nav .nav-link.active svg{color:var(--cvb-gold)}
   .bottom-more{color:#8b6b39}
+  .bottom-more.active{background:#fff4d7;color:var(--cvb-gold-dark)}
+  .bottom-more.active svg{color:var(--cvb-gold)}
 }
