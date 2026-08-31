@@ -10,6 +10,7 @@ import './styles.css';
 import './theme.css';
 import './pages/HomePolish.css';
 import './pages/TrainingPolish.css';
+import './pages/CalendarPolish.css';
 import './pages/TeamAttendanceProfessional.css';
 import './pages/WellnessMobileFix.css';
 
