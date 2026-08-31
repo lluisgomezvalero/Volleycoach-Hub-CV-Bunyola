@@ -1,0 +1,250 @@
+.weekly-team-wellness {
+  overflow: hidden;
+}
+
+.weekly-team-wellness-head {
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.weekly-team-wellness-refresh {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 12px;
+  background: rgba(248, 250, 252, 0.9);
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.weekly-team-wellness-refresh:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.weekly-team-wellness-refresh .spin {
+  animation: weekly-team-wellness-spin 0.9s linear infinite;
+}
+
+@keyframes weekly-team-wellness-spin {
+  to { transform: rotate(360deg); }
+}
+
+.weekly-team-wellness-error {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(254, 226, 226, 0.65);
+  color: #b91c1c;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.weekly-team-wellness-chart {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(78px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.weekly-team-wellness-week {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.weekly-team-wellness-plot {
+  width: 100%;
+  height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  position: relative;
+}
+
+.weekly-team-wellness-value {
+  min-height: 22px;
+  margin-bottom: 5px;
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.weekly-team-wellness-bar-track {
+  width: min(58px, 78%);
+  height: 128px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 13px 13px 8px 8px;
+  background:
+    linear-gradient(to top, rgba(226, 232, 240, 0.78) 1px, transparent 1px) 0 0 / 100% 25%,
+    rgba(248, 250, 252, 0.95);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.weekly-team-wellness-bar {
+  width: 100%;
+  border-radius: 12px 12px 7px 7px;
+  transition: height 220ms ease;
+}
+
+.weekly-team-wellness-bar.good {
+  background: linear-gradient(180deg, rgba(45, 212, 191, 0.9), rgba(20, 184, 166, 0.78));
+}
+
+.weekly-team-wellness-bar.warm {
+  background: linear-gradient(180deg, rgba(250, 204, 21, 0.92), rgba(245, 158, 11, 0.8));
+}
+
+.weekly-team-wellness-bar.alert {
+  background: linear-gradient(180deg, rgba(251, 146, 60, 0.94), rgba(239, 68, 68, 0.82));
+}
+
+.weekly-team-wellness-no-data {
+  position: absolute;
+  inset: auto 0 10px;
+  color: #94a3b8;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.weekly-team-wellness-label {
+  min-height: 34px;
+  margin-top: 8px;
+  color: #334155;
+  font-size: 0.78rem;
+  line-height: 1.15;
+}
+
+.weekly-team-wellness-coverage {
+  margin-top: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.weekly-team-wellness-records {
+  margin-top: 2px;
+  color: #94a3b8;
+  font-size: 0.66rem;
+}
+
+.weekly-team-wellness-mini {
+  width: 100%;
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+
+.weekly-team-wellness-mini span {
+  min-width: 0;
+  padding: 6px 3px;
+  border-radius: 9px;
+  background: rgba(248, 250, 252, 0.9);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.weekly-team-wellness-mini small {
+  color: #94a3b8;
+  font-size: 0.58rem;
+  line-height: 1;
+}
+
+.weekly-team-wellness-mini b {
+  color: #475569;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.weekly-team-wellness-foot {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(226, 232, 240, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: #94a3b8;
+  font-size: 0.72rem;
+}
+
+.weekly-team-wellness-foot strong {
+  color: #64748b;
+  text-align: right;
+}
+
+@media (max-width: 620px) {
+  .weekly-team-wellness-chart {
+    margin-left: -2px;
+    margin-right: -2px;
+    gap: 7px;
+    grid-template-columns: repeat(4, minmax(66px, 1fr));
+  }
+
+  .weekly-team-wellness-plot {
+    height: 142px;
+  }
+
+  .weekly-team-wellness-bar-track {
+    width: min(48px, 74%);
+    height: 112px;
+  }
+
+  .weekly-team-wellness-label {
+    font-size: 0.7rem;
+  }
+
+  .weekly-team-wellness-coverage {
+    font-size: 0.62rem;
+  }
+
+  .weekly-team-wellness-records {
+    font-size: 0.6rem;
+  }
+
+  .weekly-team-wellness-mini {
+    gap: 3px;
+  }
+
+  .weekly-team-wellness-mini span {
+    padding: 5px 2px;
+  }
+
+  .weekly-team-wellness-mini small {
+    font-size: 0.52rem;
+  }
+
+  .weekly-team-wellness-mini b {
+    font-size: 0.7rem;
+  }
+
+  .weekly-team-wellness-foot {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .weekly-team-wellness-foot strong {
+    text-align: left;
+  }
+}
