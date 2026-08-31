@@ -9,6 +9,7 @@ import WellnessPlayerCheckin from './components/WellnessPlayerCheckin.jsx';
 import CalendarSwipeEnhancer from './components/CalendarSwipeEnhancer.jsx';
 import TrainingPlayerRpeBreakdown from './components/TrainingPlayerRpeBreakdown.jsx';
 import CrossAccountIdentitySync from './components/CrossAccountIdentitySync.jsx';
+import TrainingAttendanceSyncBoundary from './components/TrainingAttendanceSyncBoundary.jsx';
 import './styles.css';
 import './theme.css';
 import './pages/HomePolish.css';
@@ -28,7 +29,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <HashRouter>
       <AuthProvider>
-        <App />
+        <TrainingAttendanceSyncBoundary>
+          <App />
+        </TrainingAttendanceSyncBoundary>
         <WeeklyTeamWellness />
         <TodayWellnessAlerts />
         <WellnessPlayerCheckin />
