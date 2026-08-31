@@ -16,10 +16,34 @@ html .calendar-legend{border-top-color:#f0ebe3}
 html .calendar-agenda-head{border-bottom-color:#f0ebe3}
 html .calendar-event-card{border-color:#e9e5df;box-shadow:0 4px 13px rgba(15,23,42,.03);transition:transform .12s ease,box-shadow .12s ease,background .12s ease}
 html button.calendar-event-card:active{transform:scale(.985);background:#fffbf4;box-shadow:0 2px 8px rgba(15,23,42,.025)}
-html .calendar-event-chevron{color:#c6ad7d}
-html .calendar-event-topline small{color:#9a650e}
-html .calendar-event-icon.type-training{background:#edf7fc}
-html .calendar-event-icon.type-match{background:#fff3d7}
+html .calendar-event-chevron{color:#b7a17a}
+
+/* Tipos de evento: colores vivos y claramente diferenciables. */
+html .dot-training{background:#2563eb!important}
+html .dot-match{background:#e11d48!important}
+html .dot-friendly{background:#0d9488!important}
+html .dot-tournament{background:#7c3aed!important}
+html .dot-birthday{background:#db2777!important}
+html .calendar-day-dots b,html .calendar-legend i{width:7px;height:7px;box-shadow:0 0 0 1px rgba(255,255,255,.9)}
+
+html .calendar-event-card.type-training{border-left-color:#2563eb}
+html .calendar-event-card.type-match{border-left-color:#e11d48}
+html .calendar-event-card.type-friendly{border-left-color:#0d9488}
+html .calendar-event-card.type-tournament{border-left-color:#7c3aed}
+html .calendar-event-card.type-birthday{border-left-color:#db2777}
+
+html .calendar-event-card.type-training .calendar-event-topline small{color:#1d4ed8}
+html .calendar-event-card.type-match .calendar-event-topline small{color:#be123c}
+html .calendar-event-card.type-friendly .calendar-event-topline small{color:#0f766e}
+html .calendar-event-card.type-tournament .calendar-event-topline small{color:#6d28d9}
+html .calendar-event-card.type-birthday .calendar-event-topline small{color:#be185d}
+
+html .calendar-event-icon.type-training{background:#dbeafe;color:#1d4ed8}
+html .calendar-event-icon.type-match{background:#ffe4e6;color:#be123c}
+html .calendar-event-icon.type-friendly{background:#ccfbf1;color:#0f766e}
+html .calendar-event-icon.type-tournament{background:#ede9fe;color:#6d28d9}
+html .calendar-event-icon.type-birthday{background:#fce7f3;color:#be185d}
+
 html .calendar-primary-action,html .calendar-empty-add{background:linear-gradient(135deg,#f7b71d,#ed9207);box-shadow:0 7px 16px rgba(217,119,6,.17)}
 html .calendar-modal{border-color:#eee3d1}
 html .calendar-modal-head{border-bottom:0}
@@ -35,14 +59,16 @@ html .calendar-modal-head{border-bottom:0}
   html .calendar-weekdays span{height:22px}
   html .calendar-day{border-radius:10px;min-height:42px}
   html .calendar-day>span{width:29px;height:29px;font-size:.72rem}
-  html .calendar-day-dots{gap:2px}
-  html .calendar-legend{margin-top:7px;padding:8px 3px 0;gap:5px 9px}
-  html .calendar-legend span{font-size:.54rem}
+  html .calendar-day-dots{gap:3px}
+  html .calendar-day-dots b{width:6px;height:6px}
+  html .calendar-legend{margin-top:7px;padding:8px 3px 0;gap:7px 11px}
+  html .calendar-legend span{font-size:.56rem;color:#64748b}
+  html .calendar-legend i{width:7px;height:7px}
   html .calendar-agenda-card{padding:12px 9px 9px;border-radius:16px}
   html .calendar-agenda-head{align-items:center;padding:0 3px 8px}
   html .calendar-agenda-head h2{font-size:.9rem}
   html .calendar-agenda-list{gap:7px;margin-top:8px}
-  html .calendar-event-card{min-height:65px;padding:10px 9px;border-radius:13px;border-left-width:3px}
+  html .calendar-event-card{min-height:65px;padding:10px 9px;border-radius:13px;border-left-width:5px}
   html .calendar-event-icon{width:34px;height:34px;border-radius:10px}
   html .calendar-event-copy{gap:2px}
   html .calendar-event-copy strong{font-size:.79rem}
