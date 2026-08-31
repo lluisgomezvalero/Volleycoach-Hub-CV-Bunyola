@@ -8,6 +8,7 @@ import TodayWellnessAlerts from './components/TodayWellnessAlerts.jsx';
 import WellnessPlayerCheckin from './components/WellnessPlayerCheckin.jsx';
 import './styles.css';
 import './theme.css';
+import './pages/HomePolish.css';
 import './pages/TeamAttendanceProfessional.css';
 import './pages/WellnessMobileFix.css';
 
