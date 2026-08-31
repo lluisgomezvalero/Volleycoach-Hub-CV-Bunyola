@@ -1,0 +1,86 @@
+/* Pulido visual de Bienestar: más compacto, claro y con sensación de app sin añadir ruido. */
+html .wellness-page{gap:13px;padding-bottom:76px}
+html .wellness-card,html .wellness-form,html .wellness-player-complete{border-color:#ebe5dc;border-radius:18px;box-shadow:0 6px 18px rgba(15,23,42,.035)}
+html .wellness-card{padding:15px}
+html .wellness-card-head{margin-bottom:11px}
+html .wellness-card-head h2{font-size:1.02rem;letter-spacing:-.015em}
+html .wellness-card-head p{color:#87919e}
+html .wellness-kpi-grid{gap:8px}
+html .wellness-kpi{padding:12px;border-color:#ebe7e1;border-radius:15px;gap:9px;box-shadow:0 2px 8px rgba(15,23,42,.018)}
+html .wellness-kpi-icon{width:39px;height:39px;border-radius:12px}
+html .wellness-kpi strong{font-size:1.12rem}
+html .wellness-kpi small{letter-spacing:.025em}
+html .wellness-alert-list button{border-color:#ece8e2;background:#fff;border-radius:13px;box-shadow:0 2px 8px rgba(15,23,42,.018);transition:transform .12s ease,background .12s ease,box-shadow .12s ease}
+html .wellness-alert-list button:active{transform:scale(.988);background:#fffbf5;box-shadow:0 1px 5px rgba(15,23,42,.02)}
+html .wellness-session-grid article{border-color:#ece8e2;background:#fff;border-radius:14px;box-shadow:0 2px 8px rgba(15,23,42,.018)}
+html .wellness-player-table{border-color:#ebe7e0;border-radius:15px}
+html .wellness-player-table-head{background:#faf8f5}
+html .wellness-player-row{border-top-color:#efebe5;transition:background .12s ease}
+html .wellness-player-row:active{background:#fffaf2}
+html .wellness-row-arrow{color:#c8b58d}
+html .wellness-form{padding:16px}
+html .wellness-question{border-color:#ece8e2;background:#fff;border-radius:15px}
+html .wellness-choice-grid button{border-color:#e9e5df;border-radius:11px;transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease}
+html .wellness-choice-grid button:active{transform:scale(.97)}
+html .wellness-choice-grid button.active{box-shadow:0 4px 12px rgba(217,145,23,.11),inset 0 0 0 1px #e4b25d}
+html .wellness-submit{border-radius:12px;box-shadow:0 7px 16px rgba(232,148,13,.17)}
+html .today-wellness-responses{border-color:#ebe7e0;border-radius:15px;box-shadow:0 3px 10px rgba(15,23,42,.025)}
+html .today-wellness-responses-toggle{transition:background .12s ease}
+html .today-wellness-responses-toggle:active{background:#fffaf2}
+html .today-wellness-responses-icon{background:#fff7e9;color:#a66a0f}
+html .today-wellness-response-row{border-bottom-color:#f1ede7}
+html #weekly-team-wellness-host{margin-top:1px}
+
+@media(max-width:760px){
+  html .wellness-page{gap:10px;padding-bottom:72px}
+  html .wellness-page-head{align-items:center;gap:10px}
+  html .wellness-page-head h1{font-size:1.32rem}
+  html .wellness-page-head p{font-size:.72rem;line-height:1.35}
+  html .wellness-head-actions{gap:6px}
+  html .wellness-primary-button,html .wellness-secondary-button{min-height:38px;border-radius:11px;font-size:.7rem;padding:0 10px}
+  html .wellness-card,html .wellness-form,html .wellness-player-complete{border-radius:16px}
+  html .wellness-card{padding:12px 10px}
+  html .wellness-card-head{align-items:center;margin-bottom:9px;padding:0 2px}
+  html .wellness-card-head h2{font-size:.92rem}
+  html .wellness-card-head p{font-size:.65rem}
+  html .wellness-card-head>small{font-size:.59rem}
+  html .wellness-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  html .wellness-kpi{min-height:66px;padding:10px;grid-template-columns:36px minmax(0,1fr);gap:8px;border-radius:13px}
+  html .wellness-kpi-icon{width:36px;height:36px;border-radius:11px}
+  html .wellness-kpi-icon svg{width:17px}
+  html .wellness-kpi small{font-size:.54rem}
+  html .wellness-kpi strong{font-size:1.05rem}
+  html .wellness-alert-list{gap:6px}
+  html .wellness-alert-list button{padding:8px 9px;border-radius:12px}
+  html .wellness-avatar{width:35px;height:35px;flex-basis:35px;border-radius:11px}
+  html .wellness-alert-copy strong{font-size:.74rem}
+  html .wellness-alert-copy span{font-size:.61rem}
+  html .wellness-session-grid{display:flex;gap:7px;overflow-x:auto;padding:1px 1px 4px;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  html .wellness-session-grid::-webkit-scrollbar{display:none}
+  html .wellness-session-grid article{flex:0 0 150px;scroll-snap-align:start;padding:10px;border-radius:13px}
+  html .wellness-session-grid article>strong{font-size:.72rem;margin:5px 0 7px}
+  html .wellness-session-rpe>span{padding:6px}
+  html .wellness-form{padding:13px 10px}
+  html .wellness-form-head{padding-bottom:11px}
+  html .wellness-form-head h2{font-size:1.02rem}
+  html .wellness-question{margin-top:11px;padding:12px 10px;border-radius:14px}
+  html .wellness-question-head strong{font-size:.8rem}
+  html .wellness-choice-grid{gap:5px;margin-top:10px}
+  html .wellness-choice-grid button{min-height:52px;padding:6px 3px;border-radius:10px}
+  html .wellness-submit{min-height:44px;margin-top:12px}
+  html .wellness-player-complete{padding:14px 11px;gap:10px}
+  html .wellness-complete-icon{width:43px;height:43px;border-radius:13px}
+  html .wellness-complete-grid{gap:6px}
+  html .wellness-metric{padding:9px;border-radius:12px}
+  html .today-wellness-responses-toggle{min-height:48px;padding:7px 9px}
+  html .today-wellness-responses-panel{padding:0 8px 8px}
+}
+
+@media(max-width:430px){
+  html .wellness-page-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end}
+  html .wellness-page-head p{grid-column:1/-1}
+  html .wellness-head-actions{justify-self:end}
+  html .wellness-kpi{grid-template-columns:34px minmax(0,1fr);padding:9px}
+  html .wellness-kpi-icon{width:34px;height:34px}
+  html .wellness-session-grid article{flex-basis:142px}
+}
