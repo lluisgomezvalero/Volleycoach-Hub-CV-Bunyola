@@ -20,6 +20,7 @@ import './pages/StatisticsPolish.css';
 import './pages/CompetitionPolish.css';
 import './pages/GamePlanPolish.css';
 import './pages/PerformancePolish.css';
+import './FinalPolish.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
