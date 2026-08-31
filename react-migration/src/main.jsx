@@ -7,6 +7,7 @@ import WeeklyTeamWellness from './components/WeeklyTeamWellness.jsx';
 import TodayWellnessAlerts from './components/TodayWellnessAlerts.jsx';
 import WellnessPlayerCheckin from './components/WellnessPlayerCheckin.jsx';
 import CalendarSwipeEnhancer from './components/CalendarSwipeEnhancer.jsx';
+import TrainingPlayerRpeBreakdown from './components/TrainingPlayerRpeBreakdown.jsx';
 import './styles.css';
 import './theme.css';
 import './pages/HomePolish.css';
@@ -31,6 +32,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <TodayWellnessAlerts />
         <WellnessPlayerCheckin />
         <CalendarSwipeEnhancer />
+        <TrainingPlayerRpeBreakdown />
       </AuthProvider>
     </HashRouter>
   </React.StrictMode>
