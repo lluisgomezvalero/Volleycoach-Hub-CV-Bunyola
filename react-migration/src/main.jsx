@@ -18,6 +18,7 @@ import './pages/WellnessPolish.css';
 import './pages/RosterPolish.css';
 import './pages/StatisticsPolish.css';
 import './pages/CompetitionPolish.css';
+import './pages/GamePlanPolish.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
