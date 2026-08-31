@@ -1,0 +1,246 @@
+/* Fine polish: Rendimiento. Visual-only overrides; data and test logic stay untouched. */
+.perf-page{gap:14px}
+
+.perf-header{
+  position:relative;
+  overflow:hidden;
+  align-items:center;
+  padding:20px 22px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:22px;
+  background:
+    radial-gradient(circle at 88% 10%,rgba(251,191,36,.24),transparent 28%),
+    linear-gradient(145deg,#111b31 0%,#1d2c45 58%,#433016 100%);
+  color:#fff;
+  box-shadow:0 15px 34px rgba(15,23,42,.15);
+}
+.perf-header>div:first-child{min-width:0}
+.perf-header h1{color:#fff;margin:.28rem 0 .26rem}
+.perf-header p{color:#d5deea}
+.perf-eyebrow{color:#f5bd4c}
+.perf-new{
+  border-color:#d9890a;
+  background:linear-gradient(90deg,#f4b62a,#e78b0b);
+  color:#382706;
+  box-shadow:0 7px 18px rgba(217,119,6,.18);
+}
+.perf-new:hover{background:linear-gradient(90deg,#efac1d,#dc8107)}
+.perf-new:active,.perf-refresh:active,.perf-tabs button:active,.perf-player-card:active{transform:scale(.985)}
+
+.perf-tabs{
+  gap:6px;
+  padding:5px;
+  border:1px solid #e5e7eb;
+  border-radius:15px;
+  background:#f7f8fa;
+}
+.perf-tabs button{
+  min-height:40px;
+  border-color:transparent;
+  background:transparent;
+  border-radius:10px;
+  transition:transform .12s ease,background .12s ease,color .12s ease,box-shadow .12s ease;
+}
+.perf-tabs button:hover{background:#fff}
+.perf-tabs button.active{
+  background:#172033;
+  border-color:#172033;
+  color:#fff;
+  box-shadow:0 5px 14px rgba(23,32,51,.14);
+}
+.perf-tabs button:last-child:not(.active){border-color:transparent;background:transparent;color:#96600b}
+
+.perf-summary,.perf-panel,.perf-empty-state{
+  border-radius:18px;
+  box-shadow:0 8px 24px rgba(15,23,42,.045);
+}
+.perf-summary{padding:.95rem}
+.perf-summary-history{background:linear-gradient(145deg,#fff 72%,#fff8e7)}
+.perf-summary-title span,.perf-section-heading>div>small{color:#9a6109}
+.perf-summary-title strong{color:#727d8d}
+.perf-kpis{gap:8px}
+.perf-kpis article{
+  position:relative;
+  overflow:hidden;
+  border-radius:13px;
+  background:#fbfcfd;
+  padding:.72rem .78rem .72rem .9rem;
+}
+.perf-kpis article::before{
+  content:"";
+  position:absolute;
+  left:5px;
+  top:10px;
+  bottom:10px;
+  width:3px;
+  border-radius:99px;
+  background:#e0a43c;
+}
+.perf-kpis strong{color:#1c283b}
+
+.perf-panel{padding:.95rem}
+.perf-count{background:#fff4d8;color:#955d08}
+.perf-section-heading>svg{color:#c77b08}
+
+.perf-player-grid{gap:9px}
+.perf-player-card{
+  border-radius:14px;
+  background:#fbfcfd;
+  box-shadow:0 2px 0 rgba(15,23,42,.015);
+  transition:transform .12s ease,border-color .12s ease,background .12s ease,box-shadow .12s ease;
+}
+.perf-player-card:hover{
+  border-color:#e4c486;
+  background:#fffdf8;
+  box-shadow:0 7px 17px rgba(77,50,8,.07);
+}
+.perf-player-card.has-record{border-color:#e8dfcf}
+.perf-avatar{background:#fff4d8;color:#955d08;border-color:#ead09b}
+.perf-player-metrics>span{border-radius:9px;background:#fff}
+.perf-card-chevron{color:#9d7d48}
+
+/* Keep improvement/regression semantics green/red, but use the app accent for neutral performance UI. */
+.perf-delta.neutral{background:#f5f1e8;color:#78684f}
+
+.perf-history-filters select,.perf-form-grid select,.perf-form-grid input,.perf-form-grid textarea{
+  background:#fff;
+}
+.perf-history-filters select:focus,.perf-form-grid select:focus,.perf-form-grid input:focus,.perf-form-grid textarea:focus{
+  border-color:#dfa43c;
+  box-shadow:0 0 0 3px rgba(251,191,36,.13);
+}
+.perf-history-person{border-top-color:#eee8dc}
+
+.perf-trend-line{stroke:#d58a0b}
+.perf-trend-dot{stroke:#d58a0b}
+.perf-log-list>div>strong{color:#9a6109}
+.perf-chart-empty{background:#fbfcfd}
+
+.perf-detail-sheet,.perf-form-sheet{border-radius:20px}
+.perf-detail-head,.perf-form-sheet>header{border-bottom-color:#eee6d7}
+.perf-detail-kpis article{border-radius:11px;background:#fbfcfd}
+.perf-detail-chart,.perf-log-card{border-radius:13px}
+.perf-test-info{border-color:#ead09b;background:#fff8e8;color:#955d08}
+.perf-test-info span{color:#7e6847}
+.perf-save{
+  border-color:#d9890a;
+  background:linear-gradient(90deg,#f4b62a,#e78b0b);
+  color:#382706;
+}
+.perf-icon-btn:active,.perf-cancel:active,.perf-save:active{transform:scale(.97)}
+.perf-empty-state svg{color:#c77b08}
+
+@media(max-width:720px){
+  .perf-page{padding:.45rem .2rem 8.25rem;gap:11px}
+  .perf-header{padding:15px 14px;border-radius:18px;gap:12px}
+  .perf-header h1{font-size:1.5rem;margin:.22rem 0 .2rem}
+  .perf-header p{font-size:.7rem;line-height:1.35}
+  .perf-eyebrow{font-size:.61rem}
+  .perf-header-actions{display:block}
+  .perf-new{width:auto;min-height:42px;border-radius:11px;padding:0 .72rem}
+
+  .perf-tabs{
+    display:flex;
+    overflow-x:auto;
+    overflow-y:hidden;
+    gap:5px;
+    padding:4px;
+    scroll-snap-type:x proximity;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+  .perf-tabs::-webkit-scrollbar{display:none}
+  .perf-tabs button,.perf-tabs button:last-child{
+    flex:0 0 auto;
+    min-width:72px;
+    min-height:38px;
+    grid-column:auto;
+    scroll-snap-align:start;
+    padding:0 .62rem;
+    font-size:.66rem;
+  }
+
+  .perf-summary{padding:.75rem;border-radius:15px;overflow:hidden}
+  .perf-summary-title{margin-bottom:.6rem;gap:.1rem}
+  .perf-summary-title span{font-size:.6rem}
+  .perf-summary-title strong{font-size:.64rem;line-height:1.3}
+  .perf-kpis{
+    display:flex;
+    gap:7px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    margin:0 -.75rem;
+    padding:0 .75rem 2px;
+    scroll-snap-type:x mandatory;
+    scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;
+  }
+  .perf-kpis::-webkit-scrollbar{display:none}
+  .perf-kpis article{
+    flex:0 0 min(145px,44vw);
+    min-height:76px;
+    padding:.62rem .62rem .62rem .82rem;
+    scroll-snap-align:start;
+  }
+  .perf-kpis small{font-size:.55rem}
+  .perf-kpis strong{font-size:.9rem}
+  .perf-kpis>article>span{font-size:.56rem}
+
+  .perf-panel{padding:.76rem;border-radius:15px;gap:.7rem}
+  .perf-section-heading{gap:.55rem}
+  .perf-section-heading h2{font-size:.96rem}
+  .perf-section-heading h3{font-size:.9rem}
+  .perf-section-heading p{font-size:.66rem}
+  .perf-count{font-size:.58rem;padding:.3rem .48rem}
+
+  .perf-player-card{
+    grid-template-columns:auto minmax(0,1fr) minmax(122px,auto);
+    grid-template-areas:"avatar player metrics" "avatar delta metrics";
+    padding:.58rem .6rem;
+    border-radius:12px;
+    gap:.2rem .48rem;
+  }
+  .perf-avatar{width:37px;height:37px;flex-basis:37px}
+  .perf-player-copy strong{font-size:.77rem}
+  .perf-player-copy small{font-size:.58rem}
+  .perf-player-copy em{font-size:.57rem}
+  .perf-player-metrics{gap:4px}
+  .perf-player-metrics>span{padding:.3rem .34rem}
+  .perf-player-metrics small{font-size:.49rem}
+  .perf-player-metrics strong{font-size:.66rem}
+  .perf-delta{font-size:.56rem}
+
+  .perf-history-grid{grid-template-columns:1fr;gap:9px}
+  .perf-history-filters{gap:7px}
+  .perf-history-filters select{height:40px}
+  .perf-chart{min-height:145px}
+  .perf-chart-empty{min-height:140px}
+
+  .perf-modal{place-items:end center;padding:0;background:rgba(15,23,42,.5)}
+  .perf-detail-sheet,.perf-form-sheet{
+    width:100%;
+    max-height:calc(100dvh - 58px);
+    border-radius:22px 22px 0 0;
+    border-bottom:0;
+  }
+  .perf-detail-head,.perf-form-sheet>header{padding:.78rem .85rem}
+  .perf-detail-body{padding:.72rem .75rem calc(.9rem + env(safe-area-inset-bottom,0px))}
+  .perf-detail-kpis{gap:6px}
+  .perf-detail-kpis article{padding:.55rem}
+  .perf-detail-chart,.perf-log-card{padding:.7rem;border-radius:12px}
+  .perf-form-grid{padding:.75rem;gap:.58rem}
+  .perf-test-info{margin:0 .75rem .65rem}
+  .perf-form-sheet>footer{padding:.65rem .75rem calc(.65rem + env(safe-area-inset-bottom,0px))}
+}
+
+@media(max-width:420px){
+  .perf-header{padding:13px 12px}
+  .perf-header h1{font-size:1.4rem}
+  .perf-new{min-height:40px;font-size:.68rem}
+  .perf-player-card{
+    grid-template-columns:auto minmax(0,1fr);
+    grid-template-areas:"avatar player" "avatar metrics" "avatar delta";
+  }
+  .perf-player-metrics{width:100%;grid-template-columns:1fr 1fr}
+  .perf-history-filters{grid-template-columns:1fr}
+}
