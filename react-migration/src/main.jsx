@@ -4,6 +4,7 @@ import { HashRouter } from 'react-router-dom';
 import App from './App.jsx';
 import { AuthProvider } from './auth/AuthProvider.jsx';
 import WeeklyTeamWellness from './components/WeeklyTeamWellness.jsx';
+import TodayWellnessAlerts from './components/TodayWellnessAlerts.jsx';
 import './styles.css';
 import './theme.css';
 import './pages/TeamAttendanceProfessional.css';
@@ -15,6 +16,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <AuthProvider>
         <App />
         <WeeklyTeamWellness />
+        <TodayWellnessAlerts />
       </AuthProvider>
     </HashRouter>
   </React.StrictMode>
