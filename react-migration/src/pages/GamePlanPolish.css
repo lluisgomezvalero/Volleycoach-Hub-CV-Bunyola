@@ -1,0 +1,168 @@
+/* Fine polish: Plan de juego. Visual-only overrides; tactical data/behaviour stays untouched. */
+.gp-page{
+  gap:14px;
+}
+
+.gp-header{
+  position:relative;
+  overflow:visible;
+  align-items:center;
+  padding:20px 22px;
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:22px;
+  background:
+    radial-gradient(circle at 88% 8%,rgba(251,191,36,.24),transparent 28%),
+    linear-gradient(145deg,#111b31 0%,#1c2b43 58%,#3e2d13 100%);
+  color:#fff;
+  box-shadow:0 15px 34px rgba(15,23,42,.15);
+}
+.gp-header>div:first-child{min-width:0}
+.gp-header h1{color:#fff;margin:.3rem 0 .28rem}
+.gp-header p{color:#d6deea}
+.gp-eyebrow{color:#f5bd4c}
+
+.gp-match-picker summary{
+  border-color:rgba(255,255,255,.35);
+  box-shadow:0 7px 20px rgba(15,23,42,.12);
+}
+.gp-history-button{
+  border-color:rgba(255,255,255,.25);
+  background:rgba(255,255,255,.11);
+  color:#fff;
+  backdrop-filter:blur(8px);
+}
+.gp-history-button:hover{background:rgba(255,255,255,.18)}
+
+.gp-header-tools select:focus,.gp-field input:focus,.gp-field select:focus{
+  border-color:#e5aa3d;
+  box-shadow:0 0 0 3px rgba(251,191,36,.13);
+}
+
+.gp-status-card,.gp-read-summary,.gp-read-panel,.gp-history-panel,.gp-editor-section,.gp-player-section,.gp-quick-summary,.gp-player-hero,.gp-empty{
+  border-radius:18px;
+  box-shadow:0 8px 24px rgba(15,23,42,.045);
+}
+.gp-status-card,.gp-read-summary{min-height:76px}
+.gp-read-summary{color:#9a620b;border-color:#ead8b4}
+.gp-read-summary:not(:disabled):hover{background:#fffaf0;border-color:#e5c88e}
+.gp-panel-heading>span{background:#fff4d7;color:#955d08}
+
+.gp-editor-section{padding:1rem}
+.gp-section-title>span{
+  background:linear-gradient(145deg,#f4b62a,#d9820c);
+  color:#3d2a05;
+  box-shadow:0 5px 12px rgba(217,119,6,.16);
+}
+.gp-attack-tabs button{
+  min-height:39px;
+  border-radius:11px;
+  transition:transform .12s ease,border-color .12s ease,background .12s ease,color .12s ease;
+}
+.gp-attack-tabs button:active{transform:scale(.97)}
+.gp-attack-tabs button.active{background:#172033;border-color:#172033;color:#fff}
+.gp-attack-tabs button.done:not(.active){border-color:#e8c781;color:#8f5908;background:#fff8e8}
+
+.gp-switch-row{border-radius:13px;background:#fbfcfd}
+.gp-switch-row input:checked{background:#d97706}
+.gp-direction-grid label{transition:transform .12s ease,border-color .12s ease,background .12s ease}
+.gp-direction-grid label:active{transform:scale(.985)}
+.gp-direction-grid label.checked{border-color:#e5bd72;background:#fff8e8;color:#8c5708}
+.gp-direction-grid input{accent-color:#d97706}
+
+/* Keep tactical court colours meaningful, only improve the physical-card feel. */
+.gp-court,.gp-serve-court{
+  box-shadow:0 8px 22px rgba(83,62,28,.10),inset 0 0 0 4px rgba(255,255,255,.2);
+}
+button.gp-zone:active{filter:brightness(.95);transform:scale(.985)}
+.gp-target-player{background:#fff8e8;border-color:#ead09b}
+.gp-target-player strong{color:#9a6008}
+
+.gp-actions-bar{
+  border-color:#dddfe4;
+  border-radius:16px;
+  box-shadow:0 15px 38px rgba(15,23,42,.15);
+}
+.gp-action-primary{
+  border-color:#d98809;
+  background:linear-gradient(90deg,#f4b62a,#e78b0b);
+  color:#392805;
+  box-shadow:0 5px 12px rgba(217,119,6,.14);
+}
+.gp-action-primary:hover{background:linear-gradient(90deg,#efac1d,#dd8207)}
+.gp-action-secondary:active,.gp-action-primary:active{transform:scale(.98)}
+
+.gp-player-hero{
+  background:
+    radial-gradient(circle at 88% 10%,rgba(251,191,36,.24),transparent 30%),
+    linear-gradient(145deg,#111b31,#243149 62%,#4b3410);
+}
+.gp-player-kicker{color:#f7ca68}
+.gp-quick-summary{background:#fffdf8;border-color:#eadbbd}
+.gp-quick-summary>small{color:#a2680b}
+.gp-quick-summary svg{color:#d88a0b}
+
+@media(max-width:720px){
+  .gp-page{padding:.45rem .2rem 8.35rem;gap:11px}
+  .gp-header{padding:15px 14px;border-radius:18px;gap:12px}
+  .gp-header h1{font-size:1.55rem;margin:.25rem 0 .22rem}
+  .gp-header p{font-size:.7rem;line-height:1.35}
+  .gp-eyebrow{font-size:.62rem}
+  .gp-header-tools{gap:7px}
+  .gp-match-picker summary{min-height:54px;border-radius:13px;padding:.45rem .55rem}
+  .gp-match-picker-logo{width:36px;height:36px;border-radius:10px}
+  .gp-match-picker-copy strong{font-size:.76rem}
+  .gp-match-picker-copy em{font-size:.58rem}
+  .gp-history-button{min-height:54px;border-radius:13px}
+
+  .gp-status-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px}
+  .gp-status-card,.gp-read-summary{min-height:66px;padding:.65rem .7rem;border-radius:14px}
+  .gp-status-card{gap:.55rem}
+  .gp-status-card small,.gp-read-summary small{font-size:.55rem}
+  .gp-status-card strong,.gp-read-summary strong{font-size:.79rem}
+  .gp-status-card em{display:none}
+  .gp-read-summary{gap:.5rem}
+
+  .gp-read-panel,.gp-history-panel{padding:.78rem;border-radius:15px}
+  .gp-panel-heading{margin-bottom:.6rem}
+  .gp-editor-section,.gp-player-section{padding:.76rem;border-radius:15px;gap:.78rem}
+  .gp-section-title p{line-height:1.35}
+
+  .gp-attack-tabs{gap:5px;margin-right:-.76rem;padding-right:.76rem;scroll-snap-type:x proximity}
+  .gp-attack-tabs button{min-width:58px;height:37px;scroll-snap-align:start}
+  .gp-direction-grid{gap:6px}
+  .gp-direction-grid label{min-height:42px;border-radius:10px}
+  .gp-switch-row{padding:.62rem .68rem}
+
+  .gp-court,.gp-serve-court{border-radius:13px}
+  .gp-zone{min-height:58px}
+
+  .gp-actions-bar{
+    bottom:calc(72px + env(safe-area-inset-bottom));
+    margin:0;
+    padding:7px;
+    gap:6px;
+    border-radius:14px;
+    background:rgba(255,255,255,.97);
+  }
+  .gp-actions-bar>div{padding:1px 3px 4px}
+  .gp-actions-bar small{font-size:.57rem}
+  .gp-actions-bar strong{font-size:.67rem}
+  .gp-action-primary,.gp-action-secondary{min-height:42px;border-radius:10px;font-size:.67rem}
+
+  .gp-player-view{gap:10px}
+  .gp-player-hero{padding:.9rem;border-radius:17px}
+  .gp-player-hero h2{font-size:1.55rem}
+  .gp-quick-summary{padding:.78rem;border-radius:15px}
+  .gp-player-section{border-radius:15px}
+}
+
+@media(max-width:390px){
+  .gp-header{padding:13px 12px}
+  .gp-header h1{font-size:1.43rem}
+  .gp-header-tools{grid-template-columns:1fr auto}
+  .gp-history-button{width:48px;min-width:48px;padding:0;font-size:0}
+  .gp-history-button svg{width:18px;height:18px}
+  .gp-status-card,.gp-read-summary{padding:.58rem}
+  .gp-status-card strong,.gp-read-summary strong{font-size:.73rem}
+  .gp-status-card small,.gp-read-summary small{font-size:.51rem}
+}
