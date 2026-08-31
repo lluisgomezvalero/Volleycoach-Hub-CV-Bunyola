@@ -8,6 +8,7 @@ import TodayWellnessAlerts from './components/TodayWellnessAlerts.jsx';
 import WellnessPlayerCheckin from './components/WellnessPlayerCheckin.jsx';
 import CalendarSwipeEnhancer from './components/CalendarSwipeEnhancer.jsx';
 import TrainingPlayerRpeBreakdown from './components/TrainingPlayerRpeBreakdown.jsx';
+import CrossAccountIdentitySync from './components/CrossAccountIdentitySync.jsx';
 import './styles.css';
 import './theme.css';
 import './pages/HomePolish.css';
@@ -33,6 +34,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <WellnessPlayerCheckin />
         <CalendarSwipeEnhancer />
         <TrainingPlayerRpeBreakdown />
+        <CrossAccountIdentitySync />
       </AuthProvider>
     </HashRouter>
   </React.StrictMode>
