@@ -15,6 +15,7 @@ import './pages/CalendarPolish.css';
 import './pages/TeamAttendanceProfessional.css';
 import './pages/WellnessMobileFix.css';
 import './pages/WellnessPolish.css';
+import './pages/RosterPolish.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
