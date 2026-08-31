@@ -1,0 +1,57 @@
+/* Pulido final Calendario: más compacto y con comportamiento de app en móvil. */
+html .calendar-page{gap:15px}
+html .calendar-toolbar{padding:3px;border:1px solid #ebe4d5;border-radius:15px;background:rgba(255,255,255,.92);box-shadow:0 5px 16px rgba(15,23,42,.035)}
+html .calendar-today{border-color:transparent;background:#fff8e9;color:#8a5707;box-shadow:none}
+html .calendar-month-navigation h2{font-weight:850;letter-spacing:-.025em;color:#1f2937}
+html .calendar-month-navigation button,html .calendar-add-icon{border-color:transparent;background:transparent;box-shadow:none}
+html .calendar-month-navigation button:active,html .calendar-add-icon:active{background:#fff4d6;transform:scale(.97)}
+html .calendar-add-icon{background:#fff4d6;color:#8a5707}
+html .calendar-month-card,html .calendar-agenda-card{border-color:#eee5d6;box-shadow:0 7px 20px rgba(15,23,42,.04)}
+html .calendar-day{transition:background .12s ease,transform .12s ease}
+html .calendar-day:active{transform:scale(.95)}
+html .calendar-day.selected{background:#fff6df}
+html .calendar-day.selected>span{background:linear-gradient(135deg,#f7b51c,#df8f08);box-shadow:0 5px 12px rgba(217,119,6,.19)}
+html .calendar-day.today:not(.selected)>span{box-shadow:inset 0 0 0 1.5px #d89a28;background:#fffaf0}
+html .calendar-legend{border-top-color:#f0ebe3}
+html .calendar-agenda-head{border-bottom-color:#f0ebe3}
+html .calendar-event-card{border-color:#e9e5df;box-shadow:0 4px 13px rgba(15,23,42,.03);transition:transform .12s ease,box-shadow .12s ease,background .12s ease}
+html button.calendar-event-card:active{transform:scale(.985);background:#fffbf4;box-shadow:0 2px 8px rgba(15,23,42,.025)}
+html .calendar-event-chevron{color:#c6ad7d}
+html .calendar-event-topline small{color:#9a650e}
+html .calendar-event-icon.type-training{background:#edf7fc}
+html .calendar-event-icon.type-match{background:#fff3d7}
+html .calendar-primary-action,html .calendar-empty-add{background:linear-gradient(135deg,#f7b71d,#ed9207);box-shadow:0 7px 16px rgba(217,119,6,.17)}
+html .calendar-modal{border-color:#eee3d1}
+html .calendar-modal-head{border-bottom:0}
+
+@media(max-width:640px){
+  html .calendar-page{gap:10px;padding-bottom:72px}
+  html .calendar-toolbar{position:sticky;top:70px;z-index:6;grid-template-columns:auto minmax(0,1fr) auto;margin:0 -2px;padding:4px 5px;border-radius:14px;background:rgba(255,255,255,.96);backdrop-filter:blur(10px)}
+  html .calendar-today{height:36px;padding:0 10px;border-radius:10px;font-size:.68rem}
+  html .calendar-month-navigation{gap:1px}
+  html .calendar-month-navigation h2{font-size:.95rem}
+  html .calendar-month-navigation button,html .calendar-add-icon{width:36px;height:36px;border-radius:10px}
+  html .calendar-month-card{padding:9px 7px 8px;border-radius:16px}
+  html .calendar-weekdays span{height:22px}
+  html .calendar-day{border-radius:10px;min-height:42px}
+  html .calendar-day>span{width:29px;height:29px;font-size:.72rem}
+  html .calendar-day-dots{gap:2px}
+  html .calendar-legend{margin-top:7px;padding:8px 3px 0;gap:5px 9px}
+  html .calendar-legend span{font-size:.54rem}
+  html .calendar-agenda-card{padding:12px 9px 9px;border-radius:16px}
+  html .calendar-agenda-head{align-items:center;padding:0 3px 8px}
+  html .calendar-agenda-head h2{font-size:.9rem}
+  html .calendar-agenda-list{gap:7px;margin-top:8px}
+  html .calendar-event-card{min-height:65px;padding:10px 9px;border-radius:13px;border-left-width:3px}
+  html .calendar-event-icon{width:34px;height:34px;border-radius:10px}
+  html .calendar-event-copy{gap:2px}
+  html .calendar-event-copy strong{font-size:.79rem}
+  html .calendar-event-topline time{font-size:.61rem}
+  html .calendar-event-meta,html .calendar-event-plan{font-size:.59rem}
+  html .calendar-event-chevron{width:16px;height:16px}
+  html .calendar-modal-backdrop{background:rgba(15,23,42,.46);backdrop-filter:blur(3px)}
+  html .calendar-modal{max-height:92dvh;border-radius:24px 24px 0 0;box-shadow:0 -12px 40px rgba(15,23,42,.18)}
+  html .calendar-modal:before{content:"";display:block;width:38px;height:4px;margin:8px auto 0;border-radius:999px;background:#d6d9df}
+  html .calendar-modal-head{padding-top:10px}
+  html .calendar-detail-actions,html .calendar-form-actions{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+}
