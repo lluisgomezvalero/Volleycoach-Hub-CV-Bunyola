@@ -70,7 +70,7 @@ window.cancelCurrentSessionCommentEdit=function(){
 };
 function install(){
   if(window[FLAG])return;
-  if(typeof window.renderSessionCenterDetail!=='function'||typeof window.saveSessionPlayerComment!=='function'){
+  if(!window.__appCorrections20260809Installed||typeof window.renderSessionCenterDetail!=='function'||typeof window.saveSessionPlayerComment!=='function'){
     setTimeout(install,150);return;
   }
   window[FLAG]=true;
