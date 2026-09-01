@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, UsersRound } from 'lucide-react';
+import { BellRing, ChevronDown, UsersRound } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider.jsx';
 import { supabase } from '../lib/supabase.js';
@@ -37,6 +37,15 @@ function scoreTone(score) {
   return 'very-high';
 }
 
+async function functionsErrorMessage(error) {
+  let message = error?.message || 'No se pudo enviar la notificación de prueba.';
+  try {
+    const detail = await error?.context?.json?.();
+    if (detail?.error) message = detail.error;
+  } catch (_) {}
+  return message;
+}
+
 export default function TrainingPlayerRpeBreakdown() {
   const { identity } = useAuth();
   const location = useLocation();
@@ -49,6 +58,8 @@ export default function TrainingPlayerRpeBreakdown() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [open, setOpen] = useState(false);
+  const [testBusyPlayer, setTestBusyPlayer] = useState(null);
+  const [testStatus, setTestStatus] = useState({});
 
   useEffect(() => {
     if (!isStaff || location.pathname !== '/training') {
@@ -113,6 +124,8 @@ export default function TrainingPlayerRpeBreakdown() {
     setPlayers([]);
     setRpeRows([]);
     setError('');
+    setTestBusyPlayer(null);
+    setTestStatus({});
 
     if (!isStaff || !sessionMarker || !teamIds.length) return () => { active = false; };
 
@@ -159,7 +172,7 @@ export default function TrainingPlayerRpeBreakdown() {
         const [playersResult, rpeResult] = await Promise.all([
           supabase
             .from('players')
-            .select('id,legacy_id,dorsal,position,profiles:profile_id(full_name,username)')
+            .select('id,profile_id,legacy_id,dorsal,position,profiles:profile_id(full_name,username)')
             .eq('team_id', eventRow.team_id)
             .eq('active', true)
             .order('dorsal', { ascending: true, nullsFirst: false }),
@@ -255,6 +268,24 @@ export default function TrainingPlayerRpeBreakdown() {
     }
   }, [host, isStaff, livePlayerMean, responded]);
 
+  async function sendTestPush(player) {
+    if (!player?.id || testBusyPlayer) return;
+    setTestBusyPlayer(player.id);
+    setTestStatus((current) => ({ ...current, [player.id]: null }));
+    try {
+      const { data, error: invokeError } = await supabase.functions.invoke('send-test-push', {
+        body: { player_id: player.id, event_id: eventRow?.id || null }
+      });
+      if (invokeError) throw new Error(await functionsErrorMessage(invokeError));
+      if (!data?.ok) throw new Error(data?.error || 'No se pudo enviar la notificación de prueba.');
+      setTestStatus((current) => ({ ...current, [player.id]: { type: 'success', text: data.delivered > 1 ? `Enviada a ${data.delivered} dispositivos` : 'Notificación enviada' } }));
+    } catch (pushError) {
+      setTestStatus((current) => ({ ...current, [player.id]: { type: 'error', text: pushError?.message || 'No se pudo enviar.' } }));
+    } finally {
+      setTestBusyPlayer(null);
+    }
+  }
+
   if (!host || !isStaff || !eventRow) return null;
 
   return createPortal(
@@ -275,6 +306,10 @@ export default function TrainingPlayerRpeBreakdown() {
 
       {open ? (
         <div className="individual-rpe-panel">
+          <div className="individual-rpe-test-hint">
+            <BellRing size={14} />
+            <span>Usa <strong>Probar aviso</strong> para comprobar el móvil de una jugadora sin esperar 30 minutos.</span>
+          </div>
           {error ? <p className="individual-rpe-error">{error}</p> : null}
           {!loading && !error && !players.length ? <p className="individual-rpe-empty">No hay jugadoras activas en el equipo.</p> : null}
           {players.length ? (
@@ -284,15 +319,31 @@ export default function TrainingPlayerRpeBreakdown() {
                 const rawScore = entry ? Number(entry.score) : null;
                 const score = Number.isFinite(rawScore) ? rawScore : null;
                 const name = playerName(player);
+                const status = testStatus[player.id];
+                const busy = testBusyPlayer === player.id;
                 return (
                   <div className="individual-rpe-row" key={player.id}>
                     <span className="individual-rpe-avatar">{initials(name)}</span>
                     <span className="individual-rpe-player">
                       <strong>{name}</strong>
                       <small>{player.dorsal != null ? `#${player.dorsal}` : 'Sin dorsal'}{player.position ? ` · ${player.position}` : ''}</small>
+                      {status ? <small className={`individual-rpe-test-status ${status.type}`}>{status.text}</small> : null}
                     </span>
-                    <span className={`individual-rpe-score ${scoreTone(score)}`}>
-                      {score == null ? 'Sin responder' : score.toFixed(score % 1 === 0 ? 0 : 1)}
+                    <span className="individual-rpe-actions">
+                      <span className={`individual-rpe-score ${scoreTone(score)}`}>
+                        {score == null ? 'Sin responder' : score.toFixed(score % 1 === 0 ? 0 : 1)}
+                      </span>
+                      {player.profile_id ? (
+                        <button
+                          type="button"
+                          className="individual-rpe-test-button"
+                          onClick={() => void sendTestPush(player)}
+                          disabled={Boolean(testBusyPlayer)}
+                          title={`Enviar notificación de prueba a ${name}`}
+                        >
+                          <BellRing size={13} /> {busy ? 'Enviando…' : 'Probar aviso'}
+                        </button>
+                      ) : null}
                     </span>
                   </div>
                 );
