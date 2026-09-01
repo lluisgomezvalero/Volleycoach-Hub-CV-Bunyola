@@ -10,6 +10,7 @@ import CalendarSwipeEnhancer from './components/CalendarSwipeEnhancer.jsx';
 import TrainingPlayerRpeBreakdown from './components/TrainingPlayerRpeBreakdown.jsx';
 import CrossAccountIdentitySync from './components/CrossAccountIdentitySync.jsx';
 import TrainingAttendanceSyncBoundary from './components/TrainingAttendanceSyncBoundary.jsx';
+import PushNotifications from './components/PushNotifications.jsx';
 import './styles.css';
 import './theme.css';
 import './pages/HomePolish.css';
@@ -38,6 +39,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <CalendarSwipeEnhancer />
         <TrainingPlayerRpeBreakdown />
         <CrossAccountIdentitySync />
+        <PushNotifications />
       </AuthProvider>
     </HashRouter>
   </React.StrictMode>
