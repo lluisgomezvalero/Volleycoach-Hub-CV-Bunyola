@@ -268,7 +268,7 @@ export default function RosterPage() {
         <div>
           <p className="eyebrow">Plantilla · {identity?.season?.name || 'Temporada actual'}</p>
           <h1>{selectedTeam?.name || 'CV Bunyola'}</h1>
-          <p>{selectedTeam?.category || 'Equipo'} · Gestión de jugadoras</p>
+          <p>{selectedTeam?.category || 'Equipo'} · {canEdit ? 'Gestión de jugadoras' : 'Plantilla del equipo'}</p>
         </div>
         <div className="roster-hero-count">
           <Users size={22} />
@@ -277,34 +277,36 @@ export default function RosterPage() {
         </div>
       </section>
 
-      <section className="roster-toolbar surface-card">
-        <div className="roster-toolbar-top">
-          <div>
-            <p className="eyebrow">Equipo</p>
-            {teams.length > 1 ? (
-              <select value={teamId} onChange={(event) => setTeamId(event.target.value)}>
-                {teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
-              </select>
-            ) : <strong>{selectedTeam?.name || 'Equipo'}</strong>}
+      {canEdit ? (
+        <section className="roster-toolbar surface-card">
+          <div className="roster-toolbar-top">
+            <div>
+              <p className="eyebrow">Equipo</p>
+              {teams.length > 1 ? (
+                <select value={teamId} onChange={(event) => setTeamId(event.target.value)}>
+                  {teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
+                </select>
+              ) : <strong>{selectedTeam?.name || 'Equipo'}</strong>}
+            </div>
+            <button className="secondary-button roster-export" type="button" onClick={exportCsv} disabled={!filteredPlayers.length}>
+              <Download size={17} /> Exportar CSV
+            </button>
           </div>
-          <button className="secondary-button roster-export" type="button" onClick={exportCsv} disabled={!filteredPlayers.length}>
-            <Download size={17} /> Exportar CSV
-          </button>
-        </div>
 
-        <div className="roster-search-row">
-          <label className="roster-search">
-            <Search size={18} />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar jugadora, dorsal o posición" />
-          </label>
-        </div>
+          <div className="roster-search-row">
+            <label className="roster-search">
+              <Search size={18} />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar jugadora, dorsal o posición" />
+            </label>
+          </div>
 
-        <div className="roster-filter-strip" aria-label="Filtrar por posición">
-          {positions.map((item) => (
-            <button key={item} className={position === item ? 'active' : ''} type="button" onClick={() => setPosition(item)}>{item}</button>
-          ))}
-        </div>
-      </section>
+          <div className="roster-filter-strip" aria-label="Filtrar por posición">
+            {positions.map((item) => (
+              <button key={item} className={position === item ? 'active' : ''} type="button" onClick={() => setPosition(item)}>{item}</button>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {loading ? <div className="roster-state-card">Cargando plantilla…</div> : null}
       {error ? <div className="roster-state-card roster-error">{error}</div> : null}
@@ -312,8 +314,8 @@ export default function RosterPage() {
       {!loading && !error ? (
         <>
           <div className="roster-section-heading">
-            <div><p className="eyebrow">Jugadoras</p><h2>{filteredPlayers.length} en esta vista</h2></div>
-            <span>Tarjetas conectadas directamente a Supabase</span>
+            <div><p className="eyebrow">Jugadoras</p><h2>{canEdit ? `${filteredPlayers.length} en esta vista` : `${players.length} jugadoras`}</h2></div>
+            {canEdit ? <span>Tarjetas conectadas directamente a Supabase</span> : null}
           </div>
           <section className="roster-grid">
             {filteredPlayers.map((player) => {
@@ -330,7 +332,7 @@ export default function RosterPage() {
                   </div>
                   <div className="roster-card-copy">
                     <h3>{displayName(player)}</h3>
-                    <span className="roster-position-pill">{normalizePosition(player.position)}</span>
+                    {canEdit ? <span className="roster-position-pill">{normalizePosition(player.position)}</span> : null}
                     <small><CalendarDays size={14} /> {formatDate(player.birth_date)}</small>
                   </div>
                   <div className="roster-card-footer">
@@ -369,7 +371,7 @@ export default function RosterPage() {
             <div className="roster-detail-body">
               <div className="roster-detail-summary">
                 <div><Hash size={17} /><span>Dorsal</span><strong>{selected.dorsal ?? '—'}</strong></div>
-                <div><ShieldCheck size={17} /><span>Posición</span><strong>{normalizePosition(selected.position)}</strong></div>
+                {canEdit ? <div><ShieldCheck size={17} /><span>Posición</span><strong>{normalizePosition(selected.position)}</strong></div> : null}
                 <div><CalendarDays size={17} /><span>Nacimiento</span><strong>{formatDate(selected.birth_date)}</strong></div>
               </div>
 
