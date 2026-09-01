@@ -124,7 +124,7 @@ export default function PushNotifications() {
     return (
       <aside className="push-optin-card push-optin-ios">
         <span className="push-optin-icon"><Smartphone size={19} /></span>
-        <div><strong>Activa avisos de RPE</strong><p>En iPhone, añade primero VolleyCoach Hub a la pantalla de inicio. Después podrás activar las notificaciones.</p></div>
+        <div><strong>Activa las notificaciones</strong><p>En iPhone, añade primero VolleyCoach Hub a la pantalla de inicio. Después podrás recibir avisos de RPE y bienestar.</p></div>
       </aside>
     );
   }
@@ -133,8 +133,8 @@ export default function PushNotifications() {
     <aside className="push-optin-card">
       <span className="push-optin-icon"><BellRing size={19} /></span>
       <div className="push-optin-copy">
-        <strong>Recordatorio de RPE</strong>
-        <p>Te avisaremos 30 min después de terminar el entreno si aún no has respondido.</p>
+        <strong>Notificaciones del equipo</strong>
+        <p>Te avisaremos si falta tu RPE y los lunes a las 15:00 si aún no has completado el bienestar obligatorio.</p>
         {error ? <small>{error}</small> : null}
       </div>
       <button type="button" onClick={() => void enable()} disabled={busy}>
