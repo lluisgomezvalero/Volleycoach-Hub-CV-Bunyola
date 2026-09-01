@@ -17,6 +17,16 @@ function groupForButton(modal, button) {
   return null;
 }
 
+function markPressedButton(modal, button) {
+  const field = button.closest('.player-checkin-field');
+  if (!field) return;
+  field.querySelectorAll('.player-checkin-scale button').forEach((item) => {
+    const pressed = item === button;
+    item.classList.toggle('selected', pressed);
+    item.setAttribute('aria-pressed', pressed ? 'true' : 'false');
+  });
+}
+
 function paintModal(modal) {
   if (!modal?.isConnected) return;
   const state = ensureState(modal);
@@ -78,6 +88,16 @@ export default function WellnessRequiredSelectionGuard() {
       if (!group) return;
       const state = ensureState(modal);
       state[group] = true;
+
+      // React conserva internamente 2/3 como valores iniciales. Si la primera pulsación
+      // coincide justo con ese valor, React no vuelve a renderizar porque el estado no
+      // cambia. Marcamos explícitamente el botón pulsado para que esa primera selección
+      // se vea siempre, tanto en fatiga como en sueño.
+      window.requestAnimationFrame(() => {
+        if (!modal.isConnected) return;
+        markPressedButton(modal, button);
+        paintModal(modal);
+      });
       schedulePaint();
     };
 
