@@ -19,6 +19,8 @@ import { useAuth } from '../auth/AuthProvider.jsx';
 import { supabase } from '../lib/supabase.js';
 import './CalendarPage.css';
 
+const calendarPageCache = new Map();
+
 const WEEKDAYS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 const MONTHS = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
@@ -359,12 +361,15 @@ export default function CalendarPage() {
   const teamIds = useMemo(() => teams.map((team) => team.id).filter(Boolean), [teams]);
   const isStaff = ['coach', 'administrator'].includes(identity?.profile?.role);
   const today = useMemo(() => new Date(), []);
+  const teamCachePrefix = teamIds.join(',');
+  const initialMonthCacheKey = `${teamCachePrefix}:${today.getFullYear()}-${today.getMonth()}`;
+  const initialMonthCache = calendarPageCache.get(initialMonthCacheKey) || null;
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1, 12));
   const [selectedKey, setSelectedKey] = useState(() => dateKey(today));
-  const [events, setEvents] = useState([]);
-  const [birthdays, setBirthdays] = useState([]);
-  const [leagueTeams, setLeagueTeams] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [events, setEvents] = useState(() => initialMonthCache?.events || []);
+  const [birthdays, setBirthdays] = useState(() => initialMonthCache?.birthdays || []);
+  const [leagueTeams, setLeagueTeams] = useState(() => initialMonthCache?.leagueTeams || []);
+  const [loading, setLoading] = useState(() => !initialMonthCache);
   const [loadError, setLoadError] = useState('');
   const [detailEvent, setDetailEvent] = useState(null);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -383,7 +388,13 @@ export default function CalendarPage() {
       if (!teamIds.length) { setLeagueTeams([]); return; }
       const { data, error } = await supabase.from('league_standings').select('context_team_id,team_key,name,logo,is_own').in('context_team_id', teamIds).order('name');
       if (!active) return;
-      if (!error) setLeagueTeams(data || []);
+      if (!error) {
+        const nextLeagueTeams = data || [];
+        setLeagueTeams(nextLeagueTeams);
+        const monthKey = `${teamCachePrefix}:${cursor.getFullYear()}-${cursor.getMonth()}`;
+        const cached = calendarPageCache.get(monthKey) || {};
+        calendarPageCache.set(monthKey, { ...cached, leagueTeams: nextLeagueTeams });
+      }
     }
     void loadLeagueTeams();
     return () => { active = false; };
@@ -398,7 +409,16 @@ export default function CalendarPage() {
         setLoading(false);
         return;
       }
-      setLoading(true);
+      const monthCacheKey = `${teamCachePrefix}:${cursor.getFullYear()}-${cursor.getMonth()}`;
+      const cachedMonth = calendarPageCache.get(monthCacheKey);
+      if (cachedMonth) {
+        setEvents(cachedMonth.events || []);
+        setBirthdays(cachedMonth.birthdays || []);
+        if (cachedMonth.leagueTeams?.length) setLeagueTeams(cachedMonth.leagueTeams);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
       setLoadError('');
       try {
         const start = new Date(cursor.getFullYear(), cursor.getMonth(), 1, 0, 0, 0, 0);
@@ -423,6 +443,8 @@ export default function CalendarPage() {
           return [{ id: `birthday-${player.id}-${year}`, isBirthday: true, date_key: dateKey(date), starts_at: date.toISOString(), title: `Cumpleaños de ${name}`, event_type: 'birthday', team_id: player.team_id }];
         });
         setBirthdays(nextBirthdays);
+        const cachedLeagueTeams = calendarPageCache.get(monthCacheKey)?.leagueTeams || leagueTeams;
+        calendarPageCache.set(monthCacheKey, { events: eventResult.data || [], birthdays: nextBirthdays, leagueTeams: cachedLeagueTeams, cachedAt: Date.now() });
       } catch (error) {
         if (active) setLoadError(error?.message || 'No se pudo cargar el calendario.');
       } finally {
@@ -431,7 +453,7 @@ export default function CalendarPage() {
     }
     void loadMonth();
     return () => { active = false; };
-  }, [cursor, teamIds]);
+  }, [cursor, teamCachePrefix, teamIds]);
 
   const monthEvents = useMemo(() => [...events, ...birthdays].sort((a, b) => String(a.starts_at).localeCompare(String(b.starts_at))), [events, birthdays]);
   const byDate = useMemo(() => {

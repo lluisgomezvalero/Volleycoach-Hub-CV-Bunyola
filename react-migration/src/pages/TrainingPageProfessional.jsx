@@ -30,6 +30,8 @@ import { supabase } from '../lib/supabase.js';
 import TeamAttendancePanel from './TeamAttendancePanel.jsx';
 import './TrainingPageProfessional.css';
 
+const trainingPageCache = new Map();
+
 const STATUS = {
   present: { label: 'Presente', short: 'P', icon: UserRoundCheck },
   late: { label: 'Tarde', short: 'T', icon: AlarmClock },
@@ -71,6 +73,14 @@ function eventEndTime(event) {
   if (Number.isFinite(explicitEnd)) return explicitEnd;
   const start = event?.starts_at ? new Date(event.starts_at).getTime() : Number.NaN;
   return Number.isFinite(start) ? start + durationMinutes(event) * 60 * 1000 : Number.NaN;
+}
+
+function eventDayEndTime(event) {
+  const start = event?.starts_at ? new Date(event.starts_at) : null;
+  if (!start || Number.isNaN(start.getTime())) return Number.NaN;
+  const endOfDay = new Date(start);
+  endOfDay.setHours(23, 59, 59, 999);
+  return endOfDay.getTime();
 }
 
 function attendanceCounts(rows = []) {
@@ -124,7 +134,9 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
   }, [event.id]);
   const endTime = eventEndTime(event);
   const completed = Number.isFinite(endTime) && timeNow >= endTime;
-  const rpeAvailable = Number.isFinite(endTime) && timeNow >= endTime + 30 * 60 * 1000;
+  const rpeDayEnd = eventDayEndTime(event);
+  const rpeExpired = Number.isFinite(rpeDayEnd) && timeNow > rpeDayEnd;
+  const rpeAvailable = Number.isFinite(endTime) && !rpeExpired && timeNow >= endTime + 30 * 60 * 1000;
   const parts = dateParts(event.starts_at);
   const counts = attendanceCounts(attendanceRows);
   const validated = counts.present + counts.late + counts.justified + counts.unjustified;
@@ -345,7 +357,8 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
       <SectionHeader number={3} kicker="Al terminar" title="Después de la sesión" tone="orange" />
       <article className="pro-session-panel tone-orange pro-rpe-panel">
         <div className="pro-panel-title pro-rpe-title"><Activity size={19} /><span><small>Percepción del esfuerzo</small><strong>Percepción del esfuerzo</strong></span></div>
-        {!rpeAvailable ? <p className="pro-muted-copy">El RPE se habilitará 30 minutos después de finalizar la sesión.</p> : null}
+        {rpeExpired ? <p className="pro-muted-copy">El plazo para responder el RPE terminó al finalizar el día del entrenamiento.</p> : null}
+        {!rpeExpired && !rpeAvailable ? <p className="pro-muted-copy">El RPE se habilitará 30 minutos después de finalizar la sesión.</p> : null}
         {rpeAvailable && loadingExtras ? <p className="pro-muted-copy">Cargando seguimiento…</p> : null}
         {rpeAvailable && !loadingExtras ? (
           <>
@@ -450,10 +463,12 @@ export default function TrainingPageProfessional() {
   const teams = identity?.teams || [];
   const isStaff = ['coach', 'administrator'].includes(identity?.profile?.role);
   const isPlayer = identity?.profile?.role === 'player';
-  const [teamId, setTeamId] = useState(teams[0]?.id || identity?.player?.team_id || '');
-  const [events, setEvents] = useState([]);
-  const [attendance, setAttendance] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const initialTeamId = teams[0]?.id || identity?.player?.team_id || '';
+  const initialCache = initialTeamId ? trainingPageCache.get(initialTeamId) : null;
+  const [teamId, setTeamId] = useState(initialTeamId);
+  const [events, setEvents] = useState(() => initialCache?.events || []);
+  const [attendance, setAttendance] = useState(() => initialCache?.attendance || []);
+  const [loading, setLoading] = useState(() => !initialCache);
   const [error, setError] = useState('');
   const [tab, setTab] = useState('upcoming');
   const [selected, setSelected] = useState(null);
@@ -482,7 +497,8 @@ export default function TrainingPageProfessional() {
       setLoading(false);
       return;
     }
-    setLoading(true);
+    const cached = trainingPageCache.get(teamId);
+    if (!cached) setLoading(true);
     setError('');
     try {
       const { data: eventRows, error: eventsError } = await supabase
@@ -494,17 +510,19 @@ export default function TrainingPageProfessional() {
         .limit(80);
       if (eventsError) throw eventsError;
       const nextEvents = eventRows || [];
-      setEvents(nextEvents);
       const ids = nextEvents.map((event) => event.id);
-      if (!ids.length) setAttendance([]);
-      else {
+      let nextAttendance = [];
+      if (ids.length) {
         const { data: attendanceRows, error: attendanceError } = await supabase
           .from('attendance')
           .select('event_id,player_id,player_response,official_status,effective_minutes,validated_at')
           .in('event_id', ids);
         if (attendanceError) throw attendanceError;
-        setAttendance(attendanceRows || []);
+        nextAttendance = attendanceRows || [];
       }
+      trainingPageCache.set(teamId, { events: nextEvents, attendance: nextAttendance, cachedAt: Date.now() });
+      setEvents(nextEvents);
+      setAttendance(nextAttendance);
     } catch (loadError) {
       setError(loadError?.message || 'No se pudieron cargar los entrenamientos.');
     } finally {
@@ -578,7 +596,11 @@ export default function TrainingPageProfessional() {
         created_by: identity.profile.id
       }).select('id,club_id,team_id,season_id,title,starts_at,ends_at,location,status,payload,created_by').single();
       if (insertError) throw insertError;
-      setEvents((current) => [data, ...current]);
+      setEvents((current) => {
+        const next = [data, ...current];
+        trainingPageCache.set(teamId, { events: next, attendance, cachedAt: Date.now() });
+        return next;
+      });
       setCreateOpen(false);
       setCreateForm(defaultTrainingForm());
       setTab('upcoming');
@@ -596,7 +618,11 @@ export default function TrainingPageProfessional() {
       const row = { event_id: event.id, player_id: identity.player.id, player_response: response, updated_at: new Date().toISOString() };
       const { data, error: rsvpError } = await supabase.from('attendance').upsert(row, { onConflict: 'event_id,player_id' }).select('event_id,player_id,player_response,official_status,effective_minutes,validated_at').single();
       if (rsvpError) throw rsvpError;
-      setAttendance((current) => [...current.filter((item) => !(item.event_id === data.event_id && item.player_id === data.player_id)), data]);
+      setAttendance((current) => {
+        const next = [...current.filter((item) => !(item.event_id === data.event_id && item.player_id === data.player_id)), data];
+        trainingPageCache.set(teamId, { events, attendance: next, cachedAt: Date.now() });
+        return next;
+      });
     } catch (responseError) {
       setError(responseError?.message || 'No se pudo guardar tu respuesta.');
     } finally {
@@ -674,7 +700,9 @@ export default function TrainingPageProfessional() {
       const saved = data || [];
       setAttendance((current) => {
         const ids = new Set(saved.map((row) => `${row.event_id}:${row.player_id}`));
-        return [...current.filter((row) => !ids.has(`${row.event_id}:${row.player_id}`)), ...saved];
+        const next = [...current.filter((row) => !ids.has(`${row.event_id}:${row.player_id}`)), ...saved];
+        trainingPageCache.set(teamId, { events, attendance: next, cachedAt: Date.now() });
+        return next;
       });
       const counts = attendanceCounts(saved);
       setRollSuccess(`Lista guardada · ${counts.present} presentes · ${counts.late} tarde · ${counts.justified} justificadas · ${counts.unjustified} no justificadas.`);

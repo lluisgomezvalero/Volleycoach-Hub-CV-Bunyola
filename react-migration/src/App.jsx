@@ -19,11 +19,11 @@ import { useAuth } from './auth/AuthProvider.jsx';
 import { supabase } from './lib/supabase.js';
 import LoginPage from './pages/LoginPage.jsx';
 import ProfileModal from './components/ProfileModal.jsx';
+import HomePage from './pages/HomePage.jsx';
+import TrainingPage from './pages/TrainingPage.jsx';
+import CalendarPage from './pages/CalendarPage.jsx';
+import WellnessPage from './pages/WellnessPage.jsx';
 
-const HomePage = lazy(() => import('./pages/HomePage.jsx'));
-const TrainingPage = lazy(() => import('./pages/TrainingPage.jsx'));
-const CalendarPage = lazy(() => import('./pages/CalendarPage.jsx'));
-const WellnessPage = lazy(() => import('./pages/WellnessPage.jsx'));
 const RosterPage = lazy(() => import('./pages/RosterPage.jsx'));
 const StatsPage = lazy(() => import('./pages/StatisticsPage.jsx'));
 const CompetitionPage = lazy(() => import('./pages/CompetitionPage.jsx'));
@@ -86,6 +86,25 @@ export default function App() {
   }, [location.pathname]);
 
   const avatarPath = identity?.player?.avatar_path || identity?.profile?.avatar_path || '';
+
+  useEffect(() => {
+    if (!identity?.profile?.id) return undefined;
+    const warmSecondary = () => {
+      void Promise.allSettled([
+        import('./pages/RosterPage.jsx'),
+        import('./pages/StatisticsPage.jsx'),
+        import('./pages/CompetitionPage.jsx'),
+        import('./pages/GamePlanPage.jsx'),
+        import('./pages/PerformancePage.jsx')
+      ]);
+    };
+    if ('requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(warmSecondary, { timeout: 1800 });
+      return () => window.cancelIdleCallback?.(idleId);
+    }
+    const timer = window.setTimeout(warmSecondary, 900);
+    return () => window.clearTimeout(timer);
+  }, [identity?.profile?.id]);
 
   useEffect(() => {
     let active = true;

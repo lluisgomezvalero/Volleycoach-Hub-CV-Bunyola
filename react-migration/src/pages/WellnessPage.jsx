@@ -22,6 +22,8 @@ import { useAuth } from '../auth/AuthProvider.jsx';
 import { supabase } from '../lib/supabase.js';
 import './WellnessPage.css';
 
+const wellnessPageCache = new Map();
+
 function localDateKey(date = new Date()) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
@@ -239,14 +241,16 @@ export default function WellnessPage() {
   const isStaff = ['coach', 'administrator'].includes(profile?.role);
   const currentPlayerId = identity?.player?.id || null;
   const today = localDateKey();
+  const cacheKey = `${team?.id || 'no-team'}:${isStaff ? 'staff' : currentPlayerId || 'player'}`;
+  const initialCache = wellnessPageCache.get(cacheKey) || null;
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !initialCache);
   const [error, setError] = useState('');
-  const [players, setPlayers] = useState([]);
-  const [wellnessRows, setWellnessRows] = useState([]);
-  const [trainingEvents, setTrainingEvents] = useState([]);
-  const [rpeRows, setRpeRows] = useState([]);
-  const [attendanceRows, setAttendanceRows] = useState([]);
+  const [players, setPlayers] = useState(() => initialCache?.players || []);
+  const [wellnessRows, setWellnessRows] = useState(() => initialCache?.wellnessRows || []);
+  const [trainingEvents, setTrainingEvents] = useState(() => initialCache?.trainingEvents || []);
+  const [rpeRows, setRpeRows] = useState(() => initialCache?.rpeRows || []);
+  const [attendanceRows, setAttendanceRows] = useState(() => initialCache?.attendanceRows || []);
   const [selectedPlayerId, setSelectedPlayerId] = useState(null);
   const [manualOpen, setManualOpen] = useState(false);
   const [manualPlayerId, setManualPlayerId] = useState('');
@@ -265,7 +269,7 @@ export default function WellnessPage() {
       return;
     }
 
-    setLoading(true);
+    if (!wellnessPageCache.has(cacheKey)) setLoading(true);
     setError('');
     try {
       const from28Date = dateDaysAgo(27);
@@ -333,20 +337,35 @@ export default function WellnessPage() {
       if (rpeResult.error) throw rpeResult.error;
       if (attendanceResult.error) throw attendanceResult.error;
 
-      setPlayers(nextPlayers);
-      setTrainingEvents(eventResult.data || []);
-      setWellnessRows(wellnessResult.data || []);
-      setRpeRows(rpeResult.data || []);
-      setAttendanceRows(attendanceResult.data || []);
+      const snapshot = {
+        players: nextPlayers,
+        trainingEvents: eventResult.data || [],
+        wellnessRows: wellnessResult.data || [],
+        rpeRows: rpeResult.data || [],
+        attendanceRows: attendanceResult.data || [],
+        cachedAt: Date.now()
+      };
+      wellnessPageCache.set(cacheKey, snapshot);
+      setPlayers(snapshot.players);
+      setTrainingEvents(snapshot.trainingEvents);
+      setWellnessRows(snapshot.wellnessRows);
+      setRpeRows(snapshot.rpeRows);
+      setAttendanceRows(snapshot.attendanceRows);
     } catch (loadError) {
       setError(loadError?.message || 'No se pudo cargar el módulo de bienestar.');
     } finally {
       setLoading(false);
     }
-  }, [currentPlayerId, isStaff, team?.id]);
+  }, [cacheKey, currentPlayerId, isStaff, team?.id]);
 
   useEffect(() => {
     void loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    const onUpdated = () => { void loadData(); };
+    window.addEventListener('volleycoach:wellness-updated', onUpdated);
+    return () => window.removeEventListener('volleycoach:wellness-updated', onUpdated);
   }, [loadData]);
 
   const latestByPlayer = useMemo(() => {

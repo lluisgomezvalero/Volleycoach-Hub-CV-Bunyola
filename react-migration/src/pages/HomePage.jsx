@@ -173,6 +173,30 @@ function writeHomeEventsCache(teamId, training, match) {
   }
 }
 
+const HOME_ATTENDANCE_CACHE_PREFIX = 'volleycoach:home-attendance:';
+
+function readHomeAttendanceCache(playerId, eventId) {
+  if (!playerId || !eventId || typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(`${HOME_ATTENDANCE_CACHE_PREFIX}${playerId}:${eventId}`);
+    const value = raw ? JSON.parse(raw) : null;
+    return ['yes', 'no'].includes(value?.response) ? value.response : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeHomeAttendanceCache(playerId, eventId, response) {
+  if (!playerId || !eventId || typeof window === 'undefined') return;
+  const key = `${HOME_ATTENDANCE_CACHE_PREFIX}${playerId}:${eventId}`;
+  try {
+    if (['yes', 'no'].includes(response)) window.sessionStorage.setItem(key, JSON.stringify({ response, cachedAt: Date.now() }));
+    else window.sessionStorage.removeItem(key);
+  } catch {
+    // Optimización visual únicamente.
+  }
+}
+
 export default function HomePage() {
   const { identity } = useAuth();
   const profile = identity?.profile;
@@ -181,13 +205,18 @@ export default function HomePage() {
   const isStaff = ['coach', 'administrator'].includes(profile?.role);
   const firstName = useMemo(() => String(profile?.full_name || profile?.username || '').trim().split(/\s+/)[0] || 'equipo', [profile]);
   const initialHomeEvents = useMemo(() => readHomeEventsCache(team?.id), [team?.id]);
+  const initialAttendanceResponse = useMemo(
+    () => readHomeAttendanceCache(identity?.player?.id, initialHomeEvents?.training?.id),
+    [identity?.player?.id, initialHomeEvents?.training?.id]
+  );
 
   const [loading, setLoading] = useState(() => !initialHomeEvents);
   const [error, setError] = useState('');
   const [nextTraining, setNextTraining] = useState(() => initialHomeEvents?.training || null);
   const [nextMatch, setNextMatch] = useState(() => initialHomeEvents?.match || null);
   const [trainingAttendance, setTrainingAttendance] = useState([]);
-  const [playerAttendanceResponse, setPlayerAttendanceResponse] = useState(null);
+  const [playerAttendanceResponse, setPlayerAttendanceResponse] = useState(() => initialAttendanceResponse);
+  const [playerAttendanceLoaded, setPlayerAttendanceLoaded] = useState(() => isStaff || Boolean(initialAttendanceResponse));
   const [attendanceSaving, setAttendanceSaving] = useState(false);
   const [attendanceError, setAttendanceError] = useState('');
   const [gamePlan, setGamePlan] = useState(null);
@@ -410,6 +439,10 @@ export default function HomePage() {
                 const start = new Date(event.starts_at).getTime();
                 const end = event.ends_at ? new Date(event.ends_at).getTime() : start + eventDuration(event) * 60000;
                 if (!Number.isFinite(end) || now.getTime() < end + 30 * 60 * 1000) return false;
+                const trainingDay = new Date(event.starts_at);
+                const dayEnd = new Date(trainingDay);
+                dayEnd.setHours(23, 59, 59, 999);
+                if (!Number.isFinite(dayEnd.getTime()) || now.getTime() > dayEnd.getTime()) return false;
                 if (ownPlayerRpeEventIds.has(event.id)) return false;
                 const attendance = attendanceMap.get(event.id);
                 return !['justified', 'unjustified'].includes(attendance?.official_status);
@@ -499,9 +532,16 @@ export default function HomePage() {
       if (isStaff || !identity?.player?.id || !nextTraining?.id) {
         if (active) {
           setPlayerAttendanceResponse(null);
+          setPlayerAttendanceLoaded(true);
           setAttendanceError('');
         }
         return;
+      }
+
+      const cachedResponse = readHomeAttendanceCache(identity.player.id, nextTraining.id);
+      if (active) {
+        setPlayerAttendanceResponse(cachedResponse);
+        setPlayerAttendanceLoaded(Boolean(cachedResponse));
       }
 
       const { data, error: ownAttendanceError } = await supabase
@@ -513,10 +553,14 @@ export default function HomePage() {
 
       if (!active) return;
       if (ownAttendanceError) {
+        setPlayerAttendanceLoaded(true);
         setAttendanceError('No se pudo cargar tu respuesta de asistencia.');
         return;
       }
-      setPlayerAttendanceResponse(data?.player_response || null);
+      const response = data?.player_response || null;
+      setPlayerAttendanceResponse(response);
+      setPlayerAttendanceLoaded(true);
+      writeHomeAttendanceCache(identity.player.id, nextTraining.id, response);
       setAttendanceError('');
     }
 
@@ -598,7 +642,10 @@ export default function HomePage() {
         .select('player_response')
         .single();
       if (saveError) throw saveError;
-      setPlayerAttendanceResponse(data?.player_response || response);
+      const savedResponse = data?.player_response || response;
+      setPlayerAttendanceResponse(savedResponse);
+      setPlayerAttendanceLoaded(true);
+      writeHomeAttendanceCache(identity.player.id, displayNextTraining.id, savedResponse);
     } catch (saveError) {
       setAttendanceError(saveError?.message || 'No se pudo guardar tu asistencia.');
     } finally {
@@ -636,11 +683,13 @@ export default function HomePage() {
         .single();
       if (insertError) throw insertError;
       setWellness((rows) => [data, ...rows.filter((row) => row.entry_date !== todayKey)]);
+      window.dispatchEvent(new CustomEvent('volleycoach:wellness-updated', { detail: { playerId: identity.player.id, entryDate: todayKey } }));
       setCheckinOpen(false);
     } catch (saveError) {
       if (saveError?.code === '23505') {
         setCheckinOpen(false);
         setWellness((rows) => rows.some((row) => row.entry_date === todayKey) ? rows : [{ player_id: identity.player.id, entry_date: todayKey, fatigue: checkinFatigue, sleep: checkinSleep, pain_score: checkinPain, notes: checkinNotes.trim() }, ...rows]);
+        window.dispatchEvent(new CustomEvent('volleycoach:wellness-updated', { detail: { playerId: identity.player.id, entryDate: todayKey } }));
       } else {
         setCheckinError(saveError?.message || 'No se pudo guardar tu bienestar.');
       }
@@ -734,12 +783,14 @@ export default function HomePage() {
               </div>
             ) : (
               <>
-                <div className="player-home-attendance-actions" aria-label="Confirma tu asistencia al próximo entrenamiento">
-                  <button type="button" className={`player-home-attendance-btn yes ${playerAttendanceResponse === 'yes' ? 'active' : ''}`} disabled={attendanceSaving} onClick={() => void saveOwnAttendance('yes')}><CheckCircle2 size={17} /> Sí, asistiré</button>
-                  <button type="button" className={`player-home-attendance-btn no ${playerAttendanceResponse === 'no' ? 'active' : ''}`} disabled={attendanceSaving} onClick={() => void saveOwnAttendance('no')}><XCircle size={17} /> No asistiré</button>
-                </div>
+                {playerAttendanceLoaded ? (
+                  <div className="player-home-attendance-actions" aria-label="Confirma tu asistencia al próximo entrenamiento">
+                    <button type="button" className={`player-home-attendance-btn yes ${playerAttendanceResponse === 'yes' ? 'active' : ''}`} disabled={attendanceSaving} onClick={() => void saveOwnAttendance('yes')}><CheckCircle2 size={17} /> Sí, asistiré</button>
+                    <button type="button" className={`player-home-attendance-btn no ${playerAttendanceResponse === 'no' ? 'active' : ''}`} disabled={attendanceSaving} onClick={() => void saveOwnAttendance('no')}><XCircle size={17} /> No asistiré</button>
+                  </div>
+                ) : <div className="player-home-attendance-loading" aria-label="Comprobando tu respuesta de asistencia"><span /></div>}
                 {attendanceError ? <div className="player-home-attendance-error">{attendanceError}</div> : null}
-                {playerAttendanceResponse ? (
+                {playerAttendanceLoaded && playerAttendanceResponse ? (
                   <Link className="player-home-session-link" to={`/training?event=${encodeURIComponent(displayNextTraining.id)}&mode=session`}>
                     <Dumbbell size={17} /> Entrar en la sesión <ChevronRight size={17} />
                   </Link>

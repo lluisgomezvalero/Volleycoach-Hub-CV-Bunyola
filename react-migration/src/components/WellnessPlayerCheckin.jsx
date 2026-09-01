@@ -130,6 +130,21 @@ export default function WellnessPlayerCheckin() {
     void refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    if (host) void refresh();
+  }, [host, refresh]);
+
+  useEffect(() => {
+    const sync = () => { void refresh(); };
+    const onVisibility = () => { if (document.visibilityState === 'visible') void refresh(); };
+    window.addEventListener('volleycoach:wellness-updated', sync);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.removeEventListener('volleycoach:wellness-updated', sync);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [refresh]);
+
   function openCheckin() {
     setError('');
     setSaved(false);
@@ -161,8 +176,8 @@ export default function WellnessPlayerCheckin() {
 
       setHasToday(true);
       setSaved(true);
-      window.dispatchEvent(new CustomEvent('volleycoach:wellness-updated'));
-      window.setTimeout(() => window.location.reload(), 650);
+      setOpen(false);
+      window.dispatchEvent(new CustomEvent('volleycoach:wellness-updated', { detail: { playerId, entryDate: localDateKey() } }));
     } catch (saveError) {
       setError(saveError?.message || 'No se pudo guardar el bienestar.');
     } finally {
