@@ -183,12 +183,23 @@ export default function TrainingPlayerRpeBreakdown() {
 
     void loadBreakdown();
     const refresh = () => void loadBreakdown();
+    const refreshVisible = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    const channel = supabase
+      .channel(`react-training-rpe-${eventRow.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rpe_entries', filter: `event_id=eq.${eventRow.id}` }, refresh)
+      .subscribe();
+
     window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refreshVisible);
     const timer = window.setInterval(refresh, 30000);
     return () => {
       active = false;
       window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refreshVisible);
       window.clearInterval(timer);
+      void supabase.removeChannel(channel);
     };
   }, [eventRow?.id, eventRow?.team_id, isStaff]);
 
@@ -205,6 +216,44 @@ export default function TrainingPlayerRpeBreakdown() {
   }, [rpeRows]);
 
   const responded = players.reduce((count, player) => count + (latestRpeByPlayer.has(player.id) ? 1 : 0), 0);
+  const livePlayerMean = useMemo(() => {
+    const scores = players
+      .map((player) => latestRpeByPlayer.get(player.id))
+      .map((row) => Number(row?.score))
+      .filter((score) => Number.isFinite(score));
+    return scores.length ? scores.reduce((sum, score) => sum + score, 0) / scores.length : null;
+  }, [latestRpeByPlayer, players]);
+
+  useEffect(() => {
+    if (!host || !isStaff) return;
+    const panel = host.closest('.pro-rpe-panel');
+    const summary = panel?.querySelector('.pro-rpe-summary-card.players');
+    if (summary) {
+      const value = summary.querySelector('strong');
+      const meter = summary.querySelector('.pro-rpe-meter i');
+      const count = summary.querySelector('small');
+      if (value) value.textContent = livePlayerMean === null ? '—' : livePlayerMean.toFixed(1);
+      if (meter) meter.style.width = `${livePlayerMean === null ? 0 : Math.max(0, Math.min(100, livePlayerMean * 10))}%`;
+      if (count) count.textContent = `${responded} respuesta${responded === 1 ? '' : 's'}`;
+    }
+
+    const coachValue = Number(panel?.querySelector('.pro-rpe-summary-card.coach strong')?.textContent);
+    const insight = panel?.querySelector('.pro-rpe-insight');
+    if (!insight) return;
+    if (!Number.isFinite(coachValue) || livePlayerMean === null) {
+      insight.className = 'pro-rpe-insight pending';
+      insight.textContent = 'Faltan valoraciones para comparar.';
+      return;
+    }
+    const gap = Math.abs(coachValue - livePlayerMean);
+    if (gap <= 1) {
+      insight.className = 'pro-rpe-insight aligned';
+      insight.textContent = `Percepción bastante alineada · diferencia ${gap.toFixed(1)}`;
+    } else {
+      insight.className = 'pro-rpe-insight different';
+      insight.textContent = `Diferencia de percepción de ${gap.toFixed(1)} puntos.`;
+    }
+  }, [host, isStaff, livePlayerMean, responded]);
 
   if (!host || !isStaff || !eventRow) return null;
 
