@@ -66,6 +66,13 @@ function durationMinutes(event) {
   return Number.isFinite(payload) && payload > 0 ? Math.round(payload) : 90;
 }
 
+function eventEndTime(event) {
+  const explicitEnd = event?.ends_at ? new Date(event.ends_at).getTime() : Number.NaN;
+  if (Number.isFinite(explicitEnd)) return explicitEnd;
+  const start = event?.starts_at ? new Date(event.starts_at).getTime() : Number.NaN;
+  return Number.isFinite(start) ? start + durationMinutes(event) * 60 * 1000 : Number.NaN;
+}
+
 function attendanceCounts(rows = []) {
   return rows.reduce((acc, row) => {
     if (row.official_status && acc[row.official_status] !== undefined) acc[row.official_status] += 1;
@@ -110,7 +117,14 @@ function SectionHeader({ number, kicker, title, tone = 'gold' }) {
 function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, onRsvp, rsvpSaving }) {
   const isStaff = ['coach', 'administrator'].includes(identity?.profile?.role);
   const isPlayer = identity?.profile?.role === 'player';
-  const completed = new Date(event.starts_at).getTime() < Date.now() - 30 * 60 * 1000;
+  const [timeNow, setTimeNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setTimeNow(Date.now()), 30000);
+    return () => window.clearInterval(timer);
+  }, [event.id]);
+  const endTime = eventEndTime(event);
+  const completed = Number.isFinite(endTime) && timeNow >= endTime;
+  const rpeAvailable = Number.isFinite(endTime) && timeNow >= endTime + 30 * 60 * 1000;
   const parts = dateParts(event.starts_at);
   const counts = attendanceCounts(attendanceRows);
   const validated = counts.present + counts.late + counts.justified + counts.unjustified;
@@ -196,7 +210,7 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
   const playerComments = feedbackRows.filter((row) => row.kind === 'player_comment' && String(row.comment_text || '').trim());
 
   async function saveRpe() {
-    if (!completed) return;
+    if (!rpeAvailable) return;
     setRpeSaving(true);
     setRpeSaved('');
     setExtrasError('');
@@ -321,9 +335,9 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
       <SectionHeader number={3} kicker="Al terminar" title="Después de la sesión" tone="orange" />
       <article className="pro-session-panel tone-orange pro-rpe-panel">
         <div className="pro-panel-title pro-rpe-title"><Activity size={19} /><span><small>Percepción del esfuerzo</small><strong>Percepción del esfuerzo</strong></span></div>
-        {!completed ? <p className="pro-muted-copy">El RPE se habilitará al finalizar la sesión.</p> : null}
-        {completed && loadingExtras ? <p className="pro-muted-copy">Cargando seguimiento…</p> : null}
-        {completed && !loadingExtras ? (
+        {!rpeAvailable ? <p className="pro-muted-copy">El RPE se habilitará 30 minutos después de finalizar la sesión.</p> : null}
+        {rpeAvailable && loadingExtras ? <p className="pro-muted-copy">Cargando seguimiento…</p> : null}
+        {rpeAvailable && !loadingExtras ? (
           <>
             {isStaff ? (
               <>
@@ -652,7 +666,7 @@ export default function TrainingPageProfessional() {
     const parts = dateParts(event.starts_at);
     const counts = attendanceCounts(eventAttendance(event.id));
     const own = ownAttendance(event.id);
-    const complete = new Date(event.starts_at).getTime() < Date.now() - 30 * 60 * 1000;
+    const complete = Number.isFinite(eventEndTime(event)) && eventEndTime(event) <= Date.now();
     return (
       <button className={`pro-training-session${featured ? ' featured' : ''}`} type="button" onClick={() => setSelected(event)}>
         <span className="pro-training-date"><b>{parts.day}</b><small>{parts.weekday}</small></span>
