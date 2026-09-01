@@ -47,10 +47,15 @@ jobs:
               anchor = '  <link rel="stylesheet" href="styles.css?v=20260813s">\n'
               html = html.replace(anchor, anchor + pwa_css, 1)
 
-          pwa_script = '    <script src="pwa-mobile-shell-20260825.js?v=20260825pwa1"></script>\n'
+          pwa_script = '    <script src="pwa-mobile-shell-20260825.js?v=20260901push1"></script>\n'
           if 'pwa-mobile-shell-20260825.js' not in html:
               anchor = '    <script src="app.js?v=20260816q"></script>\n'
               html = html.replace(anchor, anchor + pwa_script, 1)
+
+          html = html.replace(
+              'pwa-mobile-shell-20260825.js?v=20260825pwa2',
+              'pwa-mobile-shell-20260825.js?v=20260901push1'
+          )
 
           path.write_text(html)
           PY
@@ -65,7 +70,7 @@ jobs:
           grep -q 'apple-mobile-web-app-capable' index.html
           grep -q 'apple-mobile-web-app-status-bar-style" content="default' index.html
           grep -q 'pwa-mobile-shell.css' index.html
-          grep -q 'pwa-mobile-shell-20260825.js' index.html
+          grep -q 'pwa-mobile-shell-20260825.js?v=20260901push1' index.html
 
       - name: Commit integration if needed
         run: |
@@ -75,6 +80,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "PWA integration already up to date"
           else
-            git commit -m "Integrate PWA shell in app entrypoint"
+            git commit -m "Integrate current app push notifications"
             git push
           fi
