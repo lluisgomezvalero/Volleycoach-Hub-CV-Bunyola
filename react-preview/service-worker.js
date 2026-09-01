@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'volleycoach-react-pwa-';
-const CACHE_VERSION = '20260901-push-v1';
+const CACHE_VERSION = '20260902-production-ready-v1';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const OFFLINE_SHELL = ['./', './manifest.webmanifest'];
 
@@ -43,7 +43,7 @@ self.addEventListener('push', (event) => {
     try { data = JSON.parse(event.data?.text?.() || '{}'); } catch (_) {}
   }
 
-  const icon = new URL('../assets/pwa-icon-192.png', self.registration.scope).href;
+  const icon = new URL('./assets/pwa-icon-192.png', self.registration.scope).href;
   const title = data.title || 'VolleyCoach Hub';
   const options = {
     body: data.body || 'Tienes una tarea pendiente en el equipo.',
