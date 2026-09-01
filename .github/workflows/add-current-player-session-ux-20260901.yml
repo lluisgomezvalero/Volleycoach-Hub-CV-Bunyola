@@ -25,12 +25,15 @@ jobs:
           from pathlib import Path
           p=Path('index.html')
           s=p.read_text()
-          tag='    <script src="player-session-ux-current-20260901.js?v=20260901a"></script>\n'
+          tag='    <script src="player-session-ux-current-20260901.js?v=20260901b"></script>\n'
           if 'player-session-ux-current-20260901.js' not in s:
               anchor='    <script src="pwa-mobile-shell-20260825.js?v=20260901push1"></script>\n'
               if anchor not in s:
                   raise SystemExit('PWA anchor not found')
               s=s.replace(anchor, anchor+tag, 1)
+          else:
+              import re
+              s=re.sub(r'player-session-ux-current-20260901\.js\?v=[A-Za-z0-9._-]+','player-session-ux-current-20260901.js?v=20260901b',s,count=1)
           p.write_text(s)
           PY
       - name: Commit production index
@@ -42,5 +45,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Enable player comment editing in current app"
+          git commit -m "Refresh player comment editor in current app"
           git push origin HEAD:main
