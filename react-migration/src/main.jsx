@@ -11,10 +11,12 @@ import TrainingPlayerRpeBreakdown from './components/TrainingPlayerRpeBreakdown.
 import CrossAccountIdentitySync from './components/CrossAccountIdentitySync.jsx';
 import TrainingAttendanceSyncBoundary from './components/TrainingAttendanceSyncBoundary.jsx';
 import PushNotifications from './components/PushNotifications.jsx';
+import MobileBackNavigation from './components/MobileBackNavigation.jsx';
 import './styles.css';
 import './theme.css';
 import './pages/HomePolish.css';
 import './pages/TrainingPolish.css';
+import './pages/AttendanceResponsePolish.css';
 import './pages/CalendarPolish.css';
 import './pages/TeamAttendanceProfessional.css';
 import './pages/WellnessMobileFix.css';
@@ -40,6 +42,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <TrainingPlayerRpeBreakdown />
         <CrossAccountIdentitySync />
         <PushNotifications />
+        <MobileBackNavigation />
       </AuthProvider>
     </HashRouter>
   </React.StrictMode>
