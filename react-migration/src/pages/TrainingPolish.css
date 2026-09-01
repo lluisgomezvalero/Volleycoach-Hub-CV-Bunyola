@@ -105,3 +105,6 @@
   .pro-rpe-comparison{grid-template-columns:1fr 1fr;gap:6px}
   .pro-rpe-comparison>div{padding:10px}
 }
+
+/* PLAYER SESSION CLOSED STATES 20260901 */
+.pro-player-comment-locked{display:grid;gap:.8rem}.pro-player-comment-saved{display:flex;align-items:flex-start;gap:.65rem;padding:.85rem .95rem;border:1px solid #bbf7d0;border-radius:14px;background:#f0fdf4;color:#166534}.pro-player-comment-saved>span{display:flex;flex-direction:column;gap:.12rem}.pro-player-comment-saved strong{font-size:.9rem}.pro-player-comment-saved small{font-size:.75rem;color:#4b6b58}.pro-player-comment-locked>p{margin:0;padding:.9rem 1rem;border:1px solid #e2e8f0;border-radius:14px;background:#f8fafc;color:#334155;white-space:pre-wrap;line-height:1.5}.pro-player-comment-locked .pro-outline-action{justify-self:start}

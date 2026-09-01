@@ -205,6 +205,7 @@ export default function HomePage() {
   const [checkinNotes, setCheckinNotes] = useState('');
   const [checkinSaving, setCheckinSaving] = useState(false);
   const [checkinError, setCheckinError] = useState('');
+  const [pendingPlayerRpe, setPendingPlayerRpe] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -295,6 +296,20 @@ export default function HomePage() {
         let nextWorkloads = [];
         let nextAttendance = [];
         let nextPlan = null;
+        let nextPendingPlayerRpe = null;
+
+        if (!isStaff && match?.id) {
+          const { data: publishedPlanRows, error: publishedPlanError } = await supabase
+            .from('game_plans')
+            .select('id,event_id,status,published_at,version')
+            .eq('event_id', match.id)
+            .eq('status', 'published')
+            .order('version', { ascending: false })
+            .order('published_at', { ascending: false })
+            .limit(1);
+          if (publishedPlanError) throw publishedPlanError;
+          nextPlan = publishedPlanRows?.[0] || null;
+        }
 
         if (isStaff) {
           const playersResult = await supabase
@@ -320,7 +335,7 @@ export default function HomePage() {
             ? supabase.from('attendance').select('player_id,player_response,official_status').eq('event_id', training.id)
             : Promise.resolve({ data: [], error: null }));
           requests.push(match?.id
-            ? supabase.from('game_plans').select('id,event_id,status,published_at').eq('event_id', match.id).order('updated_at', { ascending: false }).limit(1)
+            ? supabase.from('game_plans').select('id,event_id,status,published_at,version').eq('event_id', match.id).eq('status', 'published').order('version', { ascending: false }).order('published_at', { ascending: false }).limit(1)
             : Promise.resolve({ data: [], error: null }));
 
           const [wellnessResult, rpeResult, attendanceResult, planResult] = await Promise.all(requests);
@@ -389,6 +404,17 @@ export default function HomePage() {
             if (playerAttendanceResult.error) throw playerAttendanceResult.error;
             const eventMap = new Map(playerEvents.map((event) => [event.id, event]));
             const attendanceMap = new Map((playerAttendanceResult.data || []).map((row) => [row.event_id, row]));
+            const ownPlayerRpeEventIds = new Set((playerRpeResult.data || []).filter((row) => row.source === 'player').map((row) => row.event_id));
+            nextPendingPlayerRpe = [...playerEvents]
+              .filter((event) => {
+                const start = new Date(event.starts_at).getTime();
+                const end = event.ends_at ? new Date(event.ends_at).getTime() : start + eventDuration(event) * 60000;
+                if (!Number.isFinite(end) || now.getTime() < end + 30 * 60 * 1000) return false;
+                if (ownPlayerRpeEventIds.has(event.id)) return false;
+                const attendance = attendanceMap.get(event.id);
+                return !['justified', 'unjustified'].includes(attendance?.official_status);
+              })
+              .sort((a, b) => new Date(b.starts_at) - new Date(a.starts_at))[0] || null;
             const chosen = new Map();
             (playerRpeResult.data || []).filter((row) => ['player', 'coach_for_player'].includes(row.source)).forEach((row) => {
               const prev = chosen.get(row.event_id);
@@ -453,6 +479,7 @@ export default function HomePage() {
         setWorkloadRows(nextWorkloads);
         setTrainingAttendance(nextAttendance);
         setGamePlan(nextPlan);
+        setPendingPlayerRpe(nextPendingPlayerRpe);
         setRecentMatches(recentMatchResult.data || []);
       } catch (loadError) {
         if (active) setError(loadError?.message || 'No se pudo cargar el panel técnico.');
@@ -650,6 +677,14 @@ export default function HomePage() {
 
       {error ? <div className="coach-home-error">{error}</div> : null}
 
+      {!isStaff && pendingPlayerRpe ? (
+        <Link className="player-pending-rpe-banner" to={`/training?event=${encodeURIComponent(pendingPlayerRpe.id)}&mode=session`}>
+          <span className="player-pending-rpe-icon"><Activity size={19} /></span>
+          <span><small>Te falta por contestar</small><strong>Enviar el RPE del entrenamiento</strong><em>Ya puedes registrar tu percepción del esfuerzo.</em></span>
+          <ChevronRight size={19} />
+        </Link>
+      ) : null}
+
       {!isStaff && !loading && playerWellnessLoaded && !playerWellnessToday ? (
         <button type="button" className="player-daily-wellness-banner" onClick={openDailyCheckin}>
           <span className="player-daily-wellness-icon"><HeartPulse /></span>
@@ -704,6 +739,11 @@ export default function HomePage() {
                   <button type="button" className={`player-home-attendance-btn no ${playerAttendanceResponse === 'no' ? 'active' : ''}`} disabled={attendanceSaving} onClick={() => void saveOwnAttendance('no')}><XCircle size={17} /> No asistiré</button>
                 </div>
                 {attendanceError ? <div className="player-home-attendance-error">{attendanceError}</div> : null}
+                {playerAttendanceResponse ? (
+                  <Link className="player-home-session-link" to={`/training?event=${encodeURIComponent(displayNextTraining.id)}&mode=session`}>
+                    <Dumbbell size={17} /> Entrar en la sesión <ChevronRight size={17} />
+                  </Link>
+                ) : null}
               </>
             )}
           </article>

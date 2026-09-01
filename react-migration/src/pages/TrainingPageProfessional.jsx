@@ -142,6 +142,7 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
   const [commentText, setCommentText] = useState('');
   const [commentSaving, setCommentSaving] = useState(false);
   const [commentSaved, setCommentSaved] = useState('');
+  const [commentEditing, setCommentEditing] = useState(false);
   const [assessment, setAssessment] = useState('');
   const [continuity, setContinuity] = useState('');
   const [coachSaving, setCoachSaving] = useState(false);
@@ -181,7 +182,8 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
 
         if (isPlayer) {
           const ownComment = nextFeedback.find((row) => row.kind === 'player_comment' && row.player_id === identity?.player?.id);
-          if (ownComment?.comment_text) setCommentText(ownComment.comment_text);
+          setCommentText(ownComment?.comment_text || '');
+          setCommentEditing(false);
         }
         if (isStaff) {
           const ownCoachFeedback = nextFeedback.find((row) => row.kind === 'coach_assessment' && row.coach_profile_id === identity.profile.id)
@@ -204,13 +206,15 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
   const playerRpes = useMemo(() => rpeRows.filter((row) => row.source === 'player' && row.player_id), [rpeRows]);
   const playerMean = playerRpes.length ? playerRpes.reduce((sum, row) => sum + Number(row.score || 0), 0) / playerRpes.length : null;
   const coachRpe = rpeRows.find((row) => row.source === 'coach' && row.coach_profile_id === identity?.profile?.id);
+  const ownPlayerRpe = isPlayer ? rpeRows.find((row) => row.source === 'player' && row.player_id === identity?.player?.id) || null : null;
+  const ownPlayerComment = isPlayer ? feedbackRows.find((row) => row.kind === 'player_comment' && row.player_id === identity?.player?.id && String(row.comment_text || '').trim()) || null : null;
   const coachScore = coachRpe ? Number(coachRpe.score) : null;
   const rpeGap = coachScore !== null && playerMean !== null ? coachScore - playerMean : null;
   const playerMap = useMemo(() => new Map(teamPlayers.map((player) => [player.id, player])), [teamPlayers]);
   const playerComments = feedbackRows.filter((row) => row.kind === 'player_comment' && String(row.comment_text || '').trim());
 
   async function saveRpe() {
-    if (!rpeAvailable) return;
+    if (!rpeAvailable || (isPlayer && ownPlayerRpe)) return;
     setRpeSaving(true);
     setRpeSaved('');
     setExtrasError('');
@@ -242,11 +246,15 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
 
   async function savePlayerComment() {
     if (!isPlayer || !identity?.player?.id || !completed) return;
+    const text = commentText.trim();
+    if (!text) {
+      setExtrasError('Escribe un comentario antes de guardarlo.');
+      return;
+    }
     setCommentSaving(true);
     setCommentSaved('');
     setExtrasError('');
     try {
-      const text = commentText.trim();
       const existing = feedbackRows.find((row) => row.kind === 'player_comment' && row.player_id === identity.player.id);
       const payload = { comment_text: text, updated_at: new Date().toISOString() };
       let result;
@@ -254,7 +262,9 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
       else result = await supabase.from('session_feedback').insert({ event_id: event.id, player_id: identity.player.id, coach_profile_id: null, kind: 'player_comment', comment_text: text }).select('id,event_id,player_id,coach_profile_id,kind,comment_text,assessment,continuity_notes,created_at,updated_at').single();
       if (result.error) throw result.error;
       setFeedbackRows((rows) => [...rows.filter((row) => row.id !== result.data.id && !(row.kind === 'player_comment' && row.player_id === identity.player.id)), result.data]);
-      setCommentSaved('Comentario enviado');
+      setCommentText(result.data.comment_text || text);
+      setCommentSaved(existing ? 'Comentario actualizado' : 'Comentario enviado');
+      setCommentEditing(false);
     } catch (error) {
       setExtrasError(error?.message || 'No se pudo guardar el comentario.');
     } finally {
@@ -364,10 +374,13 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
                 </div>
               </>
             ) : null}
-            {isStaff && coachRpe ? (
+            {(isStaff && coachRpe) || (isPlayer && ownPlayerRpe) ? (
               <div className="pro-rpe-locked">
                 <Check size={18} />
-                <span><strong>RPE previsto registrado</strong><small>Este valor queda cerrado y ya no puede modificarse.</small></span>
+                <span>
+                  <strong>{isStaff ? 'RPE previsto registrado' : 'RPE registrado'}</strong>
+                  <small>{isStaff ? 'Este valor queda cerrado y ya no puede modificarse.' : `Tu respuesta (${Math.round(Number(ownPlayerRpe?.score || 0))}/10) ha quedado guardada y cerrada.`}</small>
+                </span>
               </div>
             ) : (
               <>
@@ -408,10 +421,20 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
       {completed && isPlayer ? (
         <article className="pro-session-panel tone-violet">
           <div className="pro-panel-title"><MessageSquare size={19} /><span><small>Opcional y privado</small><strong>Mi comentario</strong></span></div>
-          <p className="pro-panel-note">Puedes dejar una sensación, incidencia o comentario para el cuerpo técnico.</p>
-          <label className="pro-field"><textarea rows="4" value={commentText} onChange={(event) => setCommentText(event.target.value)} placeholder="¿Cómo te has sentido? ¿Hay algo que quieras comentar?" /></label>
-          <button className="pro-secondary-action" type="button" disabled={commentSaving} onClick={() => void savePlayerComment()}><MessageSquare size={17} /> {commentSaving ? 'Enviando…' : 'Guardar comentario'}</button>
-          {commentSaved ? <p className="pro-success-copy"><Check size={15} /> {commentSaved}</p> : null}
+          {ownPlayerComment && !commentEditing ? (
+            <div className="pro-player-comment-locked">
+              <div className="pro-player-comment-saved"><Check size={18} /><span><strong>{commentSaved || 'Comentario enviado'}</strong><small>Tu comentario está guardado y solo lo puede ver el cuerpo técnico.</small></span></div>
+              <p>{ownPlayerComment.comment_text}</p>
+              <button className="pro-outline-action" type="button" onClick={() => { setCommentSaved(''); setExtrasError(''); setCommentEditing(true); }}><MessageSquare size={17} /> Editar comentario</button>
+            </div>
+          ) : (
+            <>
+              <p className="pro-panel-note">Puedes dejar una sensación, incidencia o comentario para el cuerpo técnico.</p>
+              <label className="pro-field"><textarea rows="4" value={commentText} onChange={(event) => setCommentText(event.target.value)} placeholder="¿Cómo te has sentido? ¿Hay algo que quieras comentar?" /></label>
+              <button className="pro-secondary-action" type="button" disabled={commentSaving} onClick={() => void savePlayerComment()}><MessageSquare size={17} /> {commentSaving ? 'Enviando…' : ownPlayerComment ? 'Guardar cambios' : 'Guardar comentario'}</button>
+              {commentSaved ? <p className="pro-success-copy"><Check size={15} /> {commentSaved}</p> : null}
+            </>
+          )}
         </article>
       ) : null}
 
