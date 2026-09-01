@@ -1,0 +1,18 @@
+{
+  "id": "./",
+  "name": "VolleyCoach Hub · CV Bunyola",
+  "short_name": "VolleyCoach Hub",
+  "description": "Entrenamientos, calendario, bienestar, rendimiento y plan de juego del CV Bunyola.",
+  "lang": "es-ES",
+  "start_url": "./#/",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f172a",
+  "categories": ["sports", "productivity"],
+  "icons": [
+    { "src": "../assets/pwa-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "../assets/pwa-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "../assets/pwa-icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
