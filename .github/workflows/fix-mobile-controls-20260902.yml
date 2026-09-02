@@ -1,4 +1,4 @@
-name: Fix mobile controls 20260902
+name: Restore native time picker 20260902
 
 on:
   push:
@@ -17,48 +17,40 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: react-vite-migration
-      - name: Patch mobile controls
+      - name: Restore native clock picker
         run: |
           python - <<'PY'
           from pathlib import Path
 
           calendar = Path('react-migration/src/pages/CalendarPage.jsx')
           text = calendar.read_text()
-          old = '''  const isMatchLike = ['match', 'friendly'].includes(form.type);\n  const rivals = (leagueTeams || []).filter((row) => !row.is_own && (!form.team_id || row.context_team_id === form.team_id));\n'''
-          new = '''  const isMatchLike = ['match', 'friendly'].includes(form.type);\n  const rivals = (leagueTeams || []).filter((row) => !row.is_own && (!form.team_id || row.context_team_id === form.team_id));\n  const [hourPart = '00', minutePart = '00'] = String(form.time || '00:00').split(':');\n  const hourOptions = Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0'));\n  const minuteOptions = Array.from({ length: 12 }, (_, index) => String(index * 5).padStart(2, '0'));\n  if (!minuteOptions.includes(minutePart)) minuteOptions.push(minutePart);\n  minuteOptions.sort();\n'''
-          if old not in text:
-              raise SystemExit('EventEditor anchor not found')
-          text = text.replace(old, new, 1)
-
-          old_time = '''            <label><span>Hora</span><input type="time" value={form.time} onChange={(e) => setForm((prev) => ({ ...prev, time: e.target.value }))} required /></label>'''
-          new_time = '''            <label><span>Hora</span><div className="calendar-time-selects"><select aria-label="Hora" value={hourPart} onChange={(e) => setForm((prev) => ({ ...prev, time: `${e.target.value}:${minutePart}` }))}>{hourOptions.map((hour) => <option key={hour} value={hour}>{hour}</option>)}</select><b>:</b><select aria-label="Minutos" value={minutePart} onChange={(e) => setForm((prev) => ({ ...prev, time: `${hourPart}:${e.target.value}` }))}>{minuteOptions.map((minute) => <option key={minute} value={minute}>{minute}</option>)}</select></div></label>'''
-          if old_time not in text:
-              raise SystemExit('Native time input not found')
-          text = text.replace(old_time, new_time, 1)
+          custom_state = """  const [hourPart = '00', minutePart = '00'] = String(form.time || '00:00').split(':');
+  const hourOptions = Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0'));
+  const minuteOptions = Array.from({ length: 12 }, (_, index) => String(index * 5).padStart(2, '0'));
+  if (!minuteOptions.includes(minutePart)) minuteOptions.push(minutePart);
+  minuteOptions.sort();
+"""
+          text = text.replace(custom_state, '', 1)
+          custom_time = """            <label><span>Hora</span><div className=\"calendar-time-selects\"><select aria-label=\"Hora\" value={hourPart} onChange={(e) => setForm((prev) => ({ ...prev, time: `${e.target.value}:${minutePart}` }))}>{hourOptions.map((hour) => <option key={hour} value={hour}>{hour}</option>)}</select><b>:</b><select aria-label=\"Minutos\" value={minutePart} onChange={(e) => setForm((prev) => ({ ...prev, time: `${hourPart}:${e.target.value}` }))}>{minuteOptions.map((minute) => <option key={minute} value={minute}>{minute}</option>)}</select></div></label>"""
+          native_time = """            <label><span>Hora</span><input type=\"time\" step=\"300\" value={form.time} onChange={(e) => setForm((prev) => ({ ...prev, time: e.target.value }))} required /></label>"""
+          if custom_time not in text:
+              raise SystemExit('Custom time selector not found')
+          text = text.replace(custom_time, native_time, 1)
           calendar.write_text(text)
 
           css = Path('react-migration/src/pages/CalendarPage.css')
           c = css.read_text()
-          marker = '/* mobile-time-control-20260902 */'
-          if marker not in c:
-              c += '''\n\n/* mobile-time-control-20260902 */\n.calendar-time-selects{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:7px;width:100%}.calendar-time-selects select{width:100%;min-width:0}.calendar-time-selects b{color:#667085;font-size:1rem;text-align:center}\n'''
-              css.write_text(c)
-
-          training_css = Path('react-migration/src/pages/TrainingPageProfessional.css')
-          t = training_css.read_text()
-          marker2 = '/* mobile-new-session-button-20260902 */'
-          if marker2 not in t:
-              t += '''\n\n/* mobile-new-session-button-20260902 */\n@media(max-width:820px){.pro-new-session{width:auto;min-width:124px;height:42px;padding:0 14px;border-radius:12px;font-size:.74rem;white-space:nowrap;justify-content:center}.pro-new-session svg{width:16px;height:16px;flex:0 0 auto}}\n'''
-              training_css.write_text(t)
+          block = """\n\n/* mobile-time-control-20260902 */
+.calendar-time-selects{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:7px;width:100%}.calendar-time-selects select{width:100%;min-width:0}.calendar-time-selects b{color:#667085;font-size:1rem;text-align:center}
+"""
+          c = c.replace(block, '', 1)
+          css.write_text(c)
           PY
-      - name: Commit changes
+      - name: Commit changes and remove helper workflow
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add react-migration/src/pages/CalendarPage.jsx react-migration/src/pages/CalendarPage.css react-migration/src/pages/TrainingPageProfessional.css
-          if git diff --cached --quiet; then
-            echo "No changes"
-            exit 0
-          fi
-          git commit -m "Polish mobile event time and new session controls"
+          git rm .github/workflows/fix-mobile-controls-20260902.yml
+          git add react-migration/src/pages/CalendarPage.jsx react-migration/src/pages/CalendarPage.css
+          git commit -m "Restore native Android clock picker"
           git push origin HEAD:react-vite-migration
