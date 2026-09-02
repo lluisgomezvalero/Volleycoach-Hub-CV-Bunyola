@@ -1,0 +1,128 @@
+name: Add coach RPE override 20260902
+
+on:
+  push:
+    branches:
+      - react-vite-migration
+    paths:
+      - '.github/workflows/add-rpe-override-20260902.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch React RPE override flow
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f'Missing patch anchor: {label}')
+              return text.replace(old, new, 1)
+
+          # Staff RPE breakdown: 24h exception + real reminder.
+          p = Path('react-migration/src/components/TrainingPlayerRpeBreakdown.jsx')
+          s = p.read_text()
+          s = replace_once(s,
+              "import { BellRing, ChevronDown, UsersRound } from 'lucide-react';",
+              "import { BellRing, ChevronDown, Clock3, UsersRound } from 'lucide-react';",
+              'breakdown import')
+          s = replace_once(s,
+              "  const [testStatus, setTestStatus] = useState({});\n",
+              "  const [testStatus, setTestStatus] = useState({});\n  const [overrideRows, setOverrideRows] = useState([]);\n  const [overrideBusyPlayer, setOverrideBusyPlayer] = useState(null);\n  const [overrideStatus, setOverrideStatus] = useState({});\n",
+              'breakdown state')
+          s = replace_once(s,
+              "    setTestBusyPlayer(null);\n    setTestStatus({});\n",
+              "    setTestBusyPlayer(null);\n    setTestStatus({});\n    setOverrideRows([]);\n    setOverrideBusyPlayer(null);\n    setOverrideStatus({});\n",
+              'breakdown reset')
+          s = replace_once(s,
+              "        const [playersResult, rpeResult] = await Promise.all([\n          supabase\n            .from('players')\n            .select('id,profile_id,legacy_id,dorsal,position,profiles:profile_id(full_name,username)')\n            .eq('team_id', eventRow.team_id)\n            .eq('active', true)\n            .order('dorsal', { ascending: true, nullsFirst: false }),\n          supabase\n            .from('rpe_entries')\n            .select('id,player_id,score,source,created_at,updated_at')\n            .eq('event_id', eventRow.id)\n            .eq('source', 'player')\n        ]);\n        if (playersResult.error) throw playersResult.error;\n        if (rpeResult.error) throw rpeResult.error;\n        if (!active) return;\n        setPlayers(playersResult.data || []);\n        setRpeRows(rpeResult.data || []);",
+              "        const [playersResult, rpeResult, overrideResult] = await Promise.all([\n          supabase\n            .from('players')\n            .select('id,profile_id,legacy_id,dorsal,position,profiles:profile_id(full_name,username)')\n            .eq('team_id', eventRow.team_id)\n            .eq('active', true)\n            .order('dorsal', { ascending: true, nullsFirst: false }),\n          supabase\n            .from('rpe_entries')\n            .select('id,player_id,score,source,created_at,updated_at')\n            .eq('event_id', eventRow.id)\n            .eq('source', 'player'),\n          supabase\n            .from('rpe_submission_overrides')\n            .select('id,event_id,player_id,enabled_at,expires_at,updated_at')\n            .eq('event_id', eventRow.id)\n        ]);\n        if (playersResult.error) throw playersResult.error;\n        if (rpeResult.error) throw rpeResult.error;\n        if (overrideResult.error) throw overrideResult.error;\n        if (!active) return;\n        setPlayers(playersResult.data || []);\n        setRpeRows(rpeResult.data || []);\n        setOverrideRows(overrideResult.data || []);",
+              'breakdown queries')
+          s = replace_once(s,
+              "      .on('postgres_changes', { event: '*', schema: 'public', table: 'rpe_entries', filter: `event_id=eq.${eventRow.id}` }, refresh)\n      .subscribe();",
+              "      .on('postgres_changes', { event: '*', schema: 'public', table: 'rpe_entries', filter: `event_id=eq.${eventRow.id}` }, refresh)\n      .on('postgres_changes', { event: '*', schema: 'public', table: 'rpe_submission_overrides', filter: `event_id=eq.${eventRow.id}` }, refresh)\n      .subscribe();",
+              'breakdown realtime')
+          s = replace_once(s,
+              "  const responded = players.reduce((count, player) => count + (latestRpeByPlayer.has(player.id) ? 1 : 0), 0);",
+              "  const activeOverrideByPlayer = useMemo(() => {\n    const now = Date.now();\n    const map = new Map();\n    overrideRows.forEach((row) => {\n      if (!row?.player_id) return;\n      const expires = new Date(row.expires_at).getTime();\n      if (Number.isFinite(expires) && expires > now) map.set(row.player_id, row);\n    });\n    return map;\n  }, [overrideRows]);\n\n  const responded = players.reduce((count, player) => count + (latestRpeByPlayer.has(player.id) ? 1 : 0), 0);",
+              'breakdown override map')
+          anchor = "  async function sendTestPush(player) {\n"
+          fn = "  async function enableRpeOverride(player) {\n    if (!player?.id || !eventRow?.id || overrideBusyPlayer) return;\n    setOverrideBusyPlayer(player.id);\n    setOverrideStatus((current) => ({ ...current, [player.id]: null }));\n    try {\n      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();\n      const { data, error: overrideError } = await supabase\n        .from('rpe_submission_overrides')\n        .upsert({\n          event_id: eventRow.id,\n          player_id: player.id,\n          enabled_by: identity.profile.id,\n          enabled_at: new Date().toISOString(),\n          expires_at: expiresAt,\n          updated_at: new Date().toISOString()\n        }, { onConflict: 'event_id,player_id' })\n        .select('id,event_id,player_id,enabled_at,expires_at,updated_at')\n        .single();\n      if (overrideError) throw overrideError;\n      setOverrideRows((current) => [...current.filter((row) => row.player_id !== player.id), data]);\n\n      let statusText = 'RPE habilitado durante 24 h';\n      if (player.profile_id) {\n        const { data: pushData, error: pushError } = await supabase.functions.invoke('send-test-push', {\n          body: { player_id: player.id, event_id: eventRow.id, kind: 'rpe_override' }\n        });\n        if (!pushError && pushData?.ok) statusText = 'RPE habilitado · aviso enviado';\n        else statusText = 'RPE habilitado · no se pudo enviar el aviso';\n      } else {\n        statusText = 'RPE habilitado · cuenta no vinculada';\n      }\n      setOverrideStatus((current) => ({ ...current, [player.id]: { type: 'success', text: statusText } }));\n    } catch (overrideError) {\n      setOverrideStatus((current) => ({ ...current, [player.id]: { type: 'error', text: overrideError?.message || 'No se pudo habilitar el RPE.' } }));\n    } finally {\n      setOverrideBusyPlayer(null);\n    }\n  }\n\n"
+          s = replace_once(s, anchor, fn + anchor, 'breakdown enable function')
+          s = replace_once(s,
+              "            <span>Usa <strong>Probar aviso</strong> para comprobar el móvil de una jugadora sin esperar 30 minutos.</span>",
+              "            <span><strong>Habilitar RPE</strong> abre una excepción de 24 h y envía un aviso a la jugadora. <strong>Probar aviso</strong> solo comprueba el móvil.</span>",
+              'breakdown hint')
+          s = replace_once(s,
+              "                const status = testStatus[player.id];\n                const busy = testBusyPlayer === player.id;",
+              "                const status = testStatus[player.id];\n                const overrideMessage = overrideStatus[player.id];\n                const activeOverride = activeOverrideByPlayer.get(player.id);\n                const busy = testBusyPlayer === player.id;\n                const overrideBusy = overrideBusyPlayer === player.id;",
+              'breakdown row vars')
+          s = replace_once(s,
+              "                      {status ? <small className={`individual-rpe-test-status ${status.type}`}>{status.text}</small> : null}",
+              "                      {status ? <small className={`individual-rpe-test-status ${status.type}`}>{status.text}</small> : null}\n                      {overrideMessage ? <small className={`individual-rpe-test-status ${overrideMessage.type}`}>{overrideMessage.text}</small> : activeOverride && score == null ? <small className=\"individual-rpe-test-status success\">RPE habilitado temporalmente</small> : null}",
+              'breakdown row status')
+          s = replace_once(s,
+              "                      {player.profile_id ? (\n                        <button\n                          type=\"button\"\n                          className=\"individual-rpe-test-button\"\n                          onClick={() => void sendTestPush(player)}\n                          disabled={Boolean(testBusyPlayer)}\n                          title={`Enviar notificación de prueba a ${name}`}\n                        >\n                          <BellRing size={13} /> {busy ? 'Enviando…' : 'Probar aviso'}\n                        </button>\n                      ) : null}",
+              "                      {score == null ? (\n                        <button\n                          type=\"button\"\n                          className=\"individual-rpe-test-button individual-rpe-override-button\"\n                          onClick={() => void enableRpeOverride(player)}\n                          disabled={Boolean(overrideBusyPlayer)}\n                          title={`${activeOverride ? 'Renovar' : 'Habilitar'} el RPE de ${name} durante 24 horas`}\n                        >\n                          <Clock3 size={13} /> {overrideBusy ? 'Habilitando…' : activeOverride ? 'Renovar RPE' : 'Habilitar RPE'}\n                        </button>\n                      ) : null}\n                      {player.profile_id ? (\n                        <button\n                          type=\"button\"\n                          className=\"individual-rpe-test-button\"\n                          onClick={() => void sendTestPush(player)}\n                          disabled={Boolean(testBusyPlayer)}\n                          title={`Enviar notificación de prueba a ${name}`}\n                        >\n                          <BellRing size={13} /> {busy ? 'Enviando…' : 'Probar aviso'}\n                        </button>\n                      ) : null}",
+              'breakdown buttons')
+          p.write_text(s)
+
+          # Player session: an active staff override bypasses the normal time window.
+          p = Path('react-migration/src/pages/TrainingPageProfessional.jsx')
+          s = p.read_text()
+          s = replace_once(s,
+              "  const rpeAvailable = Number.isFinite(endTime) && !rpeExpired && timeNow >= endTime + 30 * 60 * 1000;",
+              "  const regularRpeAvailable = Number.isFinite(endTime) && !rpeExpired && timeNow >= endTime + 30 * 60 * 1000;",
+              'training regular availability')
+          s = replace_once(s,
+              "  const [rpeSaved, setRpeSaved] = useState('');\n",
+              "  const [rpeSaved, setRpeSaved] = useState('');\n  const [rpeOverride, setRpeOverride] = useState(null);\n",
+              'training override state')
+          s = replace_once(s,
+              "  const [coachSaved, setCoachSaved] = useState('');\n\n  useEffect(() => {",
+              "  const [coachSaved, setCoachSaved] = useState('');\n  const rpeOverrideActive = isPlayer && Number.isFinite(new Date(rpeOverride?.expires_at || '').getTime()) && new Date(rpeOverride.expires_at).getTime() > timeNow;\n  const rpeAvailable = regularRpeAvailable || rpeOverrideActive;\n\n  useEffect(() => {",
+              'training computed override')
+          s = replace_once(s,
+              "        const results = await Promise.all(requests);\n        if (results[0].error) throw results[0].error;\n        if (results[1].error) throw results[1].error;\n        if (results[2]?.error) throw results[2].error;",
+              "        const overrideRequest = isPlayer\n          ? supabase.from('rpe_submission_overrides').select('id,event_id,player_id,enabled_at,expires_at').eq('event_id', event.id).eq('player_id', identity.player.id).maybeSingle()\n          : Promise.resolve({ data: null, error: null });\n        const [results, overrideResult] = await Promise.all([Promise.all(requests), overrideRequest]);\n        if (results[0].error) throw results[0].error;\n        if (results[1].error) throw results[1].error;\n        if (results[2]?.error) throw results[2].error;\n        if (overrideResult.error) throw overrideResult.error;",
+              'training override query')
+          s = replace_once(s,
+              "        setRpeRows(nextRpe);\n        setFeedbackRows(nextFeedback);\n        setTeamPlayers(nextPlayers);",
+              "        setRpeRows(nextRpe);\n        setFeedbackRows(nextFeedback);\n        setTeamPlayers(nextPlayers);\n        setRpeOverride(overrideResult.data || null);",
+              'training set override')
+          s = replace_once(s,
+              "        {rpeExpired ? <p className=\"pro-muted-copy\">El plazo para responder el RPE terminó al finalizar el día del entrenamiento.</p> : null}\n        {!rpeExpired && !rpeAvailable ? <p className=\"pro-muted-copy\">El RPE se habilitará 30 minutos después de finalizar la sesión.</p> : null}",
+              "        {rpeExpired && !rpeOverrideActive ? <p className=\"pro-muted-copy\">El plazo para responder el RPE terminó al finalizar el día del entrenamiento.</p> : null}\n        {!rpeExpired && !rpeAvailable ? <p className=\"pro-muted-copy\">El RPE se habilitará 30 minutos después de finalizar la sesión.</p> : null}\n        {rpeOverrideActive && !regularRpeAvailable ? <p className=\"pro-success-copy\"><Clock3 size={15} /> El entrenador ha habilitado tu RPE temporalmente. Puedes responderlo ahora.</p> : null}",
+              'training override notice')
+          p.write_text(s)
+
+          # Home: an active exception should bring the old RPE back as pending.
+          p = Path('react-migration/src/pages/HomePage.jsx')
+          s = p.read_text()
+          s = replace_once(s,
+              "            const [playerRpeResult, playerAttendanceResult] = await Promise.all([\n              supabase.from('rpe_entries').select('event_id,player_id,score,source,created_at').in('event_id', playerEventIds).eq('player_id', identity.player.id),\n              supabase.from('attendance').select('event_id,player_id,official_status,effective_minutes').in('event_id', playerEventIds).eq('player_id', identity.player.id)\n            ]);\n            if (playerRpeResult.error) throw playerRpeResult.error;\n            if (playerAttendanceResult.error) throw playerAttendanceResult.error;",
+              "            const [playerRpeResult, playerAttendanceResult, playerOverrideResult] = await Promise.all([\n              supabase.from('rpe_entries').select('event_id,player_id,score,source,created_at').in('event_id', playerEventIds).eq('player_id', identity.player.id),\n              supabase.from('attendance').select('event_id,player_id,official_status,effective_minutes').in('event_id', playerEventIds).eq('player_id', identity.player.id),\n              supabase.from('rpe_submission_overrides').select('event_id,player_id,expires_at').in('event_id', playerEventIds).eq('player_id', identity.player.id)\n            ]);\n            if (playerRpeResult.error) throw playerRpeResult.error;\n            if (playerAttendanceResult.error) throw playerAttendanceResult.error;\n            if (playerOverrideResult.error) throw playerOverrideResult.error;",
+              'home override query')
+          s = replace_once(s,
+              "            const ownPlayerRpeEventIds = new Set((playerRpeResult.data || []).filter((row) => row.source === 'player').map((row) => row.event_id));\n            nextPendingPlayerRpe = [...playerEvents]",
+              "            const ownPlayerRpeEventIds = new Set((playerRpeResult.data || []).filter((row) => row.source === 'player').map((row) => row.event_id));\n            const activeOverrideEventIds = new Set((playerOverrideResult.data || []).filter((row) => new Date(row.expires_at).getTime() > now.getTime()).map((row) => row.event_id));\n            nextPendingPlayerRpe = [...playerEvents]",
+              'home override set')
+          s = replace_once(s,
+              "                if (!Number.isFinite(end) || now.getTime() < end + 30 * 60 * 1000) return false;\n                const trainingDay = new Date(event.starts_at);\n                const dayEnd = new Date(trainingDay);\n                dayEnd.setHours(23, 59, 59, 999);\n                if (!Number.isFinite(dayEnd.getTime()) || now.getTime() > dayEnd.getTime()) return false;",
+              "                const overrideActive = activeOverrideEventIds.has(event.id);\n                if (!Number.isFinite(end) || (!overrideActive && now.getTime() < end + 30 * 60 * 1000)) return false;\n                const trainingDay = new Date(event.starts_at);\n                const dayEnd = new Date(trainingDay);\n                dayEnd.setHours(23, 59, 59, 999);\n                if (!Number.isFinite(dayEnd.getTime()) || (!overrideActive && now.getTime() > dayEnd.getTime())) return false;",
+              'home override timing')
+          p.write_text(s)
+          PY
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add react-migration/src/components/TrainingPlayerRpeBreakdown.jsx react-migration/src/pages/TrainingPageProfessional.jsx react-migration/src/pages/HomePage.jsx
+          git commit -m "Allow coach RPE submission overrides"
+          git push
