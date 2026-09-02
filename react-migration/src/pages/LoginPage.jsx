@@ -3,8 +3,8 @@ import { AlertCircle, LoaderCircle, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider.jsx';
 import './LoginPage.css';
 
-const CLUB_LOGO = `${import.meta.env.BASE_URL}../assets/club_logo.png`;
-const TEAM_BACKGROUND = `${import.meta.env.BASE_URL}../assets/team_banner.jpg`;
+const CLUB_LOGO = `${import.meta.env.BASE_URL}assets/club_logo.png`;
+const TEAM_BACKGROUND = `${import.meta.env.BASE_URL}assets/team_banner.jpg`;
 
 export default function LoginPage() {
   const { login } = useAuth();
