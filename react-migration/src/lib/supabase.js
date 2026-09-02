@@ -7,6 +7,8 @@ export const supabase = createClient(url, publishableKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true
+    // VolleyCoach uses username/password auth, not OAuth or magic-link callbacks.
+    // Avoid unnecessary URL-session recovery work on Safari/PWA startup.
+    detectSessionInUrl: false
   }
 });
