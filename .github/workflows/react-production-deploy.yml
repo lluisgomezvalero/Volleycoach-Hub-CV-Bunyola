@@ -70,3 +70,5 @@ jobs:
 
           git commit -m "Deploy React app to production"
           git push origin HEAD:main
+
+# Redeploy marker: fixed app-scoped image paths 2026-09-02
