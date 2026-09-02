@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Bell, BellRing, Check, Smartphone } from 'lucide-react';
+import { Bell, BellOff, BellRing, Check, Smartphone } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider.jsx';
 import { supabase } from '../lib/supabase.js';
 import './PushNotifications.css';
@@ -21,8 +21,14 @@ function isStandalone() {
   return window.matchMedia?.('(display-mode: standalone)')?.matches || window.navigator.standalone === true;
 }
 
+function subscriptionEndpoint(subscription) {
+  const json = subscription?.toJSON?.() || {};
+  return json.endpoint || subscription?.endpoint || '';
+}
+
 export default function PushNotifications() {
-  const { identity } = useAuth();
+  const { session, identity } = useAuth();
+  const authenticated = Boolean(session?.user?.id);
   const isPlayer = identity?.profile?.role === 'player';
   const playerId = identity?.player?.id || null;
   const profileId = identity?.profile?.id || null;
@@ -30,6 +36,24 @@ export default function PushNotifications() {
   const [status, setStatus] = useState('checking');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
+  async function registrationForApp() {
+    return navigator.serviceWorker.register(new URL('service-worker.js', document.baseURI).href);
+  }
+
+  async function subscriptionBelongsToCurrentPlayer(subscription) {
+    if (!isPlayer || !profileId || !playerId || !subscription) return false;
+    const endpoint = subscriptionEndpoint(subscription);
+    if (!endpoint) return false;
+
+    const { data, error: ownerError } = await supabase
+      .from('push_subscriptions')
+      .select('id, profile_id, player_id')
+      .eq('endpoint', endpoint)
+      .maybeSingle();
+    if (ownerError) throw ownerError;
+    return data?.profile_id === profileId && data?.player_id === playerId;
+  }
 
   async function saveSubscription(subscription) {
     if (!profileId || !playerId || !subscription) return;
@@ -53,27 +77,38 @@ export default function PushNotifications() {
 
   useEffect(() => {
     let active = true;
-    if (!isPlayer || !profileId || !playerId) {
+
+    if (!authenticated) {
       setStatus('hidden');
       return () => { active = false; };
     }
     if (!supported) {
-      setStatus('unsupported');
+      setStatus(isPlayer ? 'unsupported' : 'hidden');
       return () => { active = false; };
     }
-    if (isIos() && !isStandalone()) {
+    if (isPlayer && isIos() && !isStandalone()) {
       setStatus('ios-install');
       return () => { active = false; };
     }
 
     async function check() {
       try {
-        const registration = await navigator.serviceWorker.register(new URL('service-worker.js', document.baseURI).href);
+        const registration = await registrationForApp();
         const existing = await registration.pushManager.getSubscription();
         if (!active) return;
+
         if (existing) {
-          await saveSubscription(existing);
-          if (active) setStatus('enabled');
+          if (!isPlayer) {
+            setStatus('foreign');
+            return;
+          }
+          const own = await subscriptionBelongsToCurrentPlayer(existing);
+          if (active) setStatus(own ? 'enabled' : 'foreign');
+          return;
+        }
+
+        if (!isPlayer) {
+          setStatus('hidden');
           return;
         }
         if (Notification.permission === 'denied') setStatus('denied');
@@ -81,17 +116,47 @@ export default function PushNotifications() {
       } catch (checkError) {
         if (active) {
           setError(checkError?.message || 'No se pudo preparar las notificaciones.');
-          setStatus('available');
+          setStatus(isPlayer ? 'available' : 'hidden');
         }
       }
     }
 
     void check();
     return () => { active = false; };
-  }, [isPlayer, playerId, profileId, supported]);
+  }, [authenticated, isPlayer, playerId, profileId, supported]);
+
+  async function disableOnThisDevice() {
+    if (busy || !supported) return;
+    setBusy(true);
+    setError('');
+    try {
+      const registration = await registrationForApp();
+      const existing = await registration.pushManager.getSubscription();
+      if (existing) {
+        const endpoint = subscriptionEndpoint(existing);
+        if (endpoint && isPlayer && profileId && playerId) {
+          // RLS only allows deleting a subscription owned by the signed-in player.
+          // If this device belongs to another account, unsubscribe locally; the
+          // server removes the stale endpoint automatically after a failed push.
+          await supabase
+            .from('push_subscriptions')
+            .delete()
+            .eq('endpoint', endpoint)
+            .eq('profile_id', profileId)
+            .eq('player_id', playerId);
+        }
+        await existing.unsubscribe();
+      }
+      setStatus(isPlayer && Notification.permission !== 'denied' ? 'available' : 'hidden');
+    } catch (disableError) {
+      setError(disableError?.message || 'No se pudieron desactivar los avisos de este móvil.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function enable() {
-    if (busy || !supported) return;
+    if (busy || !supported || !isPlayer) return;
     setBusy(true);
     setError('');
     try {
@@ -100,8 +165,20 @@ export default function PushNotifications() {
         setStatus(permission === 'denied' ? 'denied' : 'available');
         return;
       }
-      const registration = await navigator.serviceWorker.register(new URL('service-worker.js', document.baseURI).href);
+
+      const registration = await registrationForApp();
       let subscription = await registration.pushManager.getSubscription();
+
+      if (subscription) {
+        const own = await subscriptionBelongsToCurrentPlayer(subscription);
+        if (!own) {
+          // A browser push subscription is device/scope specific. Never silently
+          // transfer one account's endpoint to another account on the same phone.
+          await subscription.unsubscribe();
+          subscription = null;
+        }
+      }
+
       if (!subscription) {
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,
@@ -118,13 +195,30 @@ export default function PushNotifications() {
     }
   }
 
-  if (!isPlayer || ['hidden', 'enabled', 'denied', 'unsupported', 'checking'].includes(status)) return null;
+  if (!authenticated || ['hidden', 'enabled', 'denied', 'unsupported', 'checking'].includes(status)) return null;
 
   if (status === 'ios-install') {
     return (
       <aside className="push-optin-card push-optin-ios">
         <span className="push-optin-icon"><Smartphone size={19} /></span>
         <div><strong>Activa las notificaciones</strong><p>En iPhone, añade primero VolleyCoach Hub a la pantalla de inicio. Después podrás recibir avisos de RPE y bienestar.</p></div>
+      </aside>
+    );
+  }
+
+  if (status === 'foreign') {
+    return (
+      <aside className="push-optin-card push-optin-warning">
+        <span className="push-optin-icon"><BellOff size={19} /></span>
+        <div className="push-optin-copy">
+          <strong>{isPlayer ? 'Avisos de otra cuenta en este móvil' : 'Avisos de jugadora en este móvil'}</strong>
+          <p>{isPlayer ? 'Este navegador conserva una suscripción de otra cuenta. Puedes sustituirla por la tuya.' : 'Este navegador conserva una suscripción de notificaciones de una jugadora aunque hayas cerrado su sesión.'}</p>
+          {error ? <small>{error}</small> : null}
+        </div>
+        <button type="button" className={isPlayer ? '' : 'push-disable-button'} onClick={() => void (isPlayer ? enable() : disableOnThisDevice())} disabled={busy}>
+          {busy ? <Bell size={16} /> : isPlayer ? <Check size={16} /> : <BellOff size={16} />}
+          {busy ? 'Procesando…' : isPlayer ? 'Usar mi cuenta' : 'Desactivar'}
+        </button>
       </aside>
     );
   }
