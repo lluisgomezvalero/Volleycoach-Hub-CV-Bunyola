@@ -1,0 +1,105 @@
+name: Compact info UI 20260902
+
+on:
+  push:
+    branches:
+      - react-vite-migration
+    paths:
+      - '.github/workflows/compact-info-ui-20260902.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: react-vite-migration
+      - name: Compact long explanations and remove redundant load dropdown
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new, label):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f'{label} anchor not found in {path}')
+              p.write_text(text.replace(old, new, 1))
+
+          # Home: remove the single-option load dropdown and move methodology to an info popover.
+          home = Path('react-migration/src/pages/HomePage.jsx')
+          text = home.read_text()
+          import_anchor = "import PlayerGamificationCard from '../components/PlayerGamificationCard.jsx';\n"
+          if "InfoPopover" not in text:
+              if import_anchor not in text:
+                  raise SystemExit('Home import anchor not found')
+              text = text.replace(import_anchor, import_anchor + "import InfoPopover from '../components/InfoPopover.jsx';\n", 1)
+          old = '''            <div className="coach-load-head">\n              <div>\n                <span className="coach-card-kicker"><Activity size={13} /> Carga del equipo</span>\n                <h3>Seguimiento individual de carga</h3>\n                <p>Volumen de los últimos 7 días calculado con sRPE × duración.</p>\n              </div>\n              <select className="coach-load-select" defaultValue="7d" aria-label="Periodo de carga">\n                <option value="7d">Carga 7 días</option>\n              </select>\n'''
+          new = '''            <div className="coach-load-head">\n              <div>\n                <span className="coach-card-kicker"><Activity size={13} /> Carga del equipo</span>\n                <div className="coach-load-title-row">\n                  <h3>Seguimiento individual de carga</h3>\n                  <InfoPopover label="Cómo se calcula la carga" align="left">\n                    El valor principal suma la carga de los últimos 7 días mediante sRPE × duración. Debajo se mantiene la carga acumulada de 28 días como referencia del volumen reciente.\n                  </InfoPopover>\n                </div>\n              </div>\n'''
+          if old not in text:
+              raise SystemExit('Home load header anchor not found')
+          home.write_text(text.replace(old, new, 1))
+
+          home_css = Path('react-migration/src/pages/HomePageDashboard.css')
+          css = home_css.read_text()
+          marker = '/* compact-info-load-20260902 */'
+          if marker not in css:
+              css += '''\n\n/* compact-info-load-20260902 */\n.coach-load-title-row{display:flex;align-items:center;gap:8px;min-width:0}.coach-load-title-row h3{margin-right:0}.coach-load-head{align-items:center}.coach-load-title-row .app-info-popover-trigger{width:28px;height:28px}\n'''
+              home_css.write_text(css)
+
+          # Wellness main heading: long explanatory sentence becomes tap-for-info.
+          wellness = Path('react-migration/src/pages/WellnessPage.jsx')
+          text = wellness.read_text()
+          import_anchor = "import { supabase } from '../lib/supabase.js';\n"
+          if "InfoPopover" not in text:
+              if import_anchor not in text:
+                  raise SystemExit('Wellness import anchor not found')
+              text = text.replace(import_anchor, "import InfoPopover from '../components/InfoPopover.jsx';\n" + import_anchor, 1)
+          old = '''          <span className="wellness-eyebrow"><HeartPulse size={14} /> Bienestar y carga</span>\n          <h1>Estado del equipo, hoy</h1>\n          <p>Señales de bienestar, carga reciente y percepción del esfuerzo en un único panel.</p>\n'''
+          new = '''          <span className="wellness-eyebrow"><HeartPulse size={14} /> Bienestar y carga</span>\n          <div className="wellness-head-title-row">\n            <h1>Estado del equipo, hoy</h1>\n            <InfoPopover label="Qué muestra este panel" align="left">\n              Reúne las respuestas de bienestar de hoy, la tendencia semanal, la carga reciente y la percepción del esfuerzo para detectar rápidamente qué jugadoras pueden necesitar atención.\n            </InfoPopover>\n          </div>\n'''
+          if old not in text:
+              raise SystemExit('Wellness header anchor not found')
+          wellness.write_text(text.replace(old, new, 1))
+
+          wellness_css = Path('react-migration/src/pages/WellnessPage.css')
+          css = wellness_css.read_text()
+          marker = '/* compact-info-wellness-20260902 */'
+          if marker not in css:
+              css += '''\n\n/* compact-info-wellness-20260902 */\n.wellness-head-title-row{display:flex;align-items:center;gap:8px}.wellness-head-title-row h1{margin-bottom:0}.wellness-coach-head{align-items:center}.wellness-head-title-row .app-info-popover-trigger{width:30px;height:30px}\n'''
+              wellness_css.write_text(css)
+
+          # Weekly fatigue card: methodology moves behind the same info affordance.
+          weekly = Path('react-migration/src/components/WeeklyTeamWellness.jsx')
+          text = weekly.read_text()
+          import_anchor = "import { supabase } from '../lib/supabase.js';\n"
+          if "InfoPopover" not in text:
+              if import_anchor not in text:
+                  raise SystemExit('Weekly import anchor not found')
+              text = text.replace(import_anchor, "import InfoPopover from './InfoPopover.jsx';\n" + import_anchor, 1)
+          old = '''          <span><Activity size={14} /> Tendencia del equipo</span>\n          <h2>Fatiga media semanal</h2>\n          <p>Primero promediamos cada jugadora dentro de la semana y después las jugadoras entre sí, para que todas pesen lo mismo.</p>\n'''
+          new = '''          <span><Activity size={14} /> Tendencia del equipo</span>\n          <div className="weekly-team-wellness-title-row">\n            <h2>Fatiga media semanal</h2>\n            <InfoPopover label="Cómo se calcula la fatiga semanal" align="left">\n              Primero se calcula la media semanal de cada jugadora y después se promedian esas medias entre sí. Así cada jugadora pesa lo mismo aunque haya respondido más días.\n            </InfoPopover>\n          </div>\n'''
+          if old not in text:
+              raise SystemExit('Weekly methodology anchor not found')
+          weekly.write_text(text.replace(old, new, 1))
+
+          weekly_css = Path('react-migration/src/components/WeeklyTeamWellness.css')
+          css = weekly_css.read_text()
+          marker = '/* compact-info-weekly-20260902 */'
+          if marker not in css:
+              css += '''\n\n/* compact-info-weekly-20260902 */\n.weekly-team-wellness-title-row{display:flex;align-items:center;gap:8px}.weekly-team-wellness-title-row h2{margin-bottom:0}.weekly-team-wellness-title-row .app-info-popover-trigger{width:28px;height:28px}\n'''
+              weekly_css.write_text(css)
+          PY
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add react-migration/src/pages/HomePage.jsx react-migration/src/pages/HomePageDashboard.css react-migration/src/pages/WellnessPage.jsx react-migration/src/pages/WellnessPage.css react-migration/src/components/WeeklyTeamWellness.jsx react-migration/src/components/WeeklyTeamWellness.css
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "Compact dashboard explanations and load control"
+          git push origin HEAD:react-vite-migration
