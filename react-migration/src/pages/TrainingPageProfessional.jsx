@@ -136,7 +136,7 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
   const completed = Number.isFinite(endTime) && timeNow >= endTime;
   const rpeDayEnd = eventDayEndTime(event);
   const rpeExpired = Number.isFinite(rpeDayEnd) && timeNow > rpeDayEnd;
-  const rpeAvailable = Number.isFinite(endTime) && !rpeExpired && timeNow >= endTime + 30 * 60 * 1000;
+  const regularRpeAvailable = Number.isFinite(endTime) && !rpeExpired && timeNow >= endTime + 30 * 60 * 1000;
   const parts = dateParts(event.starts_at);
   const counts = attendanceCounts(attendanceRows);
   const validated = counts.present + counts.late + counts.justified + counts.unjustified;
@@ -151,6 +151,7 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
   const [rpeValue, setRpeValue] = useState(5);
   const [rpeSaving, setRpeSaving] = useState(false);
   const [rpeSaved, setRpeSaved] = useState('');
+  const [rpeOverride, setRpeOverride] = useState(null);
   const [commentText, setCommentText] = useState('');
   const [commentSaving, setCommentSaving] = useState(false);
   const [commentSaved, setCommentSaved] = useState('');
@@ -159,6 +160,8 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
   const [continuity, setContinuity] = useState('');
   const [coachSaving, setCoachSaving] = useState(false);
   const [coachSaved, setCoachSaved] = useState('');
+  const rpeOverrideActive = isPlayer && Number.isFinite(new Date(rpeOverride?.expires_at || '').getTime()) && new Date(rpeOverride.expires_at).getTime() > timeNow;
+  const rpeAvailable = regularRpeAvailable || rpeOverrideActive;
 
   useEffect(() => {
     let active = true;
@@ -175,10 +178,14 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
             supabase.from('players').select('id,legacy_id,dorsal,position,profiles:profile_id(full_name,username)').eq('team_id', event.team_id).eq('active', true)
           );
         }
-        const results = await Promise.all(requests);
+        const overrideRequest = isPlayer
+          ? supabase.from('rpe_submission_overrides').select('id,event_id,player_id,enabled_at,expires_at').eq('event_id', event.id).eq('player_id', identity.player.id).maybeSingle()
+          : Promise.resolve({ data: null, error: null });
+        const [results, overrideResult] = await Promise.all([Promise.all(requests), overrideRequest]);
         if (results[0].error) throw results[0].error;
         if (results[1].error) throw results[1].error;
         if (results[2]?.error) throw results[2].error;
+        if (overrideResult.error) throw overrideResult.error;
         if (!active) return;
         const nextRpe = results[0].data || [];
         const nextFeedback = results[1].data || [];
@@ -186,6 +193,7 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
         setRpeRows(nextRpe);
         setFeedbackRows(nextFeedback);
         setTeamPlayers(nextPlayers);
+        setRpeOverride(overrideResult.data || null);
 
         const ownRpe = isStaff
           ? nextRpe.find((row) => row.source === 'coach' && row.coach_profile_id === identity.profile.id)
@@ -357,8 +365,9 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
       <SectionHeader number={3} kicker="Al terminar" title="Después de la sesión" tone="orange" />
       <article className="pro-session-panel tone-orange pro-rpe-panel">
         <div className="pro-panel-title pro-rpe-title"><Activity size={19} /><span><small>Percepción del esfuerzo</small><strong>Percepción del esfuerzo</strong></span></div>
-        {rpeExpired ? <p className="pro-muted-copy">El plazo para responder el RPE terminó al finalizar el día del entrenamiento.</p> : null}
+        {rpeExpired && !rpeOverrideActive ? <p className="pro-muted-copy">El plazo para responder el RPE terminó al finalizar el día del entrenamiento.</p> : null}
         {!rpeExpired && !rpeAvailable ? <p className="pro-muted-copy">El RPE se habilitará 30 minutos después de finalizar la sesión.</p> : null}
+        {rpeOverrideActive && !regularRpeAvailable ? <p className="pro-success-copy"><Clock3 size={15} /> El entrenador ha habilitado tu RPE temporalmente. Puedes responderlo ahora.</p> : null}
         {rpeAvailable && loadingExtras ? <p className="pro-muted-copy">Cargando seguimiento…</p> : null}
         {rpeAvailable && !loadingExtras ? (
           <>

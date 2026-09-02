@@ -426,24 +426,28 @@ export default function HomePage() {
           const playerEventIds = playerEvents.map((event) => event.id);
           let summary = { weekLoads: [0, 0, 0, 0, 0], recentSessions: 0, recentRpeMean: null, historyCoverageDays: 0, ready: false, label: 'Conociendo tu ritmo', text: 'Estamos empezando a conocer tu ritmo habitual de entrenamiento.' };
           if (playerEventIds.length) {
-            const [playerRpeResult, playerAttendanceResult] = await Promise.all([
+            const [playerRpeResult, playerAttendanceResult, playerOverrideResult] = await Promise.all([
               supabase.from('rpe_entries').select('event_id,player_id,score,source,created_at').in('event_id', playerEventIds).eq('player_id', identity.player.id),
-              supabase.from('attendance').select('event_id,player_id,official_status,effective_minutes').in('event_id', playerEventIds).eq('player_id', identity.player.id)
+              supabase.from('attendance').select('event_id,player_id,official_status,effective_minutes').in('event_id', playerEventIds).eq('player_id', identity.player.id),
+              supabase.from('rpe_submission_overrides').select('event_id,player_id,expires_at').in('event_id', playerEventIds).eq('player_id', identity.player.id)
             ]);
             if (playerRpeResult.error) throw playerRpeResult.error;
             if (playerAttendanceResult.error) throw playerAttendanceResult.error;
+            if (playerOverrideResult.error) throw playerOverrideResult.error;
             const eventMap = new Map(playerEvents.map((event) => [event.id, event]));
             const attendanceMap = new Map((playerAttendanceResult.data || []).map((row) => [row.event_id, row]));
             const ownPlayerRpeEventIds = new Set((playerRpeResult.data || []).filter((row) => row.source === 'player').map((row) => row.event_id));
+            const activeOverrideEventIds = new Set((playerOverrideResult.data || []).filter((row) => new Date(row.expires_at).getTime() > now.getTime()).map((row) => row.event_id));
             nextPendingPlayerRpe = [...playerEvents]
               .filter((event) => {
                 const start = new Date(event.starts_at).getTime();
                 const end = event.ends_at ? new Date(event.ends_at).getTime() : start + eventDuration(event) * 60000;
-                if (!Number.isFinite(end) || now.getTime() < end + 30 * 60 * 1000) return false;
+                const overrideActive = activeOverrideEventIds.has(event.id);
+                if (!Number.isFinite(end) || (!overrideActive && now.getTime() < end + 30 * 60 * 1000)) return false;
                 const trainingDay = new Date(event.starts_at);
                 const dayEnd = new Date(trainingDay);
                 dayEnd.setHours(23, 59, 59, 999);
-                if (!Number.isFinite(dayEnd.getTime()) || now.getTime() > dayEnd.getTime()) return false;
+                if (!Number.isFinite(dayEnd.getTime()) || (!overrideActive && now.getTime() > dayEnd.getTime())) return false;
                 if (ownPlayerRpeEventIds.has(event.id)) return false;
                 const attendance = attendanceMap.get(event.id);
                 return !['justified', 'unjustified'].includes(attendance?.official_status);

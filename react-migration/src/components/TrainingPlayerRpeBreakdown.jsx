@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { BellRing, ChevronDown, UsersRound } from 'lucide-react';
+import { BellRing, ChevronDown, Clock3, UsersRound } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider.jsx';
 import { supabase } from '../lib/supabase.js';
@@ -60,6 +60,9 @@ export default function TrainingPlayerRpeBreakdown() {
   const [open, setOpen] = useState(false);
   const [testBusyPlayer, setTestBusyPlayer] = useState(null);
   const [testStatus, setTestStatus] = useState({});
+  const [overrideRows, setOverrideRows] = useState([]);
+  const [overrideBusyPlayer, setOverrideBusyPlayer] = useState(null);
+  const [overrideStatus, setOverrideStatus] = useState({});
 
   useEffect(() => {
     if (!isStaff || location.pathname !== '/training') {
@@ -126,6 +129,9 @@ export default function TrainingPlayerRpeBreakdown() {
     setError('');
     setTestBusyPlayer(null);
     setTestStatus({});
+    setOverrideRows([]);
+    setOverrideBusyPlayer(null);
+    setOverrideStatus({});
 
     if (!isStaff || !sessionMarker || !teamIds.length) return () => { active = false; };
 
@@ -169,7 +175,7 @@ export default function TrainingPlayerRpeBreakdown() {
       setLoading(true);
       setError('');
       try {
-        const [playersResult, rpeResult] = await Promise.all([
+        const [playersResult, rpeResult, overrideResult] = await Promise.all([
           supabase
             .from('players')
             .select('id,profile_id,legacy_id,dorsal,position,profiles:profile_id(full_name,username)')
@@ -180,13 +186,19 @@ export default function TrainingPlayerRpeBreakdown() {
             .from('rpe_entries')
             .select('id,player_id,score,source,created_at,updated_at')
             .eq('event_id', eventRow.id)
-            .eq('source', 'player')
+            .eq('source', 'player'),
+          supabase
+            .from('rpe_submission_overrides')
+            .select('id,event_id,player_id,enabled_at,expires_at,updated_at')
+            .eq('event_id', eventRow.id)
         ]);
         if (playersResult.error) throw playersResult.error;
         if (rpeResult.error) throw rpeResult.error;
+        if (overrideResult.error) throw overrideResult.error;
         if (!active) return;
         setPlayers(playersResult.data || []);
         setRpeRows(rpeResult.data || []);
+        setOverrideRows(overrideResult.data || []);
       } catch (loadError) {
         if (active) setError(loadError?.message || 'No se pudo cargar el RPE individual.');
       } finally {
@@ -202,6 +214,7 @@ export default function TrainingPlayerRpeBreakdown() {
     const channel = supabase
       .channel(`react-training-rpe-${eventRow.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'rpe_entries', filter: `event_id=eq.${eventRow.id}` }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'rpe_submission_overrides', filter: `event_id=eq.${eventRow.id}` }, refresh)
       .subscribe();
 
     window.addEventListener('focus', refresh);
@@ -227,6 +240,17 @@ export default function TrainingPlayerRpeBreakdown() {
     });
     return map;
   }, [rpeRows]);
+
+  const activeOverrideByPlayer = useMemo(() => {
+    const now = Date.now();
+    const map = new Map();
+    overrideRows.forEach((row) => {
+      if (!row?.player_id) return;
+      const expires = new Date(row.expires_at).getTime();
+      if (Number.isFinite(expires) && expires > now) map.set(row.player_id, row);
+    });
+    return map;
+  }, [overrideRows]);
 
   const responded = players.reduce((count, player) => count + (latestRpeByPlayer.has(player.id) ? 1 : 0), 0);
   const livePlayerMean = useMemo(() => {
@@ -268,6 +292,45 @@ export default function TrainingPlayerRpeBreakdown() {
     }
   }, [host, isStaff, livePlayerMean, responded]);
 
+  async function enableRpeOverride(player) {
+    if (!player?.id || !eventRow?.id || overrideBusyPlayer) return;
+    setOverrideBusyPlayer(player.id);
+    setOverrideStatus((current) => ({ ...current, [player.id]: null }));
+    try {
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      const { data, error: overrideError } = await supabase
+        .from('rpe_submission_overrides')
+        .upsert({
+          event_id: eventRow.id,
+          player_id: player.id,
+          enabled_by: identity.profile.id,
+          enabled_at: new Date().toISOString(),
+          expires_at: expiresAt,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'event_id,player_id' })
+        .select('id,event_id,player_id,enabled_at,expires_at,updated_at')
+        .single();
+      if (overrideError) throw overrideError;
+      setOverrideRows((current) => [...current.filter((row) => row.player_id !== player.id), data]);
+
+      let statusText = 'RPE habilitado durante 24 h';
+      if (player.profile_id) {
+        const { data: pushData, error: pushError } = await supabase.functions.invoke('send-test-push', {
+          body: { player_id: player.id, event_id: eventRow.id, kind: 'rpe_override' }
+        });
+        if (!pushError && pushData?.ok) statusText = 'RPE habilitado · aviso enviado';
+        else statusText = 'RPE habilitado · no se pudo enviar el aviso';
+      } else {
+        statusText = 'RPE habilitado · cuenta no vinculada';
+      }
+      setOverrideStatus((current) => ({ ...current, [player.id]: { type: 'success', text: statusText } }));
+    } catch (overrideError) {
+      setOverrideStatus((current) => ({ ...current, [player.id]: { type: 'error', text: overrideError?.message || 'No se pudo habilitar el RPE.' } }));
+    } finally {
+      setOverrideBusyPlayer(null);
+    }
+  }
+
   async function sendTestPush(player) {
     if (!player?.id || testBusyPlayer) return;
     setTestBusyPlayer(player.id);
@@ -308,7 +371,7 @@ export default function TrainingPlayerRpeBreakdown() {
         <div className="individual-rpe-panel">
           <div className="individual-rpe-test-hint">
             <BellRing size={14} />
-            <span>Usa <strong>Probar aviso</strong> para comprobar el móvil de una jugadora sin esperar 30 minutos.</span>
+            <span><strong>Habilitar RPE</strong> abre una excepción de 24 h y envía un aviso a la jugadora. <strong>Probar aviso</strong> solo comprueba el móvil.</span>
           </div>
           {error ? <p className="individual-rpe-error">{error}</p> : null}
           {!loading && !error && !players.length ? <p className="individual-rpe-empty">No hay jugadoras activas en el equipo.</p> : null}
@@ -320,7 +383,10 @@ export default function TrainingPlayerRpeBreakdown() {
                 const score = Number.isFinite(rawScore) ? rawScore : null;
                 const name = playerName(player);
                 const status = testStatus[player.id];
+                const overrideMessage = overrideStatus[player.id];
+                const activeOverride = activeOverrideByPlayer.get(player.id);
                 const busy = testBusyPlayer === player.id;
+                const overrideBusy = overrideBusyPlayer === player.id;
                 return (
                   <div className="individual-rpe-row" key={player.id}>
                     <span className="individual-rpe-avatar">{initials(name)}</span>
@@ -328,11 +394,23 @@ export default function TrainingPlayerRpeBreakdown() {
                       <strong>{name}</strong>
                       <small>{player.dorsal != null ? `#${player.dorsal}` : 'Sin dorsal'}{player.position ? ` · ${player.position}` : ''}</small>
                       {status ? <small className={`individual-rpe-test-status ${status.type}`}>{status.text}</small> : null}
+                      {overrideMessage ? <small className={`individual-rpe-test-status ${overrideMessage.type}`}>{overrideMessage.text}</small> : activeOverride && score == null ? <small className="individual-rpe-test-status success">RPE habilitado temporalmente</small> : null}
                     </span>
                     <span className="individual-rpe-actions">
                       <span className={`individual-rpe-score ${scoreTone(score)}`}>
                         {score == null ? 'Sin responder' : score.toFixed(score % 1 === 0 ? 0 : 1)}
                       </span>
+                      {score == null ? (
+                        <button
+                          type="button"
+                          className="individual-rpe-test-button individual-rpe-override-button"
+                          onClick={() => void enableRpeOverride(player)}
+                          disabled={Boolean(overrideBusyPlayer)}
+                          title={`${activeOverride ? 'Renovar' : 'Habilitar'} el RPE de ${name} durante 24 horas`}
+                        >
+                          <Clock3 size={13} /> {overrideBusy ? 'Habilitando…' : activeOverride ? 'Renovar RPE' : 'Habilitar RPE'}
+                        </button>
+                      ) : null}
                       {player.profile_id ? (
                         <button
                           type="button"
