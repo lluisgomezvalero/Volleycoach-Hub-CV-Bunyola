@@ -29,7 +29,7 @@ const ROLE_LABELS = {
   player: 'Jugadora'
 };
 
-const CLUB_LOGO = `${import.meta.env.BASE_URL}../assets/pwa-icon-192.png?v=20260825pwa4`;
+const CLUB_LOGO = `${import.meta.env.BASE_URL}assets/pwa-icon-192.png?v=20260825pwa4`;
 
 function playerName(player) {
   return player?.profiles?.full_name || player?.profiles?.username || player?.legacy_id || 'Jugadora';
@@ -50,7 +50,7 @@ function resolveLogo(value) {
   if (!raw) return '';
   if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
   const normalized = raw.replace(/^\.?\//, '');
-  if (normalized.startsWith('assets/')) return `../${normalized}`;
+  if (normalized.startsWith('assets/')) return `${import.meta.env.BASE_URL}${normalized}`;
   return raw;
 }
 

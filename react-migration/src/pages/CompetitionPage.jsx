@@ -91,7 +91,7 @@ function resolveLogo(path) {
   if (!raw) return '';
   if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
   const clean = raw.replace(/^\.?\//, '');
-  return `../${clean}`;
+  return `${import.meta.env.BASE_URL}${clean}`;
 }
 
 function initials(name) {
