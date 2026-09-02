@@ -301,11 +301,6 @@ function EventEditor({ open, teams, leagueTeams, form, setForm, saving, error, e
   if (!open) return null;
   const isMatchLike = ['match', 'friendly'].includes(form.type);
   const rivals = (leagueTeams || []).filter((row) => !row.is_own && (!form.team_id || row.context_team_id === form.team_id));
-  const [hourPart = '00', minutePart = '00'] = String(form.time || '00:00').split(':');
-  const hourOptions = Array.from({ length: 24 }, (_, hour) => String(hour).padStart(2, '0'));
-  const minuteOptions = Array.from({ length: 12 }, (_, index) => String(index * 5).padStart(2, '0'));
-  if (!minuteOptions.includes(minutePart)) minuteOptions.push(minutePart);
-  minuteOptions.sort();
 
   function chooseOpponent(row) {
     const logo = resolveTeamLogo(row) || '';
@@ -346,7 +341,7 @@ function EventEditor({ open, teams, leagueTeams, form, setForm, saving, error, e
           ) : null}
           <div className="calendar-form-grid three">
             <label><span>Fecha</span><input type="date" value={form.date} onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))} required /></label>
-            <label><span>Hora</span><div className="calendar-time-selects"><select aria-label="Hora" value={hourPart} onChange={(e) => setForm((prev) => ({ ...prev, time: `${e.target.value}:${minutePart}` }))}>{hourOptions.map((hour) => <option key={hour} value={hour}>{hour}</option>)}</select><b>:</b><select aria-label="Minutos" value={minutePart} onChange={(e) => setForm((prev) => ({ ...prev, time: `${hourPart}:${e.target.value}` }))}>{minuteOptions.map((minute) => <option key={minute} value={minute}>{minute}</option>)}</select></div></label>
+            <label><span>Hora</span><input type="time" value={form.time} onChange={(e) => setForm((prev) => ({ ...prev, time: e.target.value }))} required /></label>
             <label><span>Duración</span><input type="number" min="15" step="15" value={form.duration} onChange={(e) => setForm((prev) => ({ ...prev, duration: Number(e.target.value) }))} required /></label>
           </div>
           <label><span>Lugar</span><input value={form.location} onChange={(e) => setForm((prev) => ({ ...prev, location: e.target.value }))} placeholder="Pabellón, localidad…" /></label>
