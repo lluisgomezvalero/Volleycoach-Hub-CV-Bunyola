@@ -5,6 +5,7 @@ on:
     branches:
       - react-vite-migration
     paths:
+      - 'react-migration/**'
       - '.github/workflows/react-production-deploy.yml'
 
 permissions:
