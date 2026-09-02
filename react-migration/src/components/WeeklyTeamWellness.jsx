@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Activity, RefreshCcw, UsersRound } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider.jsx';
+import InfoPopover from './InfoPopover.jsx';
 import { supabase } from '../lib/supabase.js';
 import './WeeklyTeamWellness.css';
 
@@ -240,8 +241,12 @@ export default function WeeklyTeamWellness() {
       <div className="wellness-card-head weekly-team-wellness-head">
         <div>
           <span><Activity size={14} /> Tendencia del equipo</span>
-          <h2>Fatiga media semanal</h2>
-          <p>Primero promediamos cada jugadora dentro de la semana y después las jugadoras entre sí, para que todas pesen lo mismo.</p>
+          <div className="weekly-team-wellness-title-row">
+            <h2>Fatiga media semanal</h2>
+            <InfoPopover label="Cómo se calcula la fatiga semanal" align="left">
+              Primero se calcula la media semanal de cada jugadora y después se promedian esas medias entre sí. Así cada jugadora pesa lo mismo aunque haya respondido más días.
+            </InfoPopover>
+          </div>
         </div>
         <button type="button" className="weekly-team-wellness-refresh" onClick={() => void load()} disabled={loading} aria-label="Actualizar gráfica">
           <RefreshCcw size={16} className={loading ? 'spin' : ''} />

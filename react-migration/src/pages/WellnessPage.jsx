@@ -19,6 +19,7 @@ import {
   Zap
 } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider.jsx';
+import InfoPopover from '../components/InfoPopover.jsx';
 import { supabase } from '../lib/supabase.js';
 import './WellnessPage.css';
 
@@ -753,8 +754,12 @@ export default function WellnessPage() {
       <header className="wellness-page-head wellness-coach-head">
         <div>
           <span className="wellness-eyebrow"><HeartPulse size={14} /> Bienestar y carga</span>
-          <h1>Estado del equipo, hoy</h1>
-          <p>Señales de bienestar, carga reciente y percepción del esfuerzo en un único panel.</p>
+          <div className="wellness-head-title-row">
+            <h1>Estado del equipo, hoy</h1>
+            <InfoPopover label="Qué muestra este panel" align="left">
+              Reúne las respuestas de bienestar de hoy, la tendencia semanal, la carga reciente y la percepción del esfuerzo para detectar rápidamente qué jugadoras pueden necesitar atención.
+            </InfoPopover>
+          </div>
         </div>
         <div className="wellness-head-actions">
           <button type="button" className="wellness-secondary-button" onClick={() => void loadData()}><RefreshCcw size={16} /> Actualizar</button>

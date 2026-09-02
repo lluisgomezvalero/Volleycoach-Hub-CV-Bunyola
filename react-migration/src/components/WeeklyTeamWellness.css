@@ -248,3 +248,7 @@
     text-align: left;
   }
 }
+
+
+/* compact-info-weekly-20260902 */
+.weekly-team-wellness-title-row{display:flex;align-items:center;gap:8px}.weekly-team-wellness-title-row h2{margin-bottom:0}.weekly-team-wellness-title-row .app-info-popover-trigger{width:28px;height:28px}

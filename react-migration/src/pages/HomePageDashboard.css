@@ -33,3 +33,7 @@
 .player-home-attendance-loading{height:48px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);overflow:hidden;position:relative}
 .player-home-attendance-loading span{position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.10),transparent);animation:playerAttendanceSoftLoad 1.15s ease-in-out infinite}
 @keyframes playerAttendanceSoftLoad{to{transform:translateX(100%)}}
+
+
+/* compact-info-load-20260902 */
+.coach-load-title-row{display:flex;align-items:center;gap:8px;min-width:0}.coach-load-title-row h3{margin-right:0}.coach-load-head{align-items:center}.coach-load-title-row .app-info-popover-trigger{width:28px;height:28px}

@@ -19,6 +19,7 @@ import {
 import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider.jsx';
 import PlayerGamificationCard from '../components/PlayerGamificationCard.jsx';
+import InfoPopover from '../components/InfoPopover.jsx';
 import { supabase } from '../lib/supabase.js';
 import './HomePageDashboard.css';
 
@@ -871,12 +872,13 @@ export default function HomePage() {
             <div className="coach-load-head">
               <div>
                 <span className="coach-card-kicker"><Activity size={13} /> Carga del equipo</span>
-                <h3>Seguimiento individual de carga</h3>
-                <p>Volumen de los últimos 7 días calculado con sRPE × duración.</p>
+                <div className="coach-load-title-row">
+                  <h3>Seguimiento individual de carga</h3>
+                  <InfoPopover label="Cómo se calcula la carga" align="left">
+                    El valor principal suma la carga de los últimos 7 días mediante sRPE × duración. Debajo se mantiene la carga acumulada de 28 días como referencia del volumen reciente.
+                  </InfoPopover>
+                </div>
               </div>
-              <select className="coach-load-select" defaultValue="7d" aria-label="Periodo de carga">
-                <option value="7d">Carga 7 días</option>
-              </select>
             </div>
             <div className="coach-load-table-wrap">
               {workloadRows.length ? (
