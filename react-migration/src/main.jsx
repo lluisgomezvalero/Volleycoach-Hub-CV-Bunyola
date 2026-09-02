@@ -15,6 +15,7 @@ import PushNotifications from './components/PushNotifications.jsx';
 import MobileBackNavigation from './components/MobileBackNavigation.jsx';
 import './styles.css';
 import './theme.css';
+import './components/BrandMark.css';
 import './pages/HomePolish.css';
 import './pages/TrainingPolish.css';
 import './pages/AttendanceResponsePolish.css';
