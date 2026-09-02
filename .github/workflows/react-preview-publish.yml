@@ -31,6 +31,16 @@ jobs:
           npm install --no-audit --no-fund
           npm run build
 
+      - name: Add shared static assets to preview build
+        run: |
+          mkdir -p react-migration/dist/assets
+          cp assets/club_logo.png react-migration/dist/assets/club_logo.png
+          cp assets/team_banner.jpg react-migration/dist/assets/team_banner.jpg
+          cp assets/apple-touch-icon.png react-migration/dist/assets/apple-touch-icon.png
+          cp assets/pwa-icon-192.png react-migration/dist/assets/pwa-icon-192.png
+          cp assets/pwa-icon-512.png react-migration/dist/assets/pwa-icon-512.png
+          cp assets/pwa-icon-maskable-512.png react-migration/dist/assets/pwa-icon-maskable-512.png
+
       - name: Publish preview into main for GitHub Pages
         run: |
           rm -rf /tmp/react-preview-dist
@@ -56,4 +66,4 @@ jobs:
           git commit -m "Publish React migration preview"
           git push origin HEAD:main
 
-# Publish marker 2026-08-31: GitHub Pages main sync
+# Publish marker 2026-09-02: static assets bundled for preview and production parity
