@@ -1,0 +1,71 @@
+name: React production deploy
+
+on:
+  push:
+    branches:
+      - react-vite-migration
+    paths:
+      - '.github/workflows/react-production-deploy.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: react-migration/package.json
+
+      - name: Build React production
+        working-directory: react-migration
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+
+      - name: Add production static assets
+        run: |
+          mkdir -p react-migration/dist/assets
+          cp assets/club_logo.png react-migration/dist/assets/club_logo.png
+          cp assets/team_banner.jpg react-migration/dist/assets/team_banner.jpg
+          cp assets/apple-touch-icon.png react-migration/dist/assets/apple-touch-icon.png
+          cp assets/pwa-icon-192.png react-migration/dist/assets/pwa-icon-192.png
+          cp assets/pwa-icon-512.png react-migration/dist/assets/pwa-icon-512.png
+          cp assets/pwa-icon-maskable-512.png react-migration/dist/assets/pwa-icon-maskable-512.png
+
+      - name: Promote React build to main root
+        run: |
+          rm -rf /tmp/react-production-dist
+          mkdir -p /tmp/react-production-dist
+          cp -R react-migration/dist/. /tmp/react-production-dist/
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin main
+          git checkout -B main origin/main
+
+          # Keep repository history, Supabase files and legacy sources for rollback.
+          # Only the Pages runtime at the repository root is replaced by the React build.
+          cp /tmp/react-production-dist/index.html ./index.html
+          cp /tmp/react-production-dist/manifest.webmanifest ./manifest.webmanifest
+          cp /tmp/react-production-dist/service-worker.js ./service-worker.js
+          mkdir -p assets
+          cp -R /tmp/react-production-dist/assets/. assets/
+          printf '%s\n' 'React production deployed from react-vite-migration on 2026-09-02.' > .react-production
+          touch .nojekyll
+
+          git add index.html manifest.webmanifest service-worker.js assets .react-production .nojekyll
+          if git diff --cached --quiet; then
+            echo "Production already up to date"
+            exit 0
+          fi
+
+          git commit -m "Deploy React app to production"
+          git push origin HEAD:main
