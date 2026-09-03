@@ -1,0 +1,240 @@
+name: Fix session and push handling 20260903
+
+on:
+  push:
+    branches:
+      - react-vite-migration
+    paths:
+      - '.github/workflows/fix-session-push-20260903.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: react-vite-migration
+          fetch-depth: 0
+
+      - name: Apply session and push fixes
+        shell: bash
+        run: |
+          cat > react-migration/src/lib/pushDevice.js <<'EOF'
+          import { supabase } from './supabase.js';
+
+          export async function getCurrentDevicePushSubscription() {
+            if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) return null;
+            const registrations = navigator.serviceWorker.getRegistrations
+              ? await navigator.serviceWorker.getRegistrations()
+              : [await navigator.serviceWorker.getRegistration()].filter(Boolean);
+
+            for (const registration of registrations) {
+              const subscription = await registration?.pushManager?.getSubscription?.();
+              if (subscription) return subscription;
+            }
+            return null;
+          }
+
+          export async function detachCurrentDevicePushSubscription(profileId = null) {
+            const subscription = await getCurrentDevicePushSubscription();
+            if (!subscription) return false;
+
+            const endpoint = subscription.endpoint;
+            if (endpoint && profileId) {
+              try {
+                await supabase
+                  .from('push_subscriptions')
+                  .delete()
+                  .eq('profile_id', profileId)
+                  .eq('endpoint', endpoint);
+              } catch {
+                // El unsubscribe local sigue siendo suficiente para que este móvil deje de recibir avisos.
+              }
+            }
+
+            try { await subscription.unsubscribe(); } catch { /* endpoint local ya puede estar invalidado */ }
+            window.dispatchEvent(new CustomEvent('volleycoach:push-device-changed'));
+            return true;
+          }
+          EOF
+
+          cat > react-migration/src/components/NotificationDeviceControl.jsx <<'EOF'
+          import { useEffect, useState } from 'react';
+          import { BellOff, LoaderCircle } from 'lucide-react';
+          import { useAuth } from '../auth/AuthProvider.jsx';
+          import { detachCurrentDevicePushSubscription, getCurrentDevicePushSubscription } from '../lib/pushDevice.js';
+
+          export default function NotificationDeviceControl() {
+            const { identity } = useAuth();
+            const profileId = identity?.profile?.id || null;
+            const role = identity?.profile?.role || '';
+            const [enabled, setEnabled] = useState(false);
+            const [busy, setBusy] = useState(false);
+
+            useEffect(() => {
+              let active = true;
+              async function checkDevice() {
+                try {
+                  const subscription = await getCurrentDevicePushSubscription();
+                  if (!active) return;
+
+                  // Entrenadores/administradores no reciben push actualmente. Si el navegador conserva
+                  // una suscripción de una jugadora usada antes en este móvil, la invalidamos localmente.
+                  if (subscription && role && role !== 'player') {
+                    await detachCurrentDevicePushSubscription(profileId);
+                    if (active) setEnabled(false);
+                    return;
+                  }
+                  if (active) setEnabled(Boolean(subscription));
+                } catch {
+                  if (active) setEnabled(false);
+                }
+              }
+              void checkDevice();
+              return () => { active = false; };
+            }, [profileId, role]);
+
+            if (role !== 'player' || !enabled) return null;
+
+            async function disableOnThisDevice() {
+              if (busy) return;
+              setBusy(true);
+              try {
+                await detachCurrentDevicePushSubscription(profileId);
+                setEnabled(false);
+              } finally {
+                setBusy(false);
+              }
+            }
+
+            return (
+              <button className="drawer-push-control" type="button" onClick={() => void disableOnThisDevice()} disabled={busy}>
+                {busy ? <LoaderCircle className="spin" size={17} /> : <BellOff size={17} />}
+                {busy ? 'Desactivando…' : 'Desactivar avisos en este móvil'}
+              </button>
+            );
+          }
+          EOF
+
+          cat > react-migration/src/lib/supabase.js <<'EOF'
+          import { createClient } from '@supabase/supabase-js';
+
+          const url = import.meta.env.VITE_SUPABASE_URL || 'https://zpvlkdjdfnvamfcjihyt.supabase.co';
+          const publishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_seL2H6gAGBrUDR0O1vhJDA_Y9d7Ky-u';
+          const projectRef = new URL(url).hostname.split('.')[0];
+          const isPreview = typeof window !== 'undefined' && window.location.pathname.includes('/react-preview/');
+          const storageKey = isPreview
+            ? `volleycoach-${projectRef}-preview-auth-v1`
+            : `volleycoach-${projectRef}-production-auth-v1`;
+
+          // La versión React usa su propio almacenamiento de sesión para que una pestaña/PWA antigua
+          // o la preview no pueda rotar el mismo refresh token y expulsar a otra sesión del dispositivo.
+          if (typeof window !== 'undefined' && !isPreview) {
+            try {
+              const legacyStorageKey = `sb-${projectRef}-auth-token`;
+              const migrationMarker = `${storageKey}:legacy-migrated`;
+              if (!window.localStorage.getItem(migrationMarker)) {
+                if (!window.localStorage.getItem(storageKey)) {
+                  const legacySession = window.localStorage.getItem(legacyStorageKey);
+                  if (legacySession) window.localStorage.setItem(storageKey, legacySession);
+                }
+                window.localStorage.setItem(migrationMarker, '1');
+              }
+            } catch {
+              // Safari en modo privado puede restringir localStorage; Supabase gestionará el fallback.
+            }
+          }
+
+          export const supabase = createClient(url, publishableKey, {
+            auth: {
+              persistSession: true,
+              autoRefreshToken: true,
+              detectSessionInUrl: true,
+              storageKey
+            }
+          });
+          EOF
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          app = Path('react-migration/src/App.jsx')
+          text = app.read_text()
+          needle = "import ProfileModal from './components/ProfileModal.jsx';\n"
+          replacement = needle + "import NotificationDeviceControl from './components/NotificationDeviceControl.jsx';\n"
+          if "NotificationDeviceControl" not in text:
+              text = text.replace(needle, replacement)
+          needle = "        <nav><Navigation onNavigate={() => setMenuOpen(false)} /></nav>\n        <button className=\"drawer-logout\" type=\"button\" onClick={handleLogout}><LogOut size={18} /> Cerrar sesión</button>"
+          replacement = "        <nav><Navigation onNavigate={() => setMenuOpen(false)} /></nav>\n        <NotificationDeviceControl />\n        <button className=\"drawer-logout\" type=\"button\" onClick={handleLogout}><LogOut size={18} /> Cerrar sesión</button>"
+          if '<NotificationDeviceControl />' not in text:
+              text = text.replace(needle, replacement)
+          app.write_text(text)
+
+          styles = Path('react-migration/src/styles.css')
+          css = styles.read_text()
+          addition = "\n/* Push device control */\n.drawer-push-control{margin-top:14px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border:1px solid #ead9b2;border-radius:12px;background:#fffaf0;color:#8a5707;font-weight:750}.drawer-push-control:disabled{opacity:.65}\n"
+          if 'drawer-push-control' not in css:
+              css += addition
+          styles.write_text(css)
+
+          push = Path('react-migration/src/components/PushNotifications.jsx')
+          text = push.read_text()
+          if 'pushRefreshKey' not in text:
+              text = text.replace("  const [error, setError] = useState('');\n", "  const [error, setError] = useState('');\n  const [pushRefreshKey, setPushRefreshKey] = useState(0);\n")
+              marker = "  async function saveSubscription(subscription) {\n"
+              listener = "  useEffect(() => {\n    const refresh = () => setPushRefreshKey((value) => value + 1);\n    window.addEventListener('volleycoach:push-device-changed', refresh);\n    return () => window.removeEventListener('volleycoach:push-device-changed', refresh);\n  }, []);\n\n"
+              text = text.replace(marker, listener + marker)
+              text = text.replace("  }, [isPlayer, playerId, profileId, supported]);", "  }, [isPlayer, playerId, profileId, supported, pushRefreshKey]);")
+          push.write_text(text)
+
+          auth = Path('react-migration/src/auth/AuthProvider.jsx')
+          text = auth.read_text()
+          if "pushDevice.js" not in text:
+              text = text.replace("import { supabase } from '../lib/supabase.js';\n", "import { supabase } from '../lib/supabase.js';\nimport { detachCurrentDevicePushSubscription } from '../lib/pushDevice.js';\n")
+          if 'const loginInFlight = useRef(false);' not in text:
+              text = text.replace('  const alive = useRef(true);\n', '  const alive = useRef(true);\n  const loginInFlight = useRef(false);\n')
+
+          start = text.index('  useEffect(() => {\n    alive.current = true;')
+          end_marker = '  }, [hydrate]);\n'
+          end = text.index(end_marker, start) + len(end_marker)
+          new_effect = '''  useEffect(() => {\n    alive.current = true;\n    let authSubscription = null;\n    let bootstrappedUserId = null;\n    let cancelled = false;\n\n    const handleAuthChange = (_event, nextSession) => {\n      if (!alive.current || cancelled) return;\n      if (_event === 'INITIAL_SESSION' && nextSession?.user?.id === bootstrappedUserId) return;\n      if (_event === 'SIGNED_IN' && loginInFlight.current) return;\n\n      setSession(nextSession || null);\n      if (!nextSession?.user) {\n        setIdentity(null);\n        setAuthError('');\n        setLoading(false);\n        return;\n      }\n\n      setAuthError('');\n      if (_event === 'TOKEN_REFRESHED') {\n        setLoading(false);\n        return;\n      }\n\n      setLoading(true);\n      window.setTimeout(() => {\n        if (!alive.current || cancelled) return;\n        hydrate(nextSession.user)\n          .catch((error) => {\n            if (alive.current && !cancelled) {\n              setIdentity(null);\n              setAuthError(error?.message || 'No se pudo cargar el perfil.');\n            }\n          })\n          .finally(() => {\n            if (alive.current && !cancelled) setLoading(false);\n          });\n      }, 0);\n    };\n\n    const bootstrap = async () => {\n      try {\n        // Primero recuperamos la sesión y después registramos el listener. Evita dos caminos de\n        // inicialización simultáneos, especialmente problemáticos en Safari/PWA.\n        const { data, error } = await supabase.auth.getSession();\n        if (error) throw error;\n        const nextSession = data?.session || null;\n        if (!alive.current || cancelled) return;\n        bootstrappedUserId = nextSession?.user?.id || null;\n        setSession(nextSession);\n        if (nextSession?.user) await hydrate(nextSession.user);\n      } catch (error) {\n        if (alive.current && !cancelled) {\n          setAuthError(error?.message || 'No se pudo recuperar la sesión.');\n          setIdentity(null);\n          setSession(null);\n        }\n      }\n\n      if (!alive.current || cancelled) return;\n      const { data: subscription } = supabase.auth.onAuthStateChange(handleAuthChange);\n      authSubscription = subscription?.subscription || null;\n      setLoading(false);\n    };\n\n    void bootstrap();\n\n    return () => {\n      cancelled = true;\n      alive.current = false;\n      authSubscription?.unsubscribe?.();\n    };\n  }, [hydrate]);\n'''
+          text = text[:start] + new_effect + text[end:]
+
+          login_start = text.index('  const login = useCallback(async (username, password) => {')
+          login_end_marker = '  }, [hydrate]);\n\n  const logout'
+          login_end = text.index(login_end_marker, login_start)
+          new_login = '''  const login = useCallback(async (username, password) => {\n    const cleanUsername = String(username || '').trim();\n    if (!cleanUsername || !password) throw new Error('Introduce usuario y contraseña.');\n\n    setAuthError('');\n    const { data: authEmail, error: rpcError } = await supabase.rpc('get_auth_email_by_username', {\n      p_username: cleanUsername\n    });\n\n    if (rpcError || !authEmail) throw new Error('Usuario o contraseña incorrectos.');\n\n    loginInFlight.current = true;\n    try {\n      const { data, error } = await supabase.auth.signInWithPassword({\n        email: authEmail,\n        password\n      });\n      if (error || !data?.session?.user) throw new Error('Usuario o contraseña incorrectos.');\n\n      if (alive.current) {\n        setLoading(true);\n        setSession(data.session);\n      }\n\n      const nextIdentity = await hydrate(data.session.user);\n\n      void supabase\n        .from('profiles')\n        .update({ last_login_at: new Date().toISOString() })\n        .eq('id', data.session.user.id);\n\n      return nextIdentity;\n    } finally {\n      loginInFlight.current = false;\n      if (alive.current) setLoading(false);\n    }\n  }, [hydrate]);\n\n'''
+          text = text[:login_start] + new_login + text[login_end + len('  }, [hydrate]);\n\n'):]
+
+          logout_start = text.index('  const logout = useCallback(async () => {')
+          logout_end_marker = '  }, []);\n\n  const refreshIdentity'
+          logout_end = text.index(logout_end_marker, logout_start)
+          new_logout = '''  const logout = useCallback(async () => {\n    const currentProfileId = identity?.profile?.id || session?.user?.id || null;\n\n    // Una suscripción push es del dispositivo, no de la pestaña. Al cerrar sesión la desligamos\n    // antes de perder permisos RLS para que este móvil no siga recibiendo avisos de esa jugadora.\n    try { await detachCurrentDevicePushSubscription(currentProfileId); } catch { /* best effort */ }\n\n    setIdentity(null);\n    setSession(null);\n    setAuthError('');\n\n    // Scope local: cerrar sesión en este móvil NO debe expulsar a la misma jugadora de su móvil.\n    const { error } = await supabase.auth.signOut({ scope: 'local' });\n    if (error) throw error;\n  }, [identity?.profile?.id, session?.user?.id]);\n\n'''
+          text = text[:logout_start] + new_logout + text[logout_end + len('  }, []);\n\n'):]
+          auth.write_text(text)
+
+          package = Path('react-migration/package.json')
+          text = package.read_text().replace('"@supabase/supabase-js": "^2.57.4"', '"@supabase/supabase-js": "2.114.0"')
+          package.write_text(text)
+
+          sw = Path('react-migration/public/service-worker.js')
+          text = sw.read_text().replace("const CACHE_VERSION = '20260902-production-ready-v1';", "const CACHE_VERSION = '20260903-session-push-v2';")
+          sw.write_text(text)
+          PY
+
+      - name: Build
+        working-directory: react-migration
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add react-migration
+          git commit -m "Fix device notifications and local session handling"
+          git push origin HEAD:react-vite-migration
