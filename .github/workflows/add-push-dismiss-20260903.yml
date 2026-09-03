@@ -1,0 +1,80 @@
+name: Add push dismiss 20260903
+
+on:
+  push:
+    branches:
+      - react-vite-migration
+    paths:
+      - '.github/workflows/add-push-dismiss-20260903.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: react-vite-migration
+          fetch-depth: 0
+
+      - name: Add dismissible notification prompt
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          jsx_path = Path('react-migration/src/components/PushNotifications.jsx')
+          text = jsx_path.read_text()
+          text = text.replace("import { useEffect, useMemo, useState } from 'react';", "import { useEffect, useMemo, useRef, useState } from 'react';")
+          text = text.replace("import { Bell, BellOff, BellRing, Check, Smartphone } from 'lucide-react';", "import { Bell, BellOff, BellRing, Check, Smartphone, X } from 'lucide-react';")
+
+          old = """  const authenticated = Boolean(session?.user?.id);\n  const isPlayer = identity?.profile?.role === 'player';"""
+          new = """  const authenticated = Boolean(session?.user?.id);\n  const currentUserId = session?.user?.id || null;\n  const isPlayer = identity?.profile?.role === 'player';"""
+          if old not in text:
+              raise SystemExit('auth marker not found')
+          text = text.replace(old, new, 1)
+
+          old = """  const [pushRefreshKey, setPushRefreshKey] = useState(0);\n\n  async function registrationForApp()"""
+          new = """  const [pushRefreshKey, setPushRefreshKey] = useState(0);\n  const [dismissed, setDismissed] = useState(false);\n  const lastUserId = useRef(null);\n\n  useEffect(() => {\n    if (!authenticated) {\n      lastUserId.current = null;\n      setDismissed(false);\n      return;\n    }\n    if (lastUserId.current && lastUserId.current !== currentUserId) setDismissed(false);\n    lastUserId.current = currentUserId;\n  }, [authenticated, currentUserId]);\n\n  async function registrationForApp()"""
+          if old not in text:
+              raise SystemExit('state marker not found')
+          text = text.replace(old, new, 1)
+
+          old = "if (!authenticated || ['hidden', 'enabled', 'denied', 'unsupported', 'checking'].includes(status)) return null;"
+          new = "if (dismissed || !authenticated || ['hidden', 'enabled', 'denied', 'unsupported', 'checking'].includes(status)) return null;"
+          if old not in text:
+              raise SystemExit('render guard marker not found')
+          text = text.replace(old, new, 1)
+
+          close_button = """        <button type=\"button\" className=\"push-optin-close\" aria-label=\"Cerrar aviso de notificaciones\" title=\"Cerrar\" onClick={() => setDismissed(true)}><X size={16} /></button>\n"""
+          text = text.replace("      <aside className=\"push-optin-card push-optin-ios\">\n", "      <aside className=\"push-optin-card push-optin-ios\">\n" + close_button, 1)
+          text = text.replace("      <aside className=\"push-optin-card push-optin-warning\">\n", "      <aside className=\"push-optin-card push-optin-warning\">\n" + close_button, 1)
+          text = text.replace("    <aside className=\"push-optin-card\">\n", "    <aside className=\"push-optin-card\">\n" + close_button, 1)
+          jsx_path.write_text(text)
+
+          css_path = Path('react-migration/src/components/PushNotifications.css')
+          css = css_path.read_text()
+          css += "\n.push-optin-card{padding-right:42px}.push-optin-card .push-optin-close{position:absolute;top:7px;right:7px;display:grid;place-items:center;width:28px;height:28px;min-height:0;padding:0;border:0;border-radius:9px;background:transparent;color:#697386;cursor:pointer;z-index:2}.push-optin-card .push-optin-close:hover{background:rgba(15,23,42,.06);color:#243047}.push-optin-card .push-optin-close:focus-visible{outline:2px solid #d89a24;outline-offset:2px}@media(max-width:760px){.push-optin-card{padding-right:40px}.push-optin-card .push-optin-close{top:6px;right:6px}}\n"
+          css_path.write_text(css)
+          PY
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: react-migration/package.json
+
+      - name: Build
+        working-directory: react-migration
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add react-migration/src/components/PushNotifications.jsx react-migration/src/components/PushNotifications.css
+          git commit -m "Allow dismissing notification opt-in per login" || exit 0
+          git push origin HEAD:react-vite-migration
