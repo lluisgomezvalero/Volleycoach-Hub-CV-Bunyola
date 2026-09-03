@@ -50,6 +50,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin main
+
+          # npm install can touch tracked files inside node_modules in this legacy repo.
+          # The built dist is already safe in /tmp, so restore the source tree before changing branch.
+          git reset --hard HEAD
+          git clean -fdx react-migration/node_modules || true
           git checkout -B main origin/main
 
           # Keep repository history, Supabase files and legacy sources for rollback.
@@ -59,7 +64,7 @@ jobs:
           cp /tmp/react-production-dist/service-worker.js ./service-worker.js
           mkdir -p assets
           cp -R /tmp/react-production-dist/assets/. assets/
-          printf '%s\n' 'React production deployed from react-vite-migration on 2026-09-02.' > .react-production
+          printf '%s\n' 'React production deployed from react-vite-migration on 2026-09-03.' > .react-production
           touch .nojekyll
 
           git add index.html manifest.webmanifest service-worker.js assets .react-production .nojekyll
@@ -71,4 +76,4 @@ jobs:
           git commit -m "Deploy React app to production"
           git push origin HEAD:main
 
-# Redeploy marker: fixed app-scoped image paths 2026-09-02
+# Redeploy marker: session and per-device push stability 2026-09-03
