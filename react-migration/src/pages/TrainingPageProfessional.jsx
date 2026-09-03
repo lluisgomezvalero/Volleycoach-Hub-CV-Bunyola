@@ -162,6 +162,9 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
   const [coachSaved, setCoachSaved] = useState('');
   const rpeOverrideActive = isPlayer && Number.isFinite(new Date(rpeOverride?.expires_at || '').getTime()) && new Date(rpeOverride.expires_at).getTime() > timeNow;
   const rpeAvailable = regularRpeAvailable || rpeOverrideActive;
+  // El cuerpo técnico debe poder revisar el RPE histórico y gestionar excepciones
+  // aunque haya terminado el plazo normal de respuesta de las jugadoras.
+  const rpeReviewVisible = isStaff ? (regularRpeAvailable || rpeExpired) : rpeAvailable;
 
   useEffect(() => {
     let active = true;
@@ -365,11 +368,11 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
       <SectionHeader number={3} kicker="Al terminar" title="Después de la sesión" tone="orange" />
       <article className="pro-session-panel tone-orange pro-rpe-panel">
         <div className="pro-panel-title pro-rpe-title"><Activity size={19} /><span><small>Percepción del esfuerzo</small><strong>Percepción del esfuerzo</strong></span></div>
-        {rpeExpired && !rpeOverrideActive ? <p className="pro-muted-copy">El plazo para responder el RPE terminó al finalizar el día del entrenamiento.</p> : null}
+        {rpeExpired && !rpeOverrideActive ? <p className="pro-muted-copy">{isStaff ? 'El plazo de las jugadoras terminó al finalizar el día. Puedes revisar sus respuestas y habilitar una excepción de 24 h a quien falte.' : 'El plazo para responder el RPE terminó al finalizar el día del entrenamiento.'}</p> : null}
         {!rpeExpired && !rpeAvailable ? <p className="pro-muted-copy">El RPE se habilitará 30 minutos después de finalizar la sesión.</p> : null}
         {rpeOverrideActive && !regularRpeAvailable ? <p className="pro-success-copy"><Clock3 size={15} /> El entrenador ha habilitado tu RPE temporalmente. Puedes responderlo ahora.</p> : null}
-        {rpeAvailable && loadingExtras ? <p className="pro-muted-copy">Cargando seguimiento…</p> : null}
-        {rpeAvailable && !loadingExtras ? (
+        {rpeReviewVisible && loadingExtras ? <p className="pro-muted-copy">Cargando seguimiento…</p> : null}
+        {rpeReviewVisible && !loadingExtras ? (
           <>
             {isStaff ? (
               <>
@@ -402,6 +405,14 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
                 <span>
                   <strong>{isStaff ? 'RPE previsto registrado' : 'RPE registrado'}</strong>
                   <small>{isStaff ? 'Este valor queda cerrado y ya no puede modificarse.' : `Tu respuesta (${Math.round(Number(ownPlayerRpe?.score || 0))}/10) ha quedado guardada y cerrada.`}</small>
+                </span>
+              </div>
+            ) : isStaff && rpeExpired ? (
+              <div className="pro-rpe-locked">
+                <Clock3 size={18} />
+                <span>
+                  <strong>RPE previsto no registrado</strong>
+                  <small>El plazo del RPE previsto ya terminó. El seguimiento individual de las jugadoras sigue disponible.</small>
                 </span>
               </div>
             ) : (
