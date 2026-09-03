@@ -53,10 +53,12 @@ function normalizeAssetUrl(value) {
   const raw = String(value || '').trim();
   if (!raw) return null;
   if (/^(https?:|data:|blob:)/i.test(raw)) return raw;
-  if (raw.startsWith('/../')) return raw.replace(/^\/\.\.\//, '../');
-  if (raw.startsWith('../') || raw.startsWith('./')) return raw;
-  if (raw.startsWith('/')) return `..${raw}`;
-  return `../${raw.replace(/^\/+/, '')}`;
+  const relative = raw
+    .replace(/^(?:\.\.\/)+/, '')
+    .replace(/^\.\//, '')
+    .replace(/^\/+/, '');
+  if (!relative) return null;
+  return new URL(relative, document.baseURI).href;
 }
 
 function resolveTeamLogo(row) {
