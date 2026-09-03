@@ -1,0 +1,57 @@
+name: Fix staff RPE history 20260903
+
+on:
+  push:
+    branches:
+      - react-vite-migration
+    paths:
+      - '.github/workflows/fix-staff-rpe-history-20260903.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: react-vite-migration
+          fetch-depth: 0
+      - name: Apply staff RPE history fix
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('react-migration/src/pages/TrainingPageProfessional.jsx')
+          s = p.read_text()
+          old = "  const rpeOverrideActive = isPlayer && Number.isFinite(new Date(rpeOverride?.expires_at || '').getTime()) && new Date(rpeOverride.expires_at).getTime() > timeNow;\n  const rpeAvailable = regularRpeAvailable || rpeOverrideActive;"
+          new = "  const rpeOverrideActive = isPlayer && Number.isFinite(new Date(rpeOverride?.expires_at || '').getTime()) && new Date(rpeOverride.expires_at).getTime() > timeNow;\n  const rpeAvailable = regularRpeAvailable || rpeOverrideActive;\n  // El cuerpo técnico debe poder revisar el RPE histórico y gestionar excepciones\n  // aunque haya terminado el plazo normal de respuesta de las jugadoras.\n  const rpeReviewVisible = isStaff ? (regularRpeAvailable || rpeExpired) : rpeAvailable;"
+          if old not in s: raise SystemExit('marker 1 not found')
+          s = s.replace(old, new, 1)
+
+          old = "        {rpeExpired && !rpeOverrideActive ? <p className=\"pro-muted-copy\">El plazo para responder el RPE terminó al finalizar el día del entrenamiento.</p> : null}"
+          new = "        {rpeExpired && !rpeOverrideActive ? <p className=\"pro-muted-copy\">{isStaff ? 'El plazo de las jugadoras terminó al finalizar el día. Puedes revisar sus respuestas y habilitar una excepción de 24 h a quien falte.' : 'El plazo para responder el RPE terminó al finalizar el día del entrenamiento.'}</p> : null}"
+          if old not in s: raise SystemExit('marker 2 not found')
+          s = s.replace(old, new, 1)
+
+          s = s.replace("        {rpeAvailable && loadingExtras ? <p className=\"pro-muted-copy\">Cargando seguimiento…</p> : null}", "        {rpeReviewVisible && loadingExtras ? <p className=\"pro-muted-copy\">Cargando seguimiento…</p> : null}", 1)
+          s = s.replace("        {rpeAvailable && !loadingExtras ? (", "        {rpeReviewVisible && !loadingExtras ? (", 1)
+
+          old = "            {(isStaff && coachRpe) || (isPlayer && ownPlayerRpe) ? (\n              <div className=\"pro-rpe-locked\">\n                <Check size={18} />\n                <span>\n                  <strong>{isStaff ? 'RPE previsto registrado' : 'RPE registrado'}</strong>\n                  <small>{isStaff ? 'Este valor queda cerrado y ya no puede modificarse.' : `Tu respuesta (${Math.round(Number(ownPlayerRpe?.score || 0))}/10) ha quedado guardada y cerrada.`}</small>\n                </span>\n              </div>\n            ) : ("
+          new = "            {(isStaff && coachRpe) || (isPlayer && ownPlayerRpe) ? (\n              <div className=\"pro-rpe-locked\">\n                <Check size={18} />\n                <span>\n                  <strong>{isStaff ? 'RPE previsto registrado' : 'RPE registrado'}</strong>\n                  <small>{isStaff ? 'Este valor queda cerrado y ya no puede modificarse.' : `Tu respuesta (${Math.round(Number(ownPlayerRpe?.score || 0))}/10) ha quedado guardada y cerrada.`}</small>\n                </span>\n              </div>\n            ) : isStaff && rpeExpired ? (\n              <div className=\"pro-rpe-locked\">\n                <Clock3 size={18} />\n                <span>\n                  <strong>RPE previsto no registrado</strong>\n                  <small>El plazo del RPE previsto ya terminó. El seguimiento individual de las jugadoras sigue disponible.</small>\n                </span>\n              </div>\n            ) : ("
+          if old not in s: raise SystemExit('marker 5 not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+      - name: Build
+        working-directory: react-migration
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add react-migration/src/pages/TrainingPageProfessional.jsx
+          git commit -m "Keep staff RPE breakdown available after expiry"
+          git push origin HEAD:react-vite-migration
