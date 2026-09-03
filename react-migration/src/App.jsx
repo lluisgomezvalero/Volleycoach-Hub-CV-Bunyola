@@ -19,6 +19,7 @@ import { useAuth } from './auth/AuthProvider.jsx';
 import { supabase } from './lib/supabase.js';
 import LoginPage from './pages/LoginPage.jsx';
 import ProfileModal from './components/ProfileModal.jsx';
+import NotificationDeviceControl from './components/NotificationDeviceControl.jsx';
 import HomePage from './pages/HomePage.jsx';
 import TrainingPage from './pages/TrainingPage.jsx';
 import CalendarPage from './pages/CalendarPage.jsx';
@@ -184,6 +185,7 @@ export default function App() {
           <span><strong>{profile.full_name || profile.username}</strong><small>{ROLE_LABELS[profile.role] || profile.role}</small></span>
         </button>
         <nav><Navigation onNavigate={() => setMenuOpen(false)} /></nav>
+        <NotificationDeviceControl />
         <button className="drawer-logout" type="button" onClick={handleLogout}><LogOut size={18} /> Cerrar sesión</button>
       </aside>
 

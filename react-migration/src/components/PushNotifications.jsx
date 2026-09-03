@@ -36,6 +36,7 @@ export default function PushNotifications() {
   const [status, setStatus] = useState('checking');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [pushRefreshKey, setPushRefreshKey] = useState(0);
 
   async function registrationForApp() {
     return navigator.serviceWorker.register(new URL('service-worker.js', document.baseURI).href);
@@ -54,6 +55,12 @@ export default function PushNotifications() {
     if (ownerError) throw ownerError;
     return data?.profile_id === profileId && data?.player_id === playerId;
   }
+
+  useEffect(() => {
+    const refresh = () => setPushRefreshKey((value) => value + 1);
+    window.addEventListener('volleycoach:push-device-changed', refresh);
+    return () => window.removeEventListener('volleycoach:push-device-changed', refresh);
+  }, []);
 
   async function saveSubscription(subscription) {
     if (!profileId || !playerId || !subscription) return;

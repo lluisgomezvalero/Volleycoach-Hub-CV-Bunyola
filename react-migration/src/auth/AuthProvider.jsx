@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
+import { detachCurrentDevicePushSubscription } from '../lib/pushDevice.js';
 
 const AuthContext = createContext(null);
 
@@ -85,6 +86,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState('');
   const alive = useRef(true);
+  const loginInFlight = useRef(false);
 
   const hydrate = useCallback(async (user) => {
     if (!user) {
@@ -101,31 +103,16 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     alive.current = true;
+    let authSubscription = null;
+    let bootstrappedUserId = null;
+    let cancelled = false;
 
-    const bootstrap = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        if (error) throw error;
-        const nextSession = data?.session || null;
-        if (!alive.current) return;
-        setSession(nextSession);
-        if (nextSession?.user) await hydrate(nextSession.user);
-      } catch (error) {
-        if (alive.current) {
-          setAuthError(error?.message || 'No se pudo recuperar la sesión.');
-          setIdentity(null);
-        }
-      } finally {
-        if (alive.current) setLoading(false);
-      }
-    };
+    const handleAuthChange = (_event, nextSession) => {
+      if (!alive.current || cancelled) return;
+      if (_event === 'INITIAL_SESSION' && nextSession?.user?.id === bootstrappedUserId) return;
+      if (_event === 'SIGNED_IN' && loginInFlight.current) return;
 
-    bootstrap();
-
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (!alive.current) return;
       setSession(nextSession || null);
-
       if (!nextSession?.user) {
         setIdentity(null);
         setAuthError('');
@@ -134,27 +121,58 @@ export function AuthProvider({ children }) {
       }
 
       setAuthError('');
-      if (_event === 'TOKEN_REFRESHED') return;
-      setLoading(true);
+      if (_event === 'TOKEN_REFRESHED') {
+        setLoading(false);
+        return;
+      }
 
+      setLoading(true);
       window.setTimeout(() => {
-        if (!alive.current) return;
+        if (!alive.current || cancelled) return;
         hydrate(nextSession.user)
           .catch((error) => {
-            if (alive.current) {
+            if (alive.current && !cancelled) {
               setIdentity(null);
               setAuthError(error?.message || 'No se pudo cargar el perfil.');
             }
           })
           .finally(() => {
-            if (alive.current) setLoading(false);
+            if (alive.current && !cancelled) setLoading(false);
           });
       }, 0);
-    });
+    };
+
+    const bootstrap = async () => {
+      try {
+        // Primero recuperamos la sesión y después registramos el listener. Evita dos caminos de
+        // inicialización simultáneos, especialmente problemáticos en Safari/PWA.
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        const nextSession = data?.session || null;
+        if (!alive.current || cancelled) return;
+        bootstrappedUserId = nextSession?.user?.id || null;
+        setSession(nextSession);
+        if (nextSession?.user) await hydrate(nextSession.user);
+      } catch (error) {
+        if (alive.current && !cancelled) {
+          setAuthError(error?.message || 'No se pudo recuperar la sesión.');
+          setIdentity(null);
+          setSession(null);
+        }
+      }
+
+      if (!alive.current || cancelled) return;
+      const { data: subscription } = supabase.auth.onAuthStateChange(handleAuthChange);
+      authSubscription = subscription?.subscription || null;
+      setLoading(false);
+    };
+
+    void bootstrap();
 
     return () => {
+      cancelled = true;
       alive.current = false;
-      subscription?.subscription?.unsubscribe?.();
+      authSubscription?.unsubscribe?.();
     };
   }, [hydrate]);
 
@@ -169,18 +187,19 @@ export function AuthProvider({ children }) {
 
     if (rpcError || !authEmail) throw new Error('Usuario o contraseña incorrectos.');
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: authEmail,
-      password
-    });
-    if (error || !data?.session?.user) throw new Error('Usuario o contraseña incorrectos.');
-
-    if (alive.current) {
-      setLoading(true);
-      setSession(data.session);
-    }
-
+    loginInFlight.current = true;
     try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: authEmail,
+        password
+      });
+      if (error || !data?.session?.user) throw new Error('Usuario o contraseña incorrectos.');
+
+      if (alive.current) {
+        setLoading(true);
+        setSession(data.session);
+      }
+
       const nextIdentity = await hydrate(data.session.user);
 
       void supabase
@@ -190,17 +209,26 @@ export function AuthProvider({ children }) {
 
       return nextIdentity;
     } finally {
+      loginInFlight.current = false;
       if (alive.current) setLoading(false);
     }
   }, [hydrate]);
 
   const logout = useCallback(async () => {
+    const currentProfileId = identity?.profile?.id || session?.user?.id || null;
+
+    // Una suscripción push es del dispositivo, no de la pestaña. Al cerrar sesión la desligamos
+    // antes de perder permisos RLS para que este móvil no siga recibiendo avisos de esa jugadora.
+    try { await detachCurrentDevicePushSubscription(currentProfileId); } catch { /* best effort */ }
+
     setIdentity(null);
     setSession(null);
     setAuthError('');
-    const { error } = await supabase.auth.signOut();
+
+    // Scope local: cerrar sesión en este móvil NO debe expulsar a la misma jugadora de su móvil.
+    const { error } = await supabase.auth.signOut({ scope: 'local' });
     if (error) throw error;
-  }, []);
+  }, [identity?.profile?.id, session?.user?.id]);
 
   const refreshIdentity = useCallback(async () => {
     if (!session?.user) return null;
