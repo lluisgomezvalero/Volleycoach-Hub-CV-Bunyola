@@ -156,6 +156,7 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
   const [commentSaving, setCommentSaving] = useState(false);
   const [commentSaved, setCommentSaved] = useState('');
   const [commentEditing, setCommentEditing] = useState(false);
+  const commentPanelRef = useRef(null);
   const [assessment, setAssessment] = useState('');
   const [continuity, setContinuity] = useState('');
   const [coachSaving, setCoachSaving] = useState(false);
@@ -264,6 +265,15 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
       setExtrasError(error?.message || 'No se pudo guardar el RPE.');
     } finally {
       setRpeSaving(false);
+    }
+  }
+
+  function goToPlayerComment() {
+    const panel = commentPanelRef.current;
+    if (!panel) return;
+    panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (!ownPlayerComment) {
+      window.setTimeout(() => panel.querySelector('textarea')?.focus({ preventScroll: true }), 350);
     }
   }
 
@@ -400,13 +410,20 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
               </>
             ) : null}
             {(isStaff && coachRpe) || (isPlayer && ownPlayerRpe) ? (
-              <div className="pro-rpe-locked">
-                <Check size={18} />
-                <span>
-                  <strong>{isStaff ? 'RPE previsto registrado' : 'RPE registrado'}</strong>
-                  <small>{isStaff ? 'Este valor queda cerrado y ya no puede modificarse.' : `Tu respuesta (${Math.round(Number(ownPlayerRpe?.score || 0))}/10) ha quedado guardada y cerrada.`}</small>
-                </span>
-              </div>
+              <>
+                <div className="pro-rpe-locked">
+                  <Check size={18} />
+                  <span>
+                    <strong>{isStaff ? 'RPE previsto registrado' : 'RPE registrado'}</strong>
+                    <small>{isStaff ? 'Este valor queda cerrado y ya no puede modificarse.' : `Tu respuesta (${Math.round(Number(ownPlayerRpe?.score || 0))}/10) ha quedado guardada y cerrada.`}</small>
+                  </span>
+                </div>
+                {isPlayer ? (
+                  <button className="pro-outline-action pro-rpe-comment-action" type="button" onClick={goToPlayerComment}>
+                    <MessageSquare size={17} /> {ownPlayerComment ? 'Ver mi comentario' : 'Añadir comentario (opcional)'}
+                  </button>
+                ) : null}
+              </>
             ) : isStaff && rpeExpired ? (
               <div className="pro-rpe-locked">
                 <Clock3 size={18} />
@@ -452,7 +469,7 @@ function SessionDetail({ event, identity, attendanceRows, onBack, onRollCall, on
       ) : null}
 
       {completed && isPlayer ? (
-        <article className="pro-session-panel tone-violet">
+        <article ref={commentPanelRef} className="pro-session-panel tone-violet">
           <div className="pro-panel-title"><MessageSquare size={19} /><span><small>Opcional y privado</small><strong>Mi comentario</strong></span></div>
           {ownPlayerComment && !commentEditing ? (
             <div className="pro-player-comment-locked">
