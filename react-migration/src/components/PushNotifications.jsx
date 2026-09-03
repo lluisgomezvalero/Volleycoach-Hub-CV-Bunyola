@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Bell, BellOff, BellRing, Check, Smartphone } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Bell, BellOff, BellRing, Check, Smartphone, X } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider.jsx';
 import { supabase } from '../lib/supabase.js';
 import './PushNotifications.css';
@@ -29,6 +29,7 @@ function subscriptionEndpoint(subscription) {
 export default function PushNotifications() {
   const { session, identity } = useAuth();
   const authenticated = Boolean(session?.user?.id);
+  const currentUserId = session?.user?.id || null;
   const isPlayer = identity?.profile?.role === 'player';
   const playerId = identity?.player?.id || null;
   const profileId = identity?.profile?.id || null;
@@ -37,6 +38,18 @@ export default function PushNotifications() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [pushRefreshKey, setPushRefreshKey] = useState(0);
+  const [dismissed, setDismissed] = useState(false);
+  const lastUserId = useRef(null);
+
+  useEffect(() => {
+    if (!authenticated) {
+      lastUserId.current = null;
+      setDismissed(false);
+      return;
+    }
+    if (lastUserId.current && lastUserId.current !== currentUserId) setDismissed(false);
+    lastUserId.current = currentUserId;
+  }, [authenticated, currentUserId]);
 
   async function registrationForApp() {
     return navigator.serviceWorker.register(new URL('service-worker.js', document.baseURI).href);
@@ -202,11 +215,12 @@ export default function PushNotifications() {
     }
   }
 
-  if (!authenticated || ['hidden', 'enabled', 'denied', 'unsupported', 'checking'].includes(status)) return null;
+  if (dismissed || !authenticated || ['hidden', 'enabled', 'denied', 'unsupported', 'checking'].includes(status)) return null;
 
   if (status === 'ios-install') {
     return (
       <aside className="push-optin-card push-optin-ios">
+        <button type="button" className="push-optin-close" aria-label="Cerrar aviso de notificaciones" title="Cerrar" onClick={() => setDismissed(true)}><X size={16} /></button>
         <span className="push-optin-icon"><Smartphone size={19} /></span>
         <div><strong>Activa las notificaciones</strong><p>En iPhone, añade primero VolleyCoach Hub a la pantalla de inicio. Después podrás recibir avisos de RPE y bienestar.</p></div>
       </aside>
@@ -216,6 +230,7 @@ export default function PushNotifications() {
   if (status === 'foreign') {
     return (
       <aside className="push-optin-card push-optin-warning">
+        <button type="button" className="push-optin-close" aria-label="Cerrar aviso de notificaciones" title="Cerrar" onClick={() => setDismissed(true)}><X size={16} /></button>
         <span className="push-optin-icon"><BellOff size={19} /></span>
         <div className="push-optin-copy">
           <strong>{isPlayer ? 'Avisos de otra cuenta en este móvil' : 'Avisos de jugadora en este móvil'}</strong>
@@ -232,6 +247,7 @@ export default function PushNotifications() {
 
   return (
     <aside className="push-optin-card">
+        <button type="button" className="push-optin-close" aria-label="Cerrar aviso de notificaciones" title="Cerrar" onClick={() => setDismissed(true)}><X size={16} /></button>
       <span className="push-optin-icon"><BellRing size={19} /></span>
       <div className="push-optin-copy">
         <strong>Notificaciones del equipo</strong>
