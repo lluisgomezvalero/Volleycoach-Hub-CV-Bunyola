@@ -1,0 +1,40 @@
+name: Fix calendar own crest v3
+
+on:
+  push:
+    branches: [react-vite-migration]
+    paths:
+      - '.github/workflows/fix-calendar-own-crest-v3-20260903.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: react-vite-migration
+          fetch-depth: 0
+      - name: Patch calendar crest paths
+        run: python3 .github/scripts/fix_calendar_crest.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: react-migration/package.json
+      - name: Build
+        working-directory: react-migration
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+      - name: Commit patch
+        run: |
+          git restore react-migration/package-lock.json 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add react-migration/src/pages/CalendarPage.jsx
+          git commit -m "Fix calendar team crest asset paths"
+          git pull --rebase origin react-vite-migration
+          git push origin HEAD:react-vite-migration
