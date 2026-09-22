@@ -52,7 +52,9 @@
 .player-latest-rpe.empty{background:#fbfcfd;border-color:#e5e9ef}
 .player-latest-rpe.empty>span:first-child>small,.player-latest-rpe.empty>span:first-child>strong{color:#8a94a3}
 .coach-latest-rpe-cell>a,.coach-latest-rpe-cell>span{display:flex;flex-direction:column;align-items:flex-start;color:inherit;text-decoration:none}
-.coach-latest-rpe-cell strong{color:#8d5d0d;font-size:.75rem}
-.coach-latest-rpe-cell small{margin-top:2px;color:#98a2b3;font-size:.55rem}
+.coach-latest-rpe-cell strong{color:#8a94a3;font-size:.75rem}
+.coach-latest-rpe-cell small{margin-top:2px;color:#a4acb7;font-size:.55rem}
+.coach-latest-rpe-cell.current strong{color:#8d5d0d}
+.coach-latest-rpe-cell.current small{color:#98a2b3}
 .coach-latest-rpe-cell>a:hover strong{text-decoration:underline}
 @media(max-width:560px){.player-latest-rpe{gap:9px;padding:12px}.player-latest-rpe>span:first-child{min-width:58px}.coach-load-table{min-width:670px}}
