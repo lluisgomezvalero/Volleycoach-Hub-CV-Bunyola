@@ -14,3 +14,11 @@
 .calendar-match-logo>span{display:grid;place-items:center;width:100%;height:100%}
 @media(max-width:640px){.calendar-event-card.type-match,.calendar-event-card.type-friendly{grid-template-columns:100px minmax(0,1fr) auto;gap:8px}.calendar-match-visual{width:100px;height:56px;gap:5px;padding:5px;border-radius:16px}.calendar-match-logo{width:35px;height:35px;flex-basis:35px;border-radius:11px}.calendar-match-visual>b{font-size:9px}}
 
+
+
+/* Logo de rival en torneos */
+.calendar-opponent-logo-upload{display:grid;gap:6px;padding:11px 12px;border:1px dashed #d8b56b;border-radius:12px;background:#fffaf0}
+.calendar-opponent-logo-upload>span{color:#6f5120;font-size:.66rem;font-weight:850}
+.calendar-opponent-logo-upload input[type="file"]{width:100%;color:#596579;font-size:.66rem}
+.calendar-opponent-logo-upload input[type="file"]::file-selector-button{margin-right:9px;padding:7px 10px;border:1px solid #e0b354;border-radius:9px;background:#fff3d6;color:#8b5c0a;font:inherit;font-weight:850;cursor:pointer}
+.calendar-opponent-logo-upload small{color:#8a95a4;font-size:.59rem}
