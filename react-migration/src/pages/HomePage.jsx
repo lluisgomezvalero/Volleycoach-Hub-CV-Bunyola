@@ -236,6 +236,7 @@ export default function HomePage() {
   const [checkinSaving, setCheckinSaving] = useState(false);
   const [checkinError, setCheckinError] = useState('');
   const [pendingPlayerRpe, setPendingPlayerRpe] = useState(null);
+  const [latestPlayerRpe, setLatestPlayerRpe] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -327,6 +328,7 @@ export default function HomePage() {
         let nextAttendance = [];
         let nextPlan = null;
         let nextPendingPlayerRpe = null;
+        let nextLatestPlayerRpe = null;
 
         if (!isStaff && match?.id) {
           const { data: publishedPlanRows, error: publishedPlanError } = await supabase
@@ -386,6 +388,16 @@ export default function HomePage() {
           const workloadReady = historyCoverageDays >= 35;
 
           const eventMap = new Map(pastTrainings.map((event) => [event.id, event]));
+          const latestRpeByPlayer = new Map();
+          (rpeResult.data || []).forEach((row) => {
+            const event = eventMap.get(row.event_id);
+            if (!row.player_id || !event || !['player', 'coach_for_player'].includes(row.source)) return;
+            const eventTime = new Date(event.starts_at).getTime();
+            const previous = latestRpeByPlayer.get(row.player_id);
+            if (!previous || eventTime > previous.eventTime || (eventTime === previous.eventTime && row.source === 'player' && previous.source !== 'player')) {
+              latestRpeByPlayer.set(row.player_id, { score: Number(row.score), source: row.source, event, eventTime });
+            }
+          });
           const loads = new Map(nextPlayers.map((player) => [player.id, { seven: 0, twentyEight: 0 }]));
           const sevenCutoff = now.getTime() - 7 * 86400000;
           (rpeResult.data || []).forEach((row) => {
@@ -400,7 +412,7 @@ export default function HomePage() {
           });
 
           nextWorkloads = nextPlayers
-            .map((player) => ({ player, ...(loads.get(player.id) || { seven: 0, twentyEight: 0 }), historyCoverageDays, ready: workloadReady }))
+            .map((player) => ({ player, ...(loads.get(player.id) || { seven: 0, twentyEight: 0 }), latestRpe: latestRpeByPlayer.get(player.id) || null, historyCoverageDays, ready: workloadReady }))
             .sort((a, b) => b.seven - a.seven || playerName(a.player).localeCompare(playerName(b.player), 'es'));
         } else if (identity?.player?.id) {
           const wellnessResult = await supabase
@@ -415,7 +427,7 @@ export default function HomePage() {
           const historyStart = new Date(now.getTime() - 35 * 86400000).toISOString();
           const playerEventsResult = await supabase
             .from('events')
-            .select('id,starts_at,ends_at,payload')
+            .select('id,title,starts_at,ends_at,payload')
             .eq('team_id', team.id)
             .eq('event_type', 'training')
             .gte('starts_at', historyStart)
@@ -458,6 +470,10 @@ export default function HomePage() {
               const prev = chosen.get(row.event_id);
               if (!prev || (row.source === 'player' && prev.source !== 'player') || (row.source === prev.source && new Date(row.created_at || 0) > new Date(prev.created_at || 0))) chosen.set(row.event_id, row);
             });
+            nextLatestPlayerRpe = [...chosen.values()]
+              .map((row) => ({ score: Number(row.score), source: row.source, event: eventMap.get(row.event_id) }))
+              .filter((item) => item.event && Number.isFinite(item.score))
+              .sort((a, b) => new Date(b.event.starts_at) - new Date(a.event.starts_at))[0] || null;
             const weekLoads = [0, 0, 0, 0, 0];
             const recentRpes = [];
             let oldest = null;
@@ -518,6 +534,7 @@ export default function HomePage() {
         setTrainingAttendance(nextAttendance);
         setGamePlan(nextPlan);
         setPendingPlayerRpe(nextPendingPlayerRpe);
+        setLatestPlayerRpe(nextLatestPlayerRpe);
         setRecentMatches(recentMatchResult.data || []);
       } catch (loadError) {
         if (active) setError(loadError?.message || 'No se pudo cargar el panel técnico.');
@@ -887,7 +904,7 @@ export default function HomePage() {
             <div className="coach-load-table-wrap">
               {workloadRows.length ? (
                 <table className="coach-load-table">
-                  <thead><tr><th>Jugadora</th><th>Carga 7 días</th><th>Estado</th></tr></thead>
+                  <thead><tr><th>Jugadora</th><th>Último RPE</th><th>Carga 7 días</th><th>Estado</th></tr></thead>
                   <tbody>
                     {workloadRows.map((row) => {
                       const tone = loadTone(row.seven, row.ready);
@@ -895,6 +912,7 @@ export default function HomePage() {
                       return (
                         <tr key={row.player.id}>
                           <td><div className="coach-load-player"><span className="coach-load-avatar">{initials(name)}</span><span><strong>{name}</strong><small>#{row.player.dorsal ?? '—'} · {row.player.position || 'Sin posición'}</small></span></div></td>
+                          <td className="coach-latest-rpe-cell">{row.latestRpe ? <Link to={`/training?event=${encodeURIComponent(row.latestRpe.event.id)}&mode=session`}><strong>{Number(row.latestRpe.score).toFixed(Number.isInteger(Number(row.latestRpe.score)) ? 0 : 1)}/10</strong><small>{dateParts(row.latestRpe.event.starts_at).short}</small></Link> : <span><strong>—</strong><small>Sin registro</small></span>}</td>
                           <td className="coach-load-value"><strong>{row.seven} UA</strong><small>{row.twentyEight} UA · 28 días</small></td>
                           <td><span className={`coach-load-state ${tone.key}`}>{tone.label}</span></td>
                         </tr>
@@ -909,6 +927,15 @@ export default function HomePage() {
           <article className="coach-card player-week-card">
             <span className="coach-card-kicker"><Activity size={13} /> Tu entrenamiento</span>
             <h3>Tu semana de entrenamiento</h3>
+            {latestPlayerRpe ? (
+              <Link className="player-latest-rpe" to={`/training?event=${encodeURIComponent(latestPlayerRpe.event.id)}&mode=session`}>
+                <span><small>Tu último RPE</small><strong>{Number(latestPlayerRpe.score).toFixed(Number.isInteger(Number(latestPlayerRpe.score)) ? 0 : 1)}<em>/10</em></strong></span>
+                <span className="player-latest-rpe-meta"><b>{latestPlayerRpe.event.title || 'Entrenamiento'}</b><small>{dateParts(latestPlayerRpe.event.starts_at).short} · {eventDuration(latestPlayerRpe.event)} min</small></span>
+                <ChevronRight size={18} />
+              </Link>
+            ) : (
+              <div className="player-latest-rpe empty"><span><small>Tu último RPE</small><strong>—</strong></span><span className="player-latest-rpe-meta"><b>Sin RPE registrado</b><small>Aparecerá aquí después de tu primer entrenamiento.</small></span></div>
+            )}
             <div className="player-week-status"><span className="player-week-dot" /><div><strong>{playerTrainingSummary.label}</strong><p>{playerTrainingSummary.text}</p></div></div>
             <div className="player-week-divider" />
             <div className="player-week-feelings">
