@@ -209,7 +209,9 @@ function defaultForm(teamId = '') {
     plan: '',
     opponent: '',
     opponent_key: '',
-    opponent_logo: ''
+    opponent_logo: '',
+    opponent_logo_path: '',
+    opponent_logo_file: null
   };
 }
 
@@ -227,7 +229,9 @@ function formFromEvent(event) {
     plan: event.payload?.plan || '',
     opponent: event.payload?.opponent || '',
     opponent_key: event.payload?.opponent_key || '',
-    opponent_logo: event.payload?.opponent_logo || ''
+    opponent_logo: event.payload?.opponent_logo || '',
+    opponent_logo_path: event.payload?.opponent_logo_path || '',
+    opponent_logo_file: null
   };
 }
 
@@ -237,7 +241,7 @@ function EventCard({ event, leagueTeams, onOpen }) {
   const Icon = meta.icon;
   const time = event.isBirthday ? 'Todo el día' : formatTime(event.starts_at);
   const planItems = String(event?.payload?.plan || '').split('\n').map((item) => item.trim()).filter(Boolean);
-  const isMatchLike = ['match', 'friendly'].includes(type);
+  const isMatchLike = ['match', 'friendly', 'tournament'].includes(type);
   const matchup = isMatchLike ? resolveMatchup(event, leagueTeams) : null;
 
   const content = (
@@ -301,7 +305,7 @@ function EventModal({ event, isStaff, onClose, onEdit, onDelete }) {
 
 function EventEditor({ open, teams, leagueTeams, form, setForm, saving, error, editing, onClose, onSubmit }) {
   if (!open) return null;
-  const isMatchLike = ['match', 'friendly'].includes(form.type);
+  const isMatchLike = ['match', 'friendly', 'tournament'].includes(form.type);
   const rivals = (leagueTeams || []).filter((row) => !row.is_own && (!form.team_id || row.context_team_id === form.team_id));
 
   function chooseOpponent(row) {
@@ -323,7 +327,7 @@ function EventEditor({ open, teams, leagueTeams, form, setForm, saving, error, e
             <label><span>Equipo</span><select value={form.team_id} onChange={(e) => setForm((prev) => ({ ...prev, team_id: e.target.value }))} required>{teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label>
           ) : null}
           <div className="calendar-form-grid two">
-            <label><span>Tipo</span><select value={form.type} onChange={(e) => { const nextType = e.target.value; setForm((prev) => ({ ...prev, type: nextType, title: prev.title === 'Entrenamiento' ? eventTypePayload(nextType) : prev.title, ...(!['match', 'friendly'].includes(nextType) ? { opponent: '', opponent_key: '', opponent_logo: '' } : {}) })); }}>{TYPE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+            <label><span>Tipo</span><select value={form.type} onChange={(e) => { const nextType = e.target.value; setForm((prev) => ({ ...prev, type: nextType, title: prev.title === 'Entrenamiento' ? eventTypePayload(nextType) : prev.title, ...(!['match', 'friendly', 'tournament'].includes(nextType) ? { opponent: '', opponent_key: '', opponent_logo: '', opponent_logo_path: '', opponent_logo_file: null } : {}) })); }}>{TYPE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
             <label><span>Título</span><input value={form.title} onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))} required /></label>
           </div>
           {isMatchLike ? (
@@ -338,7 +342,18 @@ function EventEditor({ open, teams, leagueTeams, form, setForm, saving, error, e
                   })}
                 </div>
               ) : <small className="calendar-opponent-help">No hay rivales registrados para este equipo.</small>}
-              <label className="calendar-opponent-manual"><span>Otro rival</span><input value={form.opponent} onChange={(e) => setForm((prev) => ({ ...prev, opponent: e.target.value, opponent_key: '', opponent_logo: '' }))} placeholder="Escribe el nombre si no está en la lista…" /></label>
+              <label className="calendar-opponent-manual"><span>Otro rival</span><input value={form.opponent} onChange={(e) => setForm((prev) => ({ ...prev, opponent: e.target.value, opponent_key: '', opponent_logo: '', opponent_logo_path: '' }))} placeholder="Escribe el nombre si no está en la lista…" /></label>
+              {form.type === 'tournament' ? (
+                <label className="calendar-opponent-logo-upload">
+                  <span>Logo del equipo rival · opcional</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(e) => setForm((prev) => ({ ...prev, opponent_logo_file: e.target.files?.[0] || null }))}
+                  />
+                  <small>{form.opponent_logo_file?.name || (form.opponent_logo ? 'Logo actual guardado' : 'JPG, PNG o WebP · máximo 5 MB')}</small>
+                </label>
+              ) : null}
             </div>
           ) : null}
           <div className="calendar-form-grid three">
@@ -524,7 +539,7 @@ export default function CalendarPage() {
       const minutes = Math.max(15, Number(form.duration) || 120);
       const end = new Date(start.getTime() + minutes * 60000);
       const previousPayload = editingEvent?.payload || {};
-      const isMatchLike = ['match', 'friendly'].includes(form.type);
+      const isMatchLike = ['match', 'friendly', 'tournament'].includes(form.type);
       const payload = {
         ...previousPayload,
         type: eventTypePayload(form.type),
@@ -535,8 +550,14 @@ export default function CalendarPage() {
         opponent: isMatchLike && form.opponent.trim() ? form.opponent.trim() : null,
         opponent_key: isMatchLike && form.opponent_key ? form.opponent_key : null,
         opponent_logo: isMatchLike && form.opponent_logo ? form.opponent_logo : null,
+        opponent_logo_path: isMatchLike && form.opponent_logo_path ? form.opponent_logo_path : null,
         status: editingEvent?.status || 'Próximo'
       };
+      const logoFile = form.opponent_logo_file;
+      if (logoFile) {
+        if (!['image/jpeg', 'image/png', 'image/webp'].includes(logoFile.type)) throw new Error('El logo debe ser JPG, PNG o WebP.');
+        if (logoFile.size > 5 * 1024 * 1024) throw new Error('El logo no puede superar los 5 MB.');
+      }
       const row = {
         club_id: identity.profile.club_id,
         team_id: form.team_id || teamIds[0],
@@ -555,7 +576,31 @@ export default function CalendarPage() {
       if (editingEvent) result = await supabase.from('events').update(row).eq('id', editingEvent.id).select('id,club_id,team_id,season_id,event_type,title,starts_at,ends_at,location,status,payload,created_by').single();
       else result = await supabase.from('events').insert(row).select('id,club_id,team_id,season_id,event_type,title,starts_at,ends_at,location,status,payload,created_by').single();
       if (result.error) throw result.error;
-      const saved = result.data;
+      let saved = result.data;
+      if (logoFile && form.type === 'tournament') {
+        const extension = logoFile.type === 'image/png' ? 'png' : logoFile.type === 'image/webp' ? 'webp' : 'jpg';
+        const logoPath = `${identity.profile.club_id}/opponent-logos/${saved.id}-${Date.now()}.${extension}`;
+        const { error: uploadError } = await supabase.storage.from('avatars').upload(logoPath, logoFile, {
+          cacheControl: '3600',
+          contentType: logoFile.type,
+          upsert: false
+        });
+        if (uploadError) throw uploadError;
+        const { data: signedLogo, error: signError } = await supabase.storage.from('avatars').createSignedUrl(logoPath, 60 * 60 * 24 * 365 * 10);
+        if (signError) throw signError;
+        const nextPayload = { ...saved.payload, opponent_logo: signedLogo.signedUrl, opponent_logo_path: logoPath };
+        const { data: eventWithLogo, error: logoUpdateError } = await supabase
+          .from('events')
+          .update({ payload: nextPayload, updated_at: new Date().toISOString() })
+          .eq('id', saved.id)
+          .select('id,club_id,team_id,season_id,event_type,title,starts_at,ends_at,location,status,payload,created_by')
+          .single();
+        if (logoUpdateError) throw logoUpdateError;
+        if (form.opponent_logo_path && form.opponent_logo_path !== logoPath) {
+          void supabase.storage.from('avatars').remove([form.opponent_logo_path]);
+        }
+        saved = eventWithLogo;
+      }
       const savedDate = new Date(saved.starts_at);
       setCursor(new Date(savedDate.getFullYear(), savedDate.getMonth(), 1, 12));
       setSelectedKey(dateKey(savedDate));
@@ -577,6 +622,9 @@ export default function CalendarPage() {
     if (error) {
       setLoadError(error.message || 'No se pudo eliminar el evento.');
       return;
+    }
+    if (event.payload?.opponent_logo_path) {
+      void supabase.storage.from('avatars').remove([event.payload.opponent_logo_path]);
     }
     setEvents((rows) => rows.filter((item) => item.id !== event.id));
     setDetailEvent(null);
