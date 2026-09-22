@@ -52,7 +52,20 @@ export default function PushNotifications() {
   }, [authenticated, currentUserId]);
 
   async function registrationForApp() {
-    return navigator.serviceWorker.register(new URL('service-worker.js', document.baseURI).href);
+    const hadController = Boolean(navigator.serviceWorker.controller);
+    let refreshing = false;
+    const applyUpdate = () => {
+      if (!hadController || refreshing) return;
+      refreshing = true;
+      window.location.reload();
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', applyUpdate, { once: true });
+    const registration = await navigator.serviceWorker.register(
+      new URL('service-worker.js?v=20260922-rpe-card-v1', document.baseURI).href,
+      { updateViaCache: 'none' }
+    );
+    await registration.update();
+    return registration;
   }
 
   async function subscriptionBelongsToCurrentPlayer(subscription) {
