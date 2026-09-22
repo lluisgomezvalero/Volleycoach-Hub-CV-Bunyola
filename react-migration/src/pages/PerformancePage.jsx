@@ -23,13 +23,13 @@ import { useAuth } from '../auth/AuthProvider.jsx';
 import { supabase } from '../lib/supabase.js';
 import './PerformancePage.css';
 
-const TESTS = ['SJ', 'CMJ', 'Abalakov', 'Drop Jump'];
+const TESTS = ['SJ', 'CMJ', 'CMJ brazos libres', 'Drop Jump'];
 const TABS = [...TESTS, 'Histórico'];
 
 const TEST_META = {
   SJ: { unit: 'cm', decimals: 1, label: 'Squat Jump', help: 'Salto sin contramovimiento.' },
   CMJ: { unit: 'cm', decimals: 1, label: 'CMJ', help: 'Salto con contramovimiento.' },
-  Abalakov: { unit: 'cm', decimals: 1, label: 'Abalakov', help: 'Salto con participación libre de brazos.' },
+  'CMJ brazos libres': { unit: 'cm', decimals: 1, label: 'CMJ brazos libres', help: 'Salto con contramovimiento y participación libre de brazos.' },
   'Drop Jump': { unit: 'RSI', decimals: 2, label: 'Drop Jump', help: 'Índice de fuerza reactiva (RSI).' }
 };
 
@@ -343,7 +343,7 @@ export default function PerformancePage() {
         <section className="perf-empty-state">
           <CircleGauge size={32} />
           <h2>Aún no hay tests de rendimiento</h2>
-          <p>{isStaff ? 'Registra el primer SJ, CMJ, Abalakov o Drop Jump para empezar el seguimiento del equipo.' : 'Cuando el cuerpo técnico registre tu primer test, aparecerá aquí tu evolución.'}</p>
+          <p>{isStaff ? 'Registra el primer SJ, CMJ, CMJ brazos libres o Drop Jump para empezar el seguimiento del equipo.' : 'Cuando el cuerpo técnico registre tu primer test, aparecerá aquí tu evolución.'}</p>
           {isStaff ? <button type="button" className="perf-new" onClick={() => { setError(''); setFormOpen(true); }}><Plus size={17} /> Registrar primer test</button> : null}
         </section>
       ) : null}
