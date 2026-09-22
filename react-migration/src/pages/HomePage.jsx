@@ -411,8 +411,19 @@ export default function HomePage() {
             loads.set(row.player_id, target);
           });
 
+          const latestTrainingId = pastTrainings[0]?.id || null;
           nextWorkloads = nextPlayers
-            .map((player) => ({ player, ...(loads.get(player.id) || { seven: 0, twentyEight: 0 }), latestRpe: latestRpeByPlayer.get(player.id) || null, historyCoverageDays, ready: workloadReady }))
+            .map((player) => {
+              const latestRpe = latestRpeByPlayer.get(player.id) || null;
+              return {
+                player,
+                ...(loads.get(player.id) || { seven: 0, twentyEight: 0 }),
+                latestRpe,
+                latestRpeIsCurrent: Boolean(latestRpe && latestTrainingId && latestRpe.event.id === latestTrainingId),
+                historyCoverageDays,
+                ready: workloadReady
+              };
+            })
             .sort((a, b) => b.seven - a.seven || playerName(a.player).localeCompare(playerName(b.player), 'es'));
         } else if (identity?.player?.id) {
           const wellnessResult = await supabase
@@ -912,7 +923,7 @@ export default function HomePage() {
                       return (
                         <tr key={row.player.id}>
                           <td><div className="coach-load-player"><span className="coach-load-avatar">{initials(name)}</span><span><strong>{name}</strong><small>#{row.player.dorsal ?? '—'} · {row.player.position || 'Sin posición'}</small></span></div></td>
-                          <td className="coach-latest-rpe-cell">{row.latestRpe ? <Link to={`/training?event=${encodeURIComponent(row.latestRpe.event.id)}&mode=session`}><strong>{Number(row.latestRpe.score).toFixed(Number.isInteger(Number(row.latestRpe.score)) ? 0 : 1)}/10</strong><small>{dateParts(row.latestRpe.event.starts_at).short}</small></Link> : <span><strong>—</strong><small>Sin registro</small></span>}</td>
+                          <td className={`coach-latest-rpe-cell ${row.latestRpeIsCurrent ? 'current' : 'previous'}`}>{row.latestRpe ? <Link to={`/training?event=${encodeURIComponent(row.latestRpe.event.id)}&mode=session`}><strong>{Number(row.latestRpe.score).toFixed(Number.isInteger(Number(row.latestRpe.score)) ? 0 : 1)}/10</strong><small>{dateParts(row.latestRpe.event.starts_at).short}</small></Link> : <span><strong>—</strong><small>Sin registro</small></span>}</td>
                           <td className="coach-load-value"><strong>{row.seven} UA</strong><small>{row.twentyEight} UA · 28 días</small></td>
                           <td><span className={`coach-load-state ${tone.key}`}>{tone.label}</span></td>
                         </tr>
