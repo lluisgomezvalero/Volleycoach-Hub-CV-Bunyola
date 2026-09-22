@@ -443,7 +443,7 @@ export default function PerformancePage() {
               <label><span>Jugadora</span><select value={formPlayerId} onChange={(event) => setFormPlayerId(event.target.value)} required>{players.map((player) => <option key={player.id} value={player.id}>{playerName(player)} · #{player.dorsal || '—'}</option>)}</select></label>
               <label><span>Test</span><select value={formTest} onChange={(event) => setFormTest(event.target.value)} required>{TESTS.map((test) => <option key={test}>{test}</option>)}</select></label>
               <label><span>Fecha</span><input type="date" value={formDate} onChange={(event) => setFormDate(event.target.value)} required /></label>
-              <label><span>Resultado ({testMeta(formTest).unit})</span><input type="number" min="0.01" step={formTest === 'Drop Jump' ? '0.01' : '0.1'} inputMode="decimal" value={formValue} onChange={(event) => setFormValue(event.target.value)} placeholder={formTest === 'Drop Jump' ? 'Ej. 1.65' : 'Ej. 28.4'} required /></label>
+              <label><span>Resultado ({testMeta(formTest).unit})</span><input type="number" min="0.01" step="0.01" inputMode="decimal" value={formValue} onChange={(event) => setFormValue(event.target.value)} placeholder={formTest === 'Drop Jump' ? 'Ej. 1.65' : 'Ej. 28.4'} required /></label>
               <label className="wide"><span>Notas · opcional</span><textarea value={formNotes} onChange={(event) => setFormNotes(event.target.value)} rows="3" placeholder="Contexto del test, protocolo, observaciones…" /></label>
             </div>
             <div className="perf-test-info"><Target size={18} /><div><strong>{testMeta(formTest).label}</strong><span>{testMeta(formTest).help} Unidad: {testMeta(formTest).unit}.</span></div></div>
