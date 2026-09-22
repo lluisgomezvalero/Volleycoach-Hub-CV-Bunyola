@@ -37,3 +37,22 @@
 
 /* compact-info-load-20260902 */
 .coach-load-title-row{display:flex;align-items:center;gap:8px;min-width:0}.coach-load-title-row h3{margin-right:0}.coach-load-head{align-items:center}.coach-load-title-row .app-info-popover-trigger{width:28px;height:28px}
+
+/* Último RPE visible en Inicio */
+.player-latest-rpe{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;margin:0 0 12px;padding:13px 14px;border:1px solid #ead7ad;border-radius:15px;background:linear-gradient(135deg,#fffaf0,#fffdf8);color:inherit;text-decoration:none}
+.player-latest-rpe>span:first-child{min-width:64px}
+.player-latest-rpe>span:first-child>small{display:block;color:#9b6a16;font-size:.56rem;font-weight:900;text-transform:uppercase;letter-spacing:.045em}
+.player-latest-rpe>span:first-child>strong{display:block;margin-top:2px;color:#a86608;font-size:1.3rem;line-height:1}
+.player-latest-rpe>span:first-child>strong em{font-size:.66rem;font-style:normal;color:#b28a4c}
+.player-latest-rpe-meta{min-width:0}
+.player-latest-rpe-meta b,.player-latest-rpe-meta small{display:block}
+.player-latest-rpe-meta b{overflow:hidden;color:#263247;font-size:.72rem;white-space:nowrap;text-overflow:ellipsis}
+.player-latest-rpe-meta small{margin-top:3px;color:#7e8998;font-size:.61rem;line-height:1.3}
+.player-latest-rpe>svg{color:#a66c13}
+.player-latest-rpe.empty{background:#fbfcfd;border-color:#e5e9ef}
+.player-latest-rpe.empty>span:first-child>small,.player-latest-rpe.empty>span:first-child>strong{color:#8a94a3}
+.coach-latest-rpe-cell>a,.coach-latest-rpe-cell>span{display:flex;flex-direction:column;align-items:flex-start;color:inherit;text-decoration:none}
+.coach-latest-rpe-cell strong{color:#8d5d0d;font-size:.75rem}
+.coach-latest-rpe-cell small{margin-top:2px;color:#98a2b3;font-size:.55rem}
+.coach-latest-rpe-cell>a:hover strong{text-decoration:underline}
+@media(max-width:560px){.player-latest-rpe{gap:9px;padding:12px}.player-latest-rpe>span:first-child{min-width:58px}.coach-load-table{min-width:670px}}
