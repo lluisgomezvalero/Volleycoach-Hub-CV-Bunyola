@@ -13,23 +13,8 @@
     <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="./assets/pwa-icon-192.png" />
     <title>VolleyCoach Hub · CV Bunyola</title>
-    <script>
-      (() => {
-        const url = new URL(window.location.href);
-        if (url.searchParams.get('reset-session') !== '1') return;
-        try {
-          Object.keys(localStorage)
-            .filter((key) => key.startsWith('sb-zpvlkdjdfnvamfcjihyt-') || key.includes('supabase.auth'))
-            .forEach((key) => localStorage.removeItem(key));
-          sessionStorage.clear();
-        } catch (_) {}
-        url.searchParams.delete('reset-session');
-        url.searchParams.set('session-reset', 'done');
-        window.location.replace(url.href);
-      })();
-    </script>
-    <script type="module" crossorigin src="./assets/index-restored-20260911.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-restored-20260911.css">
+    <script type="module" crossorigin src="./assets/index-Cd77_tWV.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-BBM7L2BM.css">
   </head>
   <body>
     <div id="root"></div>
