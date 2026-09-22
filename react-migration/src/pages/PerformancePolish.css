@@ -1,7 +1,7 @@
 /* Fine polish: Rendimiento. Visual-only overrides; data and test logic stay untouched. */
 .perf-page{gap:14px}
 
-.perf-header{
+.perf-page .perf-header{
   position:relative;
   overflow:hidden;
   align-items:center;
@@ -132,7 +132,7 @@
 
 @media(max-width:720px){
   .perf-page{padding:.45rem .2rem 8.25rem;gap:11px}
-  .perf-header{padding:15px 14px;border-radius:18px;gap:12px}
+  .perf-page .perf-header{padding:19px 20px;border-radius:18px;gap:14px}
   .perf-header h1{font-size:1.5rem;margin:.22rem 0 .2rem}
   .perf-header p{font-size:.7rem;line-height:1.35}
   .perf-eyebrow{font-size:.61rem}
@@ -234,7 +234,7 @@
 }
 
 @media(max-width:420px){
-  .perf-header{padding:13px 12px}
+  .perf-page .perf-header{padding:18px}
   .perf-header h1{font-size:1.4rem}
   .perf-new{min-height:40px;font-size:.68rem}
   .perf-player-card{
