@@ -181,8 +181,7 @@ function JumpFeedback({ feedback, compact = false }) {
           <span><small>Mejora</small><b>{feedback.difference >= 0 ? '+' : ''}{feedback.difference.toFixed(2)} cm · {feedback.percentage >= 0 ? '+' : ''}{feedback.percentage.toFixed(1)}%</b></span>
         </div>
       ) : null}
-      <p>{feedback.text}</p>
-      {!compact && feedback.ready ? <small className="perf-jump-feedback-note">Valores orientativos: las grabaciones a 30 fps generan escalones cercanos a 4 cm. Evita interpretar diferencias pequeñas.</small> : null}
+      {!compact ? <p>{feedback.text}</p> : null}
     </div>
   );
 }
@@ -529,7 +528,7 @@ export default function PerformancePage() {
                     <span className="perf-avatar">{initials(playerName(player))}</span>
                     <span className="perf-player-copy"><strong>{playerName(player)}</strong><small>#{player.dorsal || '—'} · {player.position || 'Jugadora'}</small>{latest ? <em><CalendarDays size={12} /> {fullDate(latest.tested_on)}</em> : <em>Sin registros</em>}</span>
                     <span className="perf-player-metrics"><span><small>Último</small><strong>{latest ? formatValue(latest.value, activeTab) : '—'}</strong></span><span><small>Mejor</small><strong>{best !== null && Number.isFinite(best) ? formatValue(best, activeTab) : '—'}</strong></span></span>
-                    <span className="perf-card-delta"><DeltaBadge delta={delta} test={activeTab} /></span>
+                    {playerRecords.length > 1 ? <span className="perf-card-delta"><DeltaBadge delta={delta} test={activeTab} /></span> : null}
                     {['CMJ', 'CMJ brazos libres'].includes(activeTab) ? <JumpFeedback feedback={jumpFeedbackByPlayer.get(player.id)} compact /> : null}
                     <ChevronRight className="perf-card-chevron" size={17} />
                   </button>
