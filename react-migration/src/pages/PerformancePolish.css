@@ -277,3 +277,61 @@
 @media(max-width:420px){
   .perf-player-card{grid-template-areas:"avatar player" "avatar metrics" "avatar delta" "tip tip"}
 }
+
+
+/* Tarjeta exterior simplificada y legible */
+.perf-page .perf-player-card{
+  grid-template-columns:auto minmax(0,1fr) auto auto;
+  grid-template-areas:"avatar player metrics chev" "avatar delta metrics chev" "tip tip tip tip";
+}
+.perf-page .perf-jump-feedback.compact{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+  padding:9px 11px;
+}
+.perf-page .perf-jump-feedback.compact .perf-jump-feedback-head{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  align-items:center;
+  width:100%;
+  gap:8px;
+}
+.perf-page .perf-jump-feedback.compact .perf-jump-feedback-head span{
+  padding:4px 7px;
+  border-radius:999px;
+  background:rgba(15,118,110,.09);
+  white-space:nowrap;
+}
+.perf-page .perf-jump-feedback.compact .perf-jump-feedback-head strong{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:.66rem;
+}
+
+@media(max-width:720px){
+  .perf-page .perf-player-card{
+    grid-template-columns:auto minmax(0,1fr);
+    grid-template-areas:"avatar player" "metrics metrics" "delta delta" "tip tip";
+    align-items:start;
+    gap:8px 10px;
+    padding:12px;
+  }
+  .perf-page .perf-player-copy{padding-top:1px}
+  .perf-page .perf-player-copy strong{font-size:.82rem}
+  .perf-page .perf-player-copy small{font-size:.61rem}
+  .perf-page .perf-player-copy em{margin-top:4px;font-size:.59rem}
+  .perf-page .perf-player-metrics{
+    width:100%;
+    grid-template-columns:1fr 1fr;
+    gap:7px;
+  }
+  .perf-page .perf-player-metrics>span{padding:8px 10px}
+  .perf-page .perf-player-metrics small{font-size:.52rem}
+  .perf-page .perf-player-metrics strong{font-size:.74rem}
+  .perf-page .perf-card-delta{display:none}
+  .perf-page .perf-jump-feedback.compact{margin-top:0}
+}
