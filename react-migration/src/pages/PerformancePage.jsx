@@ -95,6 +95,98 @@ function deltaFor(rows) {
   return first === null || last === null ? null : last - first;
 }
 
+function jumpFeedback(cmjRow, armsRow, teamMean) {
+  const cmj = numeric(cmjRow?.value);
+  const arms = numeric(armsRow?.value);
+  if (cmj === null || arms === null) {
+    return {
+      ready: false,
+      title: 'Completa los dos saltos',
+      text: 'Necesitamos un CMJ y un CMJ con brazos libres para ofrecerte un feedback.',
+      cmj,
+      arms,
+      difference: null,
+      percentage: null,
+      tone: 'neutral'
+    };
+  }
+
+  const difference = arms - cmj;
+  const percentage = cmj > 0 ? (difference / cmj) * 100 : null;
+  const mean = Number.isFinite(teamMean) ? teamMean : cmj;
+  const strengthLevel = cmj >= mean + 2 ? 'high' : cmj <= mean - 1 ? 'low' : 'average';
+
+  if (!Number.isFinite(percentage) || percentage <= 2) {
+    return {
+      ready: true, title: 'Conviene repetir la prueba',
+      text: 'La mejora con brazos es mínima. Repite ambos saltos y revisa la coordinación del braceo antes de sacar conclusiones.',
+      cmj, arms, difference, percentage, tone: 'review'
+    };
+  }
+
+  if (percentage < 10) {
+    return {
+      ready: true,
+      title: strengthLevel === 'high' ? 'Gran capacidad explosiva' : 'Mejora la coordinación del braceo',
+      text: strengthLevel === 'high'
+        ? 'Tu CMJ destaca. El siguiente paso es sincronizar mejor brazos y extensión para transferir esa potencia al salto completo.'
+        : 'El aporte de los brazos es reducido. Trabaja la sincronización del braceo y continúa desarrollando la potencia del tren inferior.',
+      cmj, arms, difference, percentage, tone: 'technique'
+    };
+  }
+
+  if (percentage < 20) {
+    return {
+      ready: true,
+      title: strengthLevel === 'high' ? 'Perfil potente y equilibrado' : strengthLevel === 'low' ? 'Buen uso de los brazos' : 'Perfil equilibrado',
+      text: strengthLevel === 'high'
+        ? 'Combinas una capacidad explosiva elevada con un aprovechamiento adecuado del braceo.'
+        : strengthLevel === 'low'
+          ? 'Aprovechas bien el braceo. Tu principal margen de mejora está en la fuerza y potencia del tren inferior.'
+          : 'Tu nivel de salto y el aprovechamiento del braceo están equilibrados respecto al equipo.',
+      cmj, arms, difference, percentage, tone: 'balanced'
+    };
+  }
+
+  if (percentage < 30) {
+    return {
+      ready: true,
+      title: strengthLevel === 'high' ? 'Perfil muy completo' : 'Muy buena coordinación',
+      text: strengthLevel === 'high'
+        ? 'Combinas un buen nivel de fuerza explosiva con un aprovechamiento muy eficaz de los brazos.'
+        : 'El braceo aporta mucho a tu salto. Puedes progresar especialmente desarrollando fuerza y potencia del tren inferior.',
+      cmj, arms, difference, percentage, tone: 'strong'
+    };
+  }
+
+  return {
+    ready: true,
+    title: 'Gran aprovechamiento del braceo',
+    text: strengthLevel === 'low'
+      ? 'Tu coordinación global es una fortaleza. El principal margen de mejora está en la capacidad explosiva del tren inferior.'
+      : 'Los brazos aportan mucho a tu salto. Mantén esa coordinación y continúa desarrollando la producción de fuerza.',
+    cmj, arms, difference, percentage, tone: 'strong'
+  };
+}
+
+function JumpFeedback({ feedback, compact = false }) {
+  if (!feedback) return null;
+  return (
+    <div className={`perf-jump-feedback ${feedback.tone} ${compact ? 'compact' : ''}`}>
+      <div className="perf-jump-feedback-head"><span>TIP DE SALTO</span><strong>{feedback.title}</strong></div>
+      {feedback.ready && !compact ? (
+        <div className="perf-jump-feedback-values">
+          <span><small>CMJ</small><b>{feedback.cmj.toFixed(2)} cm</b></span>
+          <span><small>Con brazos</small><b>{feedback.arms.toFixed(2)} cm</b></span>
+          <span><small>Mejora</small><b>{feedback.difference >= 0 ? '+' : ''}{feedback.difference.toFixed(2)} cm · {feedback.percentage >= 0 ? '+' : ''}{feedback.percentage.toFixed(1)}%</b></span>
+        </div>
+      ) : null}
+      <p>{feedback.text}</p>
+      {!compact && feedback.ready ? <small className="perf-jump-feedback-note">Valores orientativos: las grabaciones a 30 fps generan escalones cercanos a 4 cm. Evita interpretar diferencias pequeñas.</small> : null}
+    </div>
+  );
+}
+
 function Trend({ records, test, compact = false }) {
   const clean = sortAsc(records).filter((row) => numeric(row.value) !== null).slice(compact ? -8 : -12);
   if (!clean.length) return <div className="perf-chart-empty">Aún no hay registros para este test.</div>;
@@ -149,7 +241,7 @@ function DeltaBadge({ delta, test }) {
   );
 }
 
-function PlayerDetail({ player, test, records, onClose }) {
+function PlayerDetail({ player, test, records, feedback, onClose }) {
   const ordered = sortAsc(records);
   const latest = ordered[ordered.length - 1] || null;
   const best = ordered.length ? Math.max(...ordered.map((row) => numeric(row.value) ?? -Infinity)) : null;
@@ -171,6 +263,7 @@ function PlayerDetail({ player, test, records, onClose }) {
             <article><small>Cambio</small><strong><DeltaBadge delta={delta} test={test} /></strong><span>primero → último</span></article>
             <article><small>Tests</small><strong>{ordered.length}</strong><span>registros</span></article>
           </div>
+          <JumpFeedback feedback={feedback} />
           <section className="perf-detail-chart">
             <div className="perf-section-heading"><div><small>Evolución</small><h3>{testMeta(test).label}</h3></div><span>{ordered.length ? `${shortDate(ordered[0].tested_on)} → ${shortDate(ordered[ordered.length - 1].tested_on)}` : 'Sin datos'}</span></div>
             <Trend records={ordered} test={test} compact />
@@ -251,6 +344,18 @@ export default function PerformancePage() {
   const visiblePlayerIds = useMemo(() => new Set(players.map((player) => player.id)), [players]);
   const visibleRecords = useMemo(() => records.filter((row) => visiblePlayerIds.has(row.player_id)), [records, visiblePlayerIds]);
   const currentRecords = useMemo(() => activeTab === 'Histórico' ? visibleRecords : visibleRecords.filter((row) => row.test_type === activeTab), [activeTab, visibleRecords]);
+  const latestCmjMap = useMemo(() => latestByPlayer(visibleRecords.filter((row) => row.test_type === 'CMJ')), [visibleRecords]);
+  const latestArmsMap = useMemo(() => latestByPlayer(visibleRecords.filter((row) => row.test_type === 'CMJ brazos libres')), [visibleRecords]);
+  const teamCmjMean = useMemo(() => {
+    const values = [...latestCmjMap.values()].map((row) => numeric(row.value)).filter((value) => value !== null);
+    return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
+  }, [latestCmjMap]);
+  const jumpFeedbackByPlayer = useMemo(() => {
+    const map = new Map();
+    players.forEach((player) => map.set(player.id, jumpFeedback(latestCmjMap.get(player.id), latestArmsMap.get(player.id), teamCmjMean)));
+    return map;
+  }, [latestArmsMap, latestCmjMap, players, teamCmjMean]);
+
   const currentLatestMap = useMemo(() => activeTab === 'Histórico' ? new Map() : latestByPlayer(currentRecords), [activeTab, currentRecords]);
 
   const summary = useMemo(() => {
@@ -425,6 +530,7 @@ export default function PerformancePage() {
                     <span className="perf-player-copy"><strong>{playerName(player)}</strong><small>#{player.dorsal || '—'} · {player.position || 'Jugadora'}</small>{latest ? <em><CalendarDays size={12} /> {fullDate(latest.tested_on)}</em> : <em>Sin registros</em>}</span>
                     <span className="perf-player-metrics"><span><small>Último</small><strong>{latest ? formatValue(latest.value, activeTab) : '—'}</strong></span><span><small>Mejor</small><strong>{best !== null && Number.isFinite(best) ? formatValue(best, activeTab) : '—'}</strong></span></span>
                     <span className="perf-card-delta"><DeltaBadge delta={delta} test={activeTab} /></span>
+                    {['CMJ', 'CMJ brazos libres'].includes(activeTab) ? <JumpFeedback feedback={jumpFeedbackByPlayer.get(player.id)} compact /> : null}
                     <ChevronRight className="perf-card-chevron" size={17} />
                   </button>
                 );
@@ -452,7 +558,7 @@ export default function PerformancePage() {
         </div>
       ) : null}
 
-      {detailPlayer ? <PlayerDetail player={detailPlayer} test={detailTest} records={detailRecords} onClose={() => setDetailPlayerId('')} /> : null}
+      {detailPlayer ? <PlayerDetail player={detailPlayer} test={detailTest} records={detailRecords} feedback={jumpFeedbackByPlayer.get(detailPlayer.id)} onClose={() => setDetailPlayerId('')} /> : null}
     </div>
   );
 }
