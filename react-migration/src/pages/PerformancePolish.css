@@ -244,3 +244,36 @@
   .perf-player-metrics{width:100%;grid-template-columns:1fr 1fr}
   .perf-history-filters{grid-template-columns:1fr}
 }
+
+
+/* Feedback automático CMJ + brazos libres */
+.perf-player-card{grid-template-areas:"avatar player metrics chev" "avatar delta metrics chev" "tip tip tip tip"}
+.perf-jump-feedback{padding:14px;border:1px solid #dfe7e5;border-radius:14px;background:#f8fbfa;text-align:left}
+.perf-jump-feedback-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.perf-jump-feedback-head span{color:#0f766e;font-size:.56rem;font-weight:900;letter-spacing:.075em}
+.perf-jump-feedback-head strong{color:#263247;font-size:.83rem}
+.perf-jump-feedback-values{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:10px}
+.perf-jump-feedback-values>span{padding:8px 9px;border-radius:10px;background:#fff;border:1px solid #e7ecea}
+.perf-jump-feedback-values small,.perf-jump-feedback-values b{display:block}
+.perf-jump-feedback-values small{color:#8a95a4;font-size:.52rem;font-weight:850;text-transform:uppercase}
+.perf-jump-feedback-values b{margin-top:2px;color:#243247;font-size:.68rem}
+.perf-jump-feedback p{margin:8px 0 0;color:#667385;font-size:.67rem;line-height:1.45}
+.perf-jump-feedback-note{display:block;margin-top:8px;padding-top:8px;border-top:1px solid #e6ebe9;color:#8a95a4;font-size:.58rem;line-height:1.4}
+.perf-jump-feedback.strong{border-color:#bee5d8;background:#f2fbf7}
+.perf-jump-feedback.balanced{border-color:#cfe0eb;background:#f5f9fc}
+.perf-jump-feedback.technique{border-color:#edd7a7;background:#fffaf0}
+.perf-jump-feedback.review{border-color:#efc3c3;background:#fff7f7}
+.perf-jump-feedback.compact{grid-area:tip;margin-top:7px;padding:9px 10px;border-radius:11px}
+.perf-jump-feedback.compact .perf-jump-feedback-head{gap:6px}
+.perf-jump-feedback.compact .perf-jump-feedback-head strong{font-size:.68rem}
+.perf-jump-feedback.compact p{margin-top:4px;font-size:.59rem;line-height:1.38}
+.perf-detail-kpis+.perf-jump-feedback{margin-top:1px}
+
+@media(max-width:720px){
+  .perf-player-card{grid-template-areas:"avatar player metrics" "avatar delta metrics" "tip tip tip"}
+  .perf-jump-feedback{padding:12px}
+  .perf-jump-feedback-values{grid-template-columns:1fr}
+}
+@media(max-width:420px){
+  .perf-player-card{grid-template-areas:"avatar player" "avatar metrics" "avatar delta" "tip tip"}
+}
