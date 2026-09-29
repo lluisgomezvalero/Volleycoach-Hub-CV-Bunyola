@@ -6,7 +6,7 @@ if(window[FLAG])return;
 window[FLAG]=true;
 
 const VAPID_PUBLIC_KEY='BFfrWc3f5F4rWqqKtGWaZWXnqussOA9Pg2oAbXObcU-t3PHHYznz0lKcvMK2qVD9KrOWBJ7UGBD4xZyz4YMO0aU';
-const RPE_DELAY_MS=30*60*1000;
+const RPE_DELAY_MS=0;
 let pushBusy=false;
 let pushEnabledProfileId='';
 
@@ -240,7 +240,7 @@ function installRpeThirtyMinuteGuard(){
         const end=eventEndMs(findEvent(eventId));
         if(Number.isFinite(end)&&Date.now()<end+RPE_DELAY_MS){
           const remaining=Math.max(1,Math.ceil((end+RPE_DELAY_MS-Date.now())/60000));
-          try{window.showToast?.(`El RPE se habilitará 30 min después de terminar la sesión. Faltan ${remaining} min.`,'info');}catch(_){}
+          try{window.showToast?.(`El RPE se habilitará cuando termine la sesión. Faltan ${remaining} min.`,'info');}catch(_){}
           return;
         }
       }
