@@ -1,0 +1,20 @@
+// Exercise the deployed roster module with synthetic identities and a fake API.
+// No production records or sessions are used.
+const fs=require('node:fs');const vm=require('node:vm');const assert=require('node:assert/strict');
+const source=fs.readFileSync('assets/RosterPage-photo-position-20261001.js','utf8').replace(/^import[^;]+;/,'').replace('export{be as default};','')+'\n globalThis.Roster=be;globalThis.PhotoViewer=RosterPhotoViewer;';
+function nodes(tree,match){if(!tree||typeof tree!=='object')return [];const children=tree.props?.children;return [...(match(tree)?[tree]:[]),...[children].flat(Infinity).flatMap(child=>nodes(child,match))];}
+async function test(role){
+ const player={id:'player',club_id:'club',team_id:'team',display_name:'Prueba',position:'Receptora/Líbero',dorsal:7,avatar_path:'photo.jpg',profiles:null};let slots=[],cursor=0,effects=[],saved;
+ const react={useRef(value){const i=cursor++;return slots[i]??(slots[i]={current:value});},useState(value){const i=cursor++;if(!(i in slots))slots[i]=value;return [slots[i],next=>{slots[i]=typeof next==='function'?next(slots[i]):next}];},useEffect(callback,deps){const i=cursor++;if(!slots[i]||deps.some((d,j)=>d!==slots[i][j])){slots[i]=deps;effects.push(callback)}},useMemo(fn){return fn()}};
+ const api={from(){return {select(){return this},eq(){return this},order(){return Promise.resolve({data:[player]})},update(data){saved=data;return this},single(){return Promise.resolve({data:{id:'player',...saved}})}}},storage:{from(){return {createSignedUrls(){return Promise.resolve({data:[{signedUrl:'photo-url'}]})}}}}};
+ const ctx={n:react,e:{jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props}),Fragment:'fragment'},z:()=>()=>null,ne:()=>({identity:{profile:{role},teams:[{id:'team',name:'Cadete A'}]}}),g:api,console,window:{addEventListener(){},removeEventListener(){},dispatchEvent(){}},CustomEvent:class{},document:{}};
+ for(const name of ['oe','H','le','V','ce','de','ue','he','pe'])ctx[name]=()=>null;
+ vm.createContext(ctx);vm.runInContext(source,ctx);const render=()=>{cursor=0;return ctx.Roster()};let tree=render();for(const effect of effects.splice(0))effect();await new Promise(resolve=>setImmediate(resolve));tree=render();
+ const find=(cls)=>nodes(tree,x=>x.props?.className===cls)[0];assert(find('roster-avatar-img'),'photo loaded');find('roster-avatar-wrap').props.onClick({stopPropagation(){}});tree=render();const viewer=nodes(tree,x=>x.type===ctx.PhotoViewer)[0];assert(viewer,'card photo opens viewer');assert.equal(viewer.props.player.dorsal,7);assert.equal(viewer.props.player.position,'Receptora/Líbero');assert.equal(viewer.props.src,'photo-url');viewer.props.onClose();tree=render();assert(!nodes(tree,x=>x.type===ctx.PhotoViewer).length);
+ find('roster-player-card').props.onClick();tree=render();assert(!nodes(tree,x=>x.props?.children==='Sin cuenta vinculada').length);
+ if(role==='coach'){
+  assert(find('roster-avatar-edit-button'));const label=nodes(tree,x=>x.type==='label'&&nodes(x,y=>y.props?.children==='Posición').length)[0];const select=nodes(label,x=>x.type==='select')[0];assert(select);const options=nodes(select,x=>x.type==='option').map(x=>x.props.value);assert(options.includes('Receptora/Líbero'));assert(options.includes('Líbero'));select.props.onChange({target:{value:'Central'}});tree=render();const save=nodes(tree,x=>x.type==='button'&&x.props.children==='Guardar cambios')[0];await save.props.onClick();assert.equal(saved.position,'Central');
+ }else{assert(!find('roster-avatar-edit-button'));assert(!find('roster-edit-form'));assert(!nodes(tree,x=>x.type==='input'&&x.props.type==='file').length);}
+ find('roster-photo-open').props.onClick();tree=render();assert(nodes(tree,x=>x.type===ctx.PhotoViewer).length);console.log(`${role}: photo opens from card and detail; caption data, position selector/save and edit permissions passed`);
+}
+(async()=>{await test('coach');await test('player')})().catch(error=>{console.error(error);process.exitCode=1});

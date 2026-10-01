@@ -1,0 +1,11 @@
+
+.roster-photo-open{padding:0;border:0;background:transparent;cursor:zoom-in;display:block;border-radius:50%;}
+.roster-avatar-wrap:has(img){cursor:zoom-in;}
+.roster-photo-open:focus-visible{outline:3px solid #fbbf24;outline-offset:4px;}
+.roster-photo-viewer{position:fixed;inset:0;z-index:10000;background:rgba(3,7,18,.98);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:max(64px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom));color:#fff;box-sizing:border-box;}
+.roster-photo-full{display:block;max-width:100%;max-height:calc(100dvh - 200px);object-fit:contain;border-radius:12px;min-height:0;}
+.roster-photo-close{position:absolute;top:max(16px,env(safe-area-inset-top));right:16px;width:48px;height:48px;border:1px solid #ffffff50;border-radius:50%;color:#fff;background:#ffffff18;display:grid;place-items:center;cursor:pointer;}
+.roster-photo-close:focus-visible{outline:3px solid #fbbf24;outline-offset:3px;}
+.roster-photo-caption{text-align:center;flex-shrink:0;}
+.roster-photo-caption h2{margin:0;font-size:clamp(20px,4vw,28px);color:#fff;}
+.roster-photo-caption p{margin:8px 0 0;font-size:18px;color:#cbd5e1;}
