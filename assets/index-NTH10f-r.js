@@ -1,1 +1,1 @@
-export * from "./index-header-avatar-20261001.js";
+export * from "./index-statistics-opponents-20261003.js";
