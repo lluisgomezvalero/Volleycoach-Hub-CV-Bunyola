@@ -1,1 +1,1 @@
-export * from "./index-statistics-metrics-20261004.js";
+export * from "./index-reception-labels-20261004.js";
