@@ -2,7 +2,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 (async()=>{
-  const {deriveStats,validateReport,reportExample}=await import('../assets/match-report-model-20261004.js');
+  const {deriveStats,validateReport,reportExample}=await import('../assets/match-report-model-compatible-20261004.js');
   const fixture=structuredClone(reportExample);
   fixture.sets=[0,1,2,3].map(i=>({number:i+1,score:['25-21','18-25','20-25','15-25'][i],stats:{reception:{positive:5,exclamative:[8,8,7,7][i],errors:[3,3,2,2][i]},attack:{int:[29,20,20,20][i],points:[12,8,7,6][i],errors:[3,4,5,5][i]},serve:{int:20,aces:[3,3,2,2][i],errors:[3,2,2,2][i]},block:{points:[2,2,1,1][i]},opponent_errors:[8,7,7,7][i]}}));
   const d=deriveStats(fixture.totals);
@@ -22,7 +22,7 @@ const vm=require('node:vm');
   const React={Fragment:'fragment',useState(initial){const index=cursor++;if(!(index in states))states[index]=initial;return[states[index],v=>states[index]=v]},useEffect(fn){effects.push(fn)}};
   const jsx={jsxs:(type,props)=>({type,props})};
   const context={React,jsx,db,deriveStats,validateReport,reportExample,console};vm.createContext(context);
-  let source=fs.readFileSync('assets/match-report-ui-20261004.js','utf8').replace(/^import .*;\n/gm,'').replace(/export function /g,'function ');
+  let source=fs.readFileSync('assets/match-report-ui-compatible-20261004.js','utf8').replace(/^import .*;\n/gm,'').replace(/export function /g,'function ');
   vm.runInContext(source,context);
   function walk(node,predicate){if(!node||typeof node!=='object')return null;if(predicate(node))return node;for(const child of [node.props?.children].flat(Infinity)){const found=walk(child,predicate);if(found)return found}return null}
   const props={items:[{label:'Jornada 1',opponent:'CV CIDE',event:{id:'event-1'}}],team:{id:'team-1'},profile:{id:'coach',club_id:'club-1'},onClose(){},onSaved(){}};
