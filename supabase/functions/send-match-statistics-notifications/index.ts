@@ -34,14 +34,15 @@ Deno.serve(async (req: Request) => {
     const now = Date.now();
     const { data: statistics, error: eventsError } = await admin
       .from('match_statistics')
-      .select('event_id,team_id,published_at,events(id,title,payload)')
+      .select('event_id,team_id,published_at,payload,events(id,title,payload)')
       .eq('status', 'published')
       .gte('published_at', '2026-10-04T09:34:36+00:00')
       .gte('published_at', new Date(now - 24 * 60 * 60 * 1000).toISOString());
     if (eventsError) throw eventsError;
     const events = (statistics || []).map((row: any) => ({
       id: row.event_id, team_id: row.team_id,
-      title: row.events?.title, opponent: row.events?.payload?.opponent
+      title: row.events?.title, opponent: row.payload?.report?.match?.opponent || row.events?.payload?.opponent,
+      notificationKind: row.payload?.report ? "match_report_published" : "match_statistics_published"
     }));
 
     let sent = 0;
@@ -51,7 +52,7 @@ Deno.serve(async (req: Request) => {
     for (const event of events || []) {
       const [{ data: players, error: playersError }, { data: logs, error: logsError }] = await Promise.all([
         admin.from('players').select('id,profile_id').eq('team_id', event.team_id).eq('active', true),
-        admin.from('push_notification_log').select('player_id').eq('event_id', event.id).eq('kind', 'match_statistics_published')
+        admin.from('push_notification_log').select('player_id').eq('event_id', event.id).eq('kind', event.notificationKind)
       ]);
       if (playersError) throw playersError;
       if (logsError) throw logsError;
@@ -106,7 +107,7 @@ Deno.serve(async (req: Request) => {
           const { error: logError } = await admin.from('push_notification_log').upsert({
             event_id: event.id,
             player_id: player.id,
-            kind: 'match_statistics_published',
+            kind: event.notificationKind,
             sent_at: new Date().toISOString(),
             metadata: { trigger: 'match_statistics_published' }
           }, { onConflict: 'event_id,player_id,kind' });
