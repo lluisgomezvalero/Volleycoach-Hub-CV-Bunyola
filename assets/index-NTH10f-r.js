@@ -1,1 +1,1 @@
-export * from "./index-sessions-20261011.js";
+export * from "./index-insights-20261012.js";

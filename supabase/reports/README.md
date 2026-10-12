@@ -40,3 +40,6 @@ Existing `stats_staff_write` RLS protects writes by club and staff role. Existin
 First report publication sets `published_at`; editing an already published report preserves it. The existing minute-based notification function records `match_report_published` independently from legacy `match_statistics_published`. The unique event/player/kind log prevents repeated edit notifications. Push permissions are still required.
 
 `published_report_read.sql` records the deployed RPC change. Tests: `node tests/match-report.test.cjs`. Database permissions were tested using authenticated player claims in rolled-back transactions: published report visible, draft hidden, player update affects zero rows.
+
+## Textos originales del informe
+El importador acepta `insights: {headline, positive, key_issue, next_objective}` tanto en JSON canónico como en el formato con `team`/`jornada`. Se conserva cada texto en `payload.report.conclusions`; `insights` tiene prioridad si ambas claves están presentes. En cada jugadora acepta `insights` o `feedback` con las mismas claves. No se genera feedback de sustitución: la ausencia de comentarios se indica como pendiente. Editar feedback conserva la fecha de publicación.
