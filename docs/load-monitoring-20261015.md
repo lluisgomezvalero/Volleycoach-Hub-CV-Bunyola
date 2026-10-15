@@ -59,6 +59,7 @@ Los archivos son migraciones de una sola aplicación; el historial de Supabase c
 - `node --test tests/load-monitoring.test.mjs tests/load-ui.test.mjs`: escenarios de cálculo, datos ausentes, RPE cero, participación parcial, partidos, torneo sin duplicados, actividad adicional, descanso, referencia incompleta, retorno, dolor creciente, aumento planificado, procedencia, límites de periodos, Madrid/DST, componentes y paginación.
 - `tests/load-permissions.sql`: integración real con transacción revertida: permisos propios/ajenos, validación del entrenador, decisiones privadas, revisión de cambios, atomicidad y plazo/reapertura de RPE, bloqueo anónimo.
 - Pruebas existentes: avatar, estadísticas/insights, local/visitante, plantilla y series de sesiones.
+- Se sustituye el workflow PWA legado (ya fallaba antes de este cambio por buscar la antigua interfaz) por validación de los módulos React actuales, sin commits automáticos.
 - Comprobación sintáctica de módulos y bundle, referencias de imports y `git diff --check`.
 - Asesor de seguridad: sin avisos nuevos para los objetos del módulo. Se mantienen avisos previos sobre funciones de estadísticas, logs push sin políticas y protección de contraseñas filtradas; no se han modificado por estar fuera del alcance de carga.
 
