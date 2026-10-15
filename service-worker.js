@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'volleycoach-react-pwa-';
-const CACHE_VERSION = '20261013-player-visual-v1';
+const CACHE_VERSION = '20261015-load-monitoring-v1';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const OFFLINE_SHELL = ['./', './manifest.webmanifest'];
 
@@ -21,9 +21,16 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const request = event.request;
-  if (request.method !== 'GET' || request.mode !== 'navigate') return;
+  if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  // Revalidate the common bundle after a deployed update; keep one React module URL.
+  if (url.pathname.endsWith('/assets/index-insights-20261012.js') || /\/assets\/load-[^/]+\.(js|css)$/.test(url.pathname)) {
+    event.respondWith(fetch(request, { cache: 'no-cache' }));
+    return;
+  }
+  if (request.mode !== 'navigate') return;
 
   event.respondWith((async () => {
     try {
