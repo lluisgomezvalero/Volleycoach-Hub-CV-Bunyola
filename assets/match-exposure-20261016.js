@@ -12,7 +12,8 @@ export function matchExposure(events,rows,playerId,now=Date.now()){
  }
  return result;
 }
-export function exposureCopy(summary){
+export function exposureCopy(summary,compact=false){
+ if(compact){const labels={none:"sin jugar/calentar",warmup:"solo calentó",low:"baja",medium:"media",high:"alta",pending:"pendiente"};return Object.entries(labels).filter(([key])=>summary[key]).map(([key,label])=>`${summary[key]} ${label}${key==="pending"&&summary[key]>1?"s":""}`).join(" · ");}
  const labels={none:'sin participación ni calentamiento',warmup:'solo calentamiento',low:'participación baja',medium:'participación media',high:'participación alta'};
  return Object.entries(labels).filter(([key])=>summary[key]).map(([key,label])=>`${summary[key]} ${summary[key]===1?'partido':'partidos'} · ${label}`).concat(summary.pending?[`${summary.pending} ${summary.pending===1?'partido pendiente':'partidos pendientes'} de registrar`]:[]).join('; ');
 }
@@ -37,7 +38,7 @@ export function createMatchExposureUI(React,jsx,db,useIdentity){
   }catch{setError('No se pudo guardar. Tus cambios siguen aquí; vuelve a intentarlo.');}finally{setBusy(false);}}
   return hs('section',{className:'match-exposure-editor',children:[h('h3',{children:'Participación en el partido'}),h('p',{children:'Observación del entrenador. No calcula UA ni sustituye el RPE individual.'}),h('small',{children:'Criterio práctico: baja = jugó poco; media = aproximadamente la mitad; alta = casi todo. Incluye por separado a quien solo calentó. No es una escala científica validada.'}),!finished?h('p',{children:'Podrás registrar la participación cuando termine el partido.'}):null,loading?h('p',{children:'Cargando jugadoras…'}):players.map(p=>hs('label',{className:'match-exposure-row',children:[h('span',{children:`${p.dorsal?`${p.dorsal} · `:''}${p.profiles?.full_name||p.profiles?.username||'Jugadora'}`}),h('select',{'aria-label':`Participación de ${p.profiles?.full_name||p.profiles?.username||'jugadora'}`,value:values[p.id]||'',disabled:busy||!finished||!!error&&players.length===0,onChange:e=>{setValues(v=>({...v,[p.id]:e.target.value}));setMessage('');},children:participationOptions.map(([value,label])=>h('option',{value,children:label},value))})]},p.id)),error?h('p',{role:'alert',children:error}):null,message?h('p',{role:'status',children:message}):null,h('button',{type:'button',className:'calendar-primary-action',disabled:loading||busy||!finished||!changed.length,onClick:save,children:busy?'Guardando…':`Guardar participación${changed.length?` (${changed.length})`:''}`})]});
  }
- function Summary({playerId}){
+ function Summary({playerId,compact=false}){
   const [state,setState]=React.useState({loading:true});
   React.useEffect(()=>{let active=true;async function refresh(){try{const now=Date.now(),from=new Date(now-7*86400000).toISOString();const player=await db.from('players').select('team_id').eq('id',playerId).single();if(player.error)throw player.error;
    const scoped=await db.from('events').select('id,event_type,starts_at,ends_at,status').eq('team_id',player.data.team_id).in('event_type',['match','friendly']).gte('starts_at',from).lte('starts_at',new Date(now).toISOString());if(scoped.error)throw scoped.error;
@@ -45,7 +46,7 @@ export function createMatchExposureUI(React,jsx,db,useIdentity){
    if(active)setState({summary:matchExposure(scoped.data||[],rows,playerId,now)});
   }catch{if(active)setState({error:true});}}if(playerId){setState({loading:true});refresh();}else setState({});window.addEventListener('match-exposure-updated',refresh);return()=>{active=false;window.removeEventListener('match-exposure-updated',refresh);};},[playerId]);
   if(!playerId)return null;
-  return h('span',{className:'match-exposure-summary',children:state.loading?'Cargando exposición a partidos…':state.error?'Exposición a partidos no disponible.':state.summary?.total?`Partidos y amistosos · últimos 7 días: ${exposureCopy(state.summary)}. Registro del entrenador; separado de las UA.`:'Sin partidos ni amistosos finalizados en los últimos 7 días.'});
+  return h('span',{className:'match-exposure-summary',children:state.loading?(compact?'Partidos: cargando…':'Cargando exposición a partidos…'):state.error?(compact?'Partidos: no disponible':'Exposición a partidos no disponible.'):compact?(state.summary?.total?`Partidos: ${exposureCopy(state.summary,true)}`:'Sin partidos'):state.summary?.total?`Partidos y amistosos · últimos 7 días: ${exposureCopy(state.summary)}. Registro del entrenador; separado de las UA.`:'Sin partidos ni amistosos finalizados en los últimos 7 días.'});
  }
  return {Editor,Summary};
 }

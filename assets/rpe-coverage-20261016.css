@@ -1,1 +1,19 @@
 .rpe-coverage{display:grid;gap:3px;margin:8px 0;color:#64748b;font-size:12px;line-height:1.45;font-weight:400;white-space:normal;text-align:left}.rpe-coverage strong{color:#8c5a20;font-size:inherit;font-weight:700}.rpe-coverage.compact{font-size:10px;margin:5px 0;max-width:240px}.wellness-row-load .rpe-coverage.compact{font-size:9px;max-width:150px}.rpe-coverage span{display:block}
+
+/* Short summaries in lists; full explanations remain in the individual detail. */
+html .rpe-coverage.compact{font-size:11px;line-height:1.3;gap:3px;margin:4px 0 0;max-width:none}
+html .rpe-coverage.compact .coverage-pending{color:#8c5a20}
+html .rpe-coverage.compact .match-exposure-summary{font-size:inherit;line-height:inherit;margin:0}
+@media(max-width:640px){
+ html .wellness-player-table{overflow:visible}
+ html .wellness-player-table-head{display:none}
+ html .wellness-player-row{width:100%;min-width:0;max-width:100%;grid-template-columns:minmax(84px,1fr) minmax(112px,1.3fr) 42px;gap:8px;padding:10px 12px;align-items:start}
+ html .wellness-player-identity{grid-column:1/-1;padding-right:20px}
+ html .wellness-player-identity>span{min-width:0}
+ html .wellness-row-metrics{grid-column:1;align-self:start;gap:3px;flex-wrap:wrap}
+ html .wellness-row-metrics b{padding:4px 6px;font-size:11px}
+ html .wellness-row-load{grid-column:2;min-width:0;font-size:13px;line-height:1.3}
+ html .wellness-player-row>.wellness-ratio{grid-column:3;align-self:start;font-size:11px}
+ html .wellness-row-arrow{top:15px;right:10px}
+ html .wellness-row-load .rpe-coverage.compact{font-size:11px;max-width:none}
+}
