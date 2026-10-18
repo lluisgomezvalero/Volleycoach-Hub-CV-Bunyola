@@ -1,7 +1,7 @@
 import {individualMinutes} from './individual-minutes-20261015.js';
 const WEEK=7*86400000;
 const validScore=r=>r&&r.score!==null&&r.score!==undefined&&r.score!==''&&Number.isFinite(Number(r.score))&&Number(r.score)>=0&&Number(r.score)<=10;
-const labels=['Hace 4 periodos','Hace 3 periodos','Hace 2 periodos','Periodo anterior','Últimos 7 días'];
+const labels=['Hace 4 semanas','Hace 3 semanas','Hace 2 semanas','Semana pasada','Últimos 7 días'];
 const date=new Intl.DateTimeFormat('es-ES',{timeZone:'Europe/Madrid',day:'2-digit',month:'short'});
 export function playerLoadWeeks(events,attendance,rpes,playerId,duration,now=Date.now()){
  const weeks=labels.map((label,index)=>({label,start:now-(5-index)*WEEK,end:now-(4-index)*WEEK,load:0,sessions:0,performed:0,registered:0,pending:0,absences:0}));
