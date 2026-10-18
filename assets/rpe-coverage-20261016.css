@@ -17,3 +17,24 @@ html .rpe-coverage.compact .match-exposure-summary{font-size:inherit;line-height
  html .wellness-row-arrow{top:15px;right:10px}
  html .wellness-row-load .rpe-coverage.compact{font-size:11px;max-width:none}
 }
+
+/* Denser staff roster on phones: identity, metrics, then full-width record status. */
+@media(max-width:640px){
+ html .wellness-team-tracking .wellness-card-head>div>span{display:none}
+ html .wellness-team-tracking .wellness-card-head{margin-bottom:8px}
+ html .wellness-team-tracking .wellness-card-head h2{margin-top:0;font-size:16px}
+ html .wellness-team-tracking .wellness-card-head p{margin:4px 0 0;font-size:11px}
+ html .wellness-player-row{grid-template-columns:minmax(0,1fr) auto;gap:5px 8px;padding:8px 10px;align-items:center}
+ html .wellness-player-identity{grid-column:1;grid-row:1;padding-right:0;gap:7px}
+ html .wellness-player-identity .wellness-avatar{width:28px;height:28px;flex-basis:28px;border-radius:8px;font-size:10px}
+ html .wellness-player-identity strong{font-size:12px;line-height:1.2}
+ html .wellness-player-identity small{font-size:10px;line-height:1.2;margin-top:2px}
+ html .wellness-player-row>.wellness-ratio{grid-column:2;grid-row:1;align-self:center;margin-right:17px;font-size:11px}
+ html .wellness-row-metrics{grid-column:1;grid-row:2;flex-wrap:nowrap;gap:4px;align-self:center}
+ html .wellness-row-metrics b{padding:3px 7px;font-size:11px;line-height:1.2;min-width:0}
+ html .wellness-row-load{display:contents}
+ html .wellness-row-load-number{grid-column:2;grid-row:2;justify-self:end;font-size:13px;line-height:1.3}
+ html .wellness-row-load .rpe-coverage.compact{display:flex;flex-wrap:wrap;align-items:baseline;grid-column:1/-1;grid-row:3;gap:3px 10px;margin:0;font-size:10px;line-height:1.3}
+ html .wellness-row-load .rpe-coverage.compact>span{min-width:0}
+ html .wellness-row-arrow{top:14px;right:8px;width:13px}
+}
