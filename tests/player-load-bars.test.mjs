@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {playerLoadWeeks,createPlayerLoadBars} from '../assets/player-load-bars-20261018.js';
+import {playerLoadWeeks,createPlayerLoadBars,playerBarTone} from '../assets/player-load-bars-20261018.js';
 const DAY=86400000,WEEK=7*DAY,now=Date.parse('2026-10-26T12:00:00+01:00');
 const event=(id,age,extra={})=>({id,event_type:'training',starts_at:new Date(now-age).toISOString(),ends_at:new Date(now-age+3600000).toISOString(),...extra});
 const attendance=(id,status='present',minutes=60)=>({event_id:id,player_id:'p',official_status:status,effective_minutes:minutes});
@@ -29,5 +29,13 @@ test('complete reference permits neutral descriptive comparison; missing old dat
  const events=Array.from({length:5},(_,i)=>event(String(i),i*WEEK+DAY)),rows=events.map(e=>attendance(e.id)),scores=events.map(e=>rpe(e.id));assert.equal(model(events,rows,scores).message,'Similar a tus semanas anteriores');scores[0].score=10;assert.match(model(events,rows,scores).message,/Más carga registrada/);assert.equal(model(events,rows,scores.slice(0,4)).message,'Faltan registros');
 });
 test('bars are keyboard buttons and tapping shows dates, load and pending detail',()=>{
- const state=[];let cursor=0;const React={useState(initial){const id=cursor++;if(!(id in state))state[id]=initial;return [state[id],v=>state[id]=v];}};const jsx={jsx:(tag,props)=>({tag,props}),jsxs:(tag,props)=>({tag,props})};const Component=createPlayerLoadBars(React,jsx);const m=model([event('a',DAY)]);const render=()=>{cursor=0;return Component({model:m});};let tree=render();const buttons=tree.props.children[1].props.children;assert.equal(buttons.length,5);assert.equal(buttons[4].tag,'button');assert.match(JSON.stringify(tree.props.children[2]),/Faltan datos/);buttons[0].props.onClick();tree=render();assert.match(JSON.stringify(tree.props.children[2]),/no permite confirmar descanso/);assert.equal(tree.props.children[1].props.children[0].props['aria-pressed'],true);assert.doesNotMatch(JSON.stringify(tree),/ACWR|riesgo|óptim/);
+ const state=[];let cursor=0;const React={useState(initial){const id=cursor++;if(!(id in state))state[id]=initial;return [state[id],v=>state[id]=v];}};const jsx={jsx:(tag,props)=>({tag,props}),jsxs:(tag,props)=>({tag,props})};const Component=createPlayerLoadBars(React,jsx);const m=model([event('a',DAY)]);const render=()=>{cursor=0;return Component({model:m});};let tree=render();const buttons=tree.props.children[1].props.children;assert.equal(buttons.length,5);assert.equal(buttons[4].tag,'button');assert.match(JSON.stringify(tree.props.children[3]),/Faltan datos/);buttons[0].props.onClick();tree=render();assert.match(JSON.stringify(tree.props.children[3]),/no permite confirmar descanso/);assert.equal(tree.props.children[1].props.children[0].props['aria-pressed'],true);assert.doesNotMatch(JSON.stringify(tree),/ACWR|UA|óptim/);
+});
+test('colors encode relative quantity only for complete periods; missing data stays neutral',()=>{
+ const weeks=[{load:100,sessions:1,incomplete:false},{load:200,sessions:1,incomplete:false},{load:300,sessions:1,incomplete:false},{load:900,sessions:1,incomplete:true},{load:0,sessions:0,incomplete:false}];
+ assert.equal(playerBarTone(weeks[0],weeks).key,'green');assert.equal(playerBarTone(weeks[2],weeks).key,'red');assert.equal(playerBarTone(weeks[3],weeks).key,'unknown');assert.equal(playerBarTone(weeks[4],weeks).key,'unknown');assert.equal(playerBarTone(weeks[0],[weeks[0]]).key,'neutral');assert.equal(playerBarTone(weeks[0],[weeks[0],weeks[0]]).key,'neutral');
+});
+test('explanation is collapsed in an accessible info control and player text contains no units',()=>{
+ const React={useState:initial=>[initial,()=>{}]},jsx={jsx:(tag,props)=>({tag,props}),jsxs:(tag,props)=>({tag,props})};
+ const tree=createPlayerLoadBars(React,jsx)({model:model([])});const info=tree.props.children[0].props.children[1];assert.equal(info.tag,'details');assert.equal(info.props.open,undefined);assert.equal(info.props.children[0].tag,'summary');assert.match(info.props.children[0].props['aria-label'],/Cómo leer/);assert.doesNotMatch(JSON.stringify(tree),/UA|ACWR/);assert.match(JSON.stringify(info),/no indican si está bien o mal/);
 });

@@ -1,6 +1,6 @@
 # Barras individuales de carga
 
-Cambio incremental en Inicio y Bienestar de las jugadoras. Componente compartido con cinco barras pulsables y accesibles por teclado. Al seleccionar: fechas y horas Europe/Madrid, UA registradas, sesiones con carga calculable, datos pendientes y ausencias confirmadas. Las barras usan un único color neutro; tramas indican registros pendientes. Una mayor carga no significa una mejora. Los partidos siguen separados.
+Cambio incremental en Inicio y Bienestar de las jugadoras. Componente compartido con cinco barras pulsables y accesibles por teclado. Al seleccionar: fechas Europe/Madrid, sesiones con esfuerzo registrado, datos pendientes y ausencias confirmadas. No se muestran UA a la jugadora. La explicación queda en un control nativo details/summary (ⓘ), cerrado inicialmente y accesible por teclado. Se elimina el resumen duplicado de cobertura debajo del gráfico y se conserva la exposición a partidos en formato breve. Una mayor carga no significa una mejora. Los partidos siguen separados.
 
 Reutiliza los registros ya consultados, minutos individuales y la fórmula RPE individual × minutos. No cambia la recogida de RPE, permisos, registros históricos ni cálculo de carga/ACWR del entrenador. El ACWR ya estaba limitado a la vista del entrenador; no se incorpora al nuevo componente.
 
@@ -11,3 +11,6 @@ La referencia descriptiva requiere los cuatro periodos anteriores con al menos u
 No evalúa aún vacaciones, lesión, enfermedad o retorno, ni garantiza que todas las sesiones reales estén en el calendario. Un periodo sin sesiones registradas no confirma descanso. La duración de sesión conserva su comportamiento existente; no se modifica el histórico.
 
 Validación: pruebas del modelo, selección por teclado/pulsación simulada y regresiones existentes. No requiere migración. Pendiente revisión visual autenticada en dispositivo.
+
+
+Actualización de color: escala de verde a rojo sobre el mínimo/máximo de carga entre los periodos visibles completos. Son cantidades relativas, no valoraciones de calidad, objetivos ni alertas de lesión. El color se mantiene neutro cuando no hay dos cantidades distintas para comparar. Los periodos incompletos permanecen grises con tramas y no intervienen en la escala de color. Las alturas siguen representando la carga registrada, también cuando es parcial. La leyenda indica «Menos carga / Más carga» y la selección incluye el significado en texto. El cálculo interno y la vista técnica con unidades no cambian.
