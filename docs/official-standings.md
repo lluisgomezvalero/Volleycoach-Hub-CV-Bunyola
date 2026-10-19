@@ -1,0 +1,15 @@
+# Clasificación federativa automática
+
+Competición muestra la tabla oficial de FVbIB para el equipo Cadete Femenino (ID b0000000-0000-4000-8000-000000000003), temporada b0000000-0000-4000-8000-000000000002 (2026/27), competición 8244.
+
+Fuente facilitada por el entrenador: https://www.voleibolib.net/clasificaciones?id=8244&desp=30011 . La página federativa carga su tabla desde https://www.voleibolib.net/JSON/get_clasificacion.asp?id=8244 . Aunque la ruta contiene JSON, devuelve una tabla HTML. Se comprobó respuesta HTTP 200 y cabecera Access-Control-Allow-Origin: *. No se necesita clave ni sesión federativa. El navegador envía una consulta pública sin credenciales.
+
+Se consulta al abrir Competición, al volver a la pantalla/aplicación y cada 15 minutos mientras Competición esté montada y visible. Incluye botón Actualizar y enlace a la fuente oficial. No hay proceso de servidor ni actualizaciones con la app cerrada. No se afirma que los datos sean en directo: dependen de cuándo publique FVbIB. Última consulta correcta es la hora de descarga, no una fecha de modificación federativa. Se muestra en Europe/Madrid.
+
+Se respeta el orden exacto publicado: no se calcula desempate, no se sustituye Bunyola por resultados internos, no se recalculan puntos por victorias. PJ/PG/PP y JF/JC (sets) se mapean por cabeceras; PT es puntuación. Posibles sanciones/puntos negativos se conservan. Una respuesta vacía, error HTTP, cambio de formato, posición incoherente o ausencia de Bunyola se rechaza y no sustituye la lectura válida anterior.
+
+Se guarda una copia de datos públicos por competición en localStorage del dispositivo. Si la petición falla, se conserva con su fecha y aviso de posible desactualización. Sin copia válida se muestra indisponibilidad y enlace oficial; nunca se presentan datos manuales antiguos como oficiales. Si localStorage está bloqueado, la consulta sigue funcionando y solo se pierde la persistencia local. Peticiones limitadas a 12 segundos, abortadas al salir, sin consultas paralelas por doble toque.
+
+La tabla league_standings y los eventos no se modifican. El modo federativo no monta el componente manual, por lo que tampoco ejecuta su sincronización automática de la fila propia desde eventos. El componente manual se conserva para contextos no configurados. Al cambiar la temporada del equipo, esta conexión no se aplica automáticamente a una liga antigua. Cambiar de competición requiere actualizar la configuración de fuente. Sin migraciones ni nuevas dependencias, secretos o permisos.
+
+Verificación: descarga real de la tabla (12 equipos, incluido Jardins Dalfabia CVBunyola), cabeceras y CORS; pruebas de parser, valores cero/negativos, orden, cabeceras cambiadas, tabla incompleta, error HTTP, abort, caché inválida/bloqueada, aviso con última lectura y aislamiento por equipo/temporada. Suite existente, sintaxis JS y coherencia de runtime React. Pendiente revisión visual con sesión iniciada y prueba real de CORS en el móvil. Dependencia de un recurso público de la web federativa: no se ha identificado un contrato de API estable ni garantía de disponibilidad.
