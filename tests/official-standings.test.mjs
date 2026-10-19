@@ -32,3 +32,20 @@ test('official rendering shows saved state and outage warning without legacy edi
  const Component=createOfficialStandings(React,jsx),view=JSON.stringify(Component());assert.ok(view.includes('puede estar desactualizada'));assert.ok(view.includes('Última consulta correcta'));assert.ok(!view.includes('Editar'));assert.ok(!view.includes('Reiniciar'));
  const page=readFileSync('assets/CompetitionPage-CD0FJnCQ.js','utf8');assert.ok(page.includes('sourceFor(identity)?e.jsx(OfficialStandings,{}):e.jsx(ee,{})'));
 });
+test('all federation sponsored names map to the existing 12 club crests, including accents',async()=>{
+ const {clubKey,standingsWithLogos}=await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+ const names=['CV Alaró','CV Algaida','CV Artà','CV BUNYOLA','CV CIDE','CV Esporles','CV Manacor','CV Mayurqa','CV Muro','CV Portocristo','CV Pòrtol','CV Sóller'];
+ const clubs=names.map(name=>({name,logo:`assets/${clubKey(name)}.png`}));const rows=parse(fixture),decorated=standingsWithLogos(rows,clubs);
+ assert.equal(new Set(rows.map(r=>clubKey(r.name))).size,12);assert.ok(decorated.every(r=>r.logo));assert.deepEqual(decorated.map(({logo,...r})=>r),rows);
+ const shuffled=standingsWithLogos([...rows].reverse(),clubs);assert.equal(shuffled.find(r=>r.is_own).logo,'assets/bunyola.png');
+ assert.equal(clubKey('Club desconocido'),'');assert.equal(clubKey('CIDE y Bunyola'),'');
+});
+test('missing or ambiguous logo data never modifies official scores or prevents the table',async()=>{
+ const {standingsWithLogos}=await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);const rows=parse(fixture);
+ const noLogos=standingsWithLogos(rows,undefined);assert.equal(noLogos.length,12);assert.ok(noLogos.every(r=>r.logo===''));
+ const ambiguous=standingsWithLogos(rows,[{name:'CV Bunyola',logo:'assets/one.png'},{name:'Bunyola',logo:'assets/two.png'}]);assert.equal(ambiguous.find(r=>r.is_own).logo,'');assert.deepEqual(noLogos.map(({logo,...r})=>r),rows);
+});
+test('crest URLs accept existing raster data and local assets while rejecting executable schemes',async()=>{
+ const {safeLogo}=await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+ assert.equal(safeLogo('data:image/jpeg;base64,abc'),'data:image/jpeg;base64,abc');assert.equal(safeLogo('assets/team.png'),'./assets/team.png');assert.equal(safeLogo('https://example.org/logo.png'),'https://example.org/logo.png');assert.equal(safeLogo('javascript:alert(1)'),'');assert.equal(safeLogo('data:text/html,abc'),'');
+});

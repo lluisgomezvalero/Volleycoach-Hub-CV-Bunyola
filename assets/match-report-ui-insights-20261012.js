@@ -1,6 +1,6 @@
-import {playerMetrics,playerSeries,playerTrend,metricsForPosition,playerMetricValue,playerMetricDetail} from './player-visual-model-20261013.js?v=runtime-20261020b';
-import {r as React,j as jsx,s as db} from './index-NTH10f-r.js?v=runtime-20261020b';
-import {deriveStats,validateReport,reportExample,resolveNarratives} from './match-report-model-insights-20261012.js?v=runtime-20261020b';
+import {playerMetrics,playerSeries,playerTrend,metricsForPosition,playerMetricValue,playerMetricDetail} from './player-visual-model-20261013.js?v=runtime-20261020c';
+import {r as React,j as jsx,s as db} from './index-NTH10f-r.js?v=runtime-20261020c';
+import {deriveStats,validateReport,reportExample,resolveNarratives} from './match-report-model-insights-20261012.js?v=runtime-20261020c';
 const h=(type,props,...children)=>jsx.jsxs(type,{...props,children:children.length===1?children[0]:children});
 const pct=v=>v==null?'—':`${v.toFixed(1)}%`;
 const names={reception:'Recepción',attack:'Ataque',serve:'Saque',block:'Bloqueo',defense:'Defensa',setting:'Colocación'};
