@@ -16,3 +16,5 @@ html .player-home-compact .player-daily-wellness-banner{min-height:68px;padding:
 html .player-home-rpe-banner{background:linear-gradient(105deg,#e7eef5,#dbe5ef);border-color:#b9c9d9;box-shadow:0 5px 14px #0f172a0d;color:#243b53}
 html .player-home-rpe-banner .player-daily-wellness-icon{background:#ffffffa6}
 @media(max-width:360px){html .player-home-compact .coach-home-identity{gap:8px}html .player-home-compact .coach-home-greeting{max-width:76px}html .player-home-compact .coach-home-club-copy h1{font-size:16px}}
+
+.player-save-notice{margin:8px 0 12px;padding:9px 12px;background:#edf5f1;border:1px solid #c5ded0;border-radius:10px;color:#2e5b44;font-size:13px;line-height:1.4}

@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'volleycoach-react-pwa-';
-const CACHE_VERSION = '20261018-week-labels-v1';
+const CACHE_VERSION = '20261019-save-flow-v1';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const OFFLINE_SHELL = ['./', './manifest.webmanifest'];
 

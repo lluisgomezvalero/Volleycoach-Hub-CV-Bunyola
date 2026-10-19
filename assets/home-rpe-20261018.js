@@ -34,9 +34,9 @@ export function createHomeRpe(React,{jsx:h,jsxs:hs},db,Link,Icon,Arrow,opensAt,c
    refresh();
    const channel=db.channel(`home-rpe-${playerId}`).on('postgres_changes',{event:'*',schema:'public',table:'rpe_entries',filter:`player_id=eq.${playerId}`},refresh).on('postgres_changes',{event:'*',schema:'public',table:'rpe_submission_overrides',filter:`player_id=eq.${playerId}`},refresh).on('postgres_changes',{event:'*',schema:'public',table:'attendance',filter:`player_id=eq.${playerId}`},refresh).subscribe();
    const focus=()=>{setNow(Date.now());refresh();},visible=()=>{if(document.visibilityState==='visible')focus();};
-   window.addEventListener('focus',focus);document.addEventListener('visibilitychange',visible);
+   window.addEventListener('volleycoach:rpe-saved',refresh);window.addEventListener('focus',focus);document.addEventListener('visibilitychange',visible);
    const tick=window.setInterval(()=>{if(document.visibilityState!=='hidden')setNow(Date.now());},15000),poll=window.setInterval(refresh,60000);
-   return()=>{active=false;window.clearInterval(tick);window.clearInterval(poll);window.removeEventListener('focus',focus);document.removeEventListener('visibilitychange',visible);db.removeChannel(channel);};
+   return()=>{active=false;window.clearInterval(tick);window.clearInterval(poll);window.removeEventListener('volleycoach:rpe-saved',refresh);window.removeEventListener('focus',focus);document.removeEventListener('visibilitychange',visible);db.removeChannel(channel);};
   },[playerId,teamId]);
   const event=data?.playerId===playerId&&data?.teamId===teamId?pendingHomeRpe(data.events,data.attendance,data.rpes,data.overrides,playerId,opensAt,closesAt,now):null;
   if(!event)return null;
