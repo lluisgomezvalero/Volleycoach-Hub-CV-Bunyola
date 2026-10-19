@@ -1,6 +1,6 @@
 # Japos
 
-Acceso: Entrenos → Japos para consultar la clasificación de la temporada del equipo seleccionado. Dentro de cada entrenamiento, Japos permite al cuerpo técnico registrar tantos resultados como se hayan jugado y corregirlos o anularlos. Las jugadoras solo consultan los resultados de su equipo.
+Acceso: pestaña Japos directamente en la barra inferior, además del menú lateral. Incluye clasificación de temporada y selector de fecha/sesión para consultar resultados. El registro, corrección y anulación se mantienen dentro de cada entrenamiento; la pestaña nueva es de consulta. Se reutilizan los mismos resultados, sin copias ni cambios de esquema. La barra inferior mantiene Inicio, Entrenos, Calendario, Bienestar y Más, añadiendo Japos antes de Más. Las jugadoras solo consultan los resultados de su equipo.
 
 ## Reglas
 

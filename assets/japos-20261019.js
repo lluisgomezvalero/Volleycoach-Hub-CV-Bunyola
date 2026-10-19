@@ -23,8 +23,8 @@ export async function loadJapos(db,teamId,seasonId){
 }
 export function createJapos(React,jsx,db){
  const h=jsx.jsx,hs=jsx.jsxs;
- function Body({event,teamId,seasonId,identity}){
- const staff=['coach','administrator'].includes(identity?.profile?.role),own=identity?.player?.id;
+ function Body({event,teamId,seasonId,identity,readOnly=false}){
+ const staff=!readOnly&&['coach','administrator'].includes(identity?.profile?.role),own=identity?.player?.id;
  const [games,setGames]=React.useState([]),[players,setPlayers]=React.useState([]),[loading,setLoading]=React.useState(true),[error,setError]=React.useState(''),[draft,setDraft]=React.useState(null),[busy,setBusy]=React.useState(false),[notice,setNotice]=React.useState('');
  const lock=React.useRef(false),generation=React.useRef(0);
  async function load(){const token=++generation.current;setLoading(true);setError('');try{
@@ -52,5 +52,25 @@ export function createJapos(React,jsx,db){
  current.length?hs('div',{children:[h('h3',{children:'Japos de esta sesión'}),...current.map(g=>hs('details',{children:[h('summary',{children:`A ${g.sets_a}–${g.sets_b} B${g.voided?' · Anulado':''}`}),h('p',{children:`A: ${names(g.team_a)}`}),h('p',{children:`B: ${names(g.team_b)}`}),staff&&!draft&&!g.voided?hs('div',{className:'japo-actions',children:[h('button',{type:'button',disabled:busy,onClick:()=>{setError('');setDraft({...g});},children:'Corregir'}),h('button',{type:'button',disabled:busy,onClick:()=>{if(window.confirm('¿Anular este Japo? Dejará de sumar en la clasificación.'))save({...g,voided:true});},children:'Anular'})]}):null]},g.id))]}):null,
  event&&!event.season_id?h('p',{className:'japo-note',children:'Este entrenamiento no tiene temporada asignada. Complétala antes de registrar Japos.'}):null,h('h3',{children:'Clasificación de la temporada'}),error&&!games.length?null:standings.length?hs('div',{className:'japo-table-wrap',children:[hs('table',{children:[hs('thead',{children:[hs('tr',{children:['Pos.','Jugadora','Pts','Jugados','Victorias'].map(c=>h('th',{scope:'col',children:c},c))})]}),h('tbody',{children:standings.map(r=>hs('tr',{className:r.id===own?'japo-own':'',children:[h('td',{children:r.rank}),h('th',{scope:'row',children:r.name+(r.id===own?' · Tú':'')}),h('td',{children:r.points}),h('td',{children:r.played}),h('td',{children:r.wins})]},r.id))})]}),h('p',{className:'japo-note',children:'Los empates en puntos comparten posición. Las ausentes no suman partidos ni derrotas.'})]}):h('p',{children:'Todavía no hay resultados registrados en esta temporada.'})]});
  }
- return function Japos(props){const [open,setOpen]=React.useState(false);if(!props.teamId)return null;return hs('section',{className:'japo-panel',children:[hs('button',{type:'button',className:'japo-toggle','aria-expanded':open,onClick:()=>setOpen(v=>!v),children:[h('strong',{children:'Japos'}),h('span',{children:open?'Cerrar':'Resultados y clasificación ›'})]}),open?h(Body,props,`${props.teamId}:${props.event?.id||''}:${props.seasonId||''}`):null]});};
+ return function Japos(props){const [open,setOpen]=React.useState(false);if(!props.teamId)return null;if(props.standalone)return h(Body,props,`${props.teamId}:${props.event?.id||''}:${props.seasonId||''}`);return hs('section',{className:'japo-panel',children:[hs('button',{type:'button',className:'japo-toggle','aria-expanded':open,onClick:()=>setOpen(v=>!v),children:[h('strong',{children:'Japos'}),h('span',{children:open?'Cerrar':'Resultados y clasificación ›'})]}),open?h(Body,props,`${props.teamId}:${props.event?.id||''}:${props.seasonId||''}`):null]});};
+}
+
+export function createJapoPage(React,jsx,db,useIdentity,Japos){
+ const h=jsx.jsx,hs=jsx.jsxs;
+ return function JapoPage(){
+ const {identity}=useIdentity(),teams=identity?.teams||[],fallback=teams[0]?.id||identity?.player?.team_id||'';
+ const [selected,setSelected]=React.useState(''),teamId=teams.some(t=>t.id===selected)?selected:fallback;
+ const [sessions,setSessions]=React.useState([]),[eventId,setEventId]=React.useState(''),[seasonId,setSeasonId]=React.useState(''),[loading,setLoading]=React.useState(true),[error,setError]=React.useState(''),[retry,setRetry]=React.useState(0);
+ const staff=['coach','administrator'].includes(identity?.profile?.role);
+ React.useEffect(()=>{let active=true;setLoading(true);setError('');setSessions([]);setEventId('');setSeasonId('');
+ async function load(){try{if(!teamId){if(active)setLoading(false);return;}
+ const team=await db.from('teams').select('season_id').eq('id',teamId).single();if(team.error)throw team.error;if(!team.data.season_id)throw Error('El equipo no tiene temporada asignada.');
+ let rows=[];for(let start=0;;start+=500){const r=await db.from('events').select('id,team_id,season_id,title,starts_at,status').eq('team_id',teamId).eq('season_id',team.data.season_id).eq('event_type','training').lte('starts_at',new Date().toISOString()).order('starts_at',{ascending:false}).order('id').range(start,start+499);if(r.error)throw r.error;rows.push(...r.data);if(r.data.length<500)break;}
+ if(!active)return;rows=rows.filter(e=>!['cancelled','canceled'].includes(e.status));setSeasonId(team.data.season_id);setSessions(rows);setEventId(rows[0]?.id||'');
+ }catch(e){if(active)setError(e.message||'No se pudieron cargar los Japos.');}finally{if(active)setLoading(false);}}
+ load();return()=>{active=false;};},[teamId,retry]);
+ const event=sessions.find(e=>e.id===eventId),date=e=>new Date(e.starts_at).toLocaleDateString('es-ES',{timeZone:'Europe/Madrid',day:'numeric',month:'short',year:'numeric'});
+ return hs('div',{className:'japo-page',children:[hs('header',{children:[h('h1',{children:'Japos'}),h('p',{className:'japo-note',children:staff?'Resultados y clasificación. Registra los Japos dentro de cada entrenamiento.':'Resultados y clasificación individual de la temporada.'})]}),teams.length>1?hs('label',{className:'japo-session-picker',children:[h('span',{children:'Equipo'}),h('select',{value:teamId,onChange:e=>setSelected(e.target.value),children:teams.map(t=>h('option',{value:t.id,children:t.name},t.id))})]}):null,
+ loading?h('p',{role:'status',children:'Cargando Japos…'}):error?hs('div',{role:'alert',children:[h('p',{children:error}),h('button',{type:'button',onClick:()=>setRetry(v=>v+1),children:'Reintentar'})]}):!teamId?h('p',{children:'No tienes un equipo asignado.'}):hs(jsx.Fragment,{children:[sessions.length?hs('label',{className:'japo-session-picker',children:[h('span',{children:'Consultar resultados del día'}),h('select',{value:eventId,onChange:e=>setEventId(e.target.value),children:sessions.map(e=>h('option',{value:e.id,children:`${date(e)} · ${e.title||'Entrenamiento'}`},e.id))})]}):h('p',{className:'japo-note',children:staff?'Todavía no hay sesiones de esta temporada en las que registrar un Japo.':'Todavía no hay sesiones registradas esta temporada.'}),h(Japos,{event,teamId,seasonId,identity,standalone:true,readOnly:true},`${teamId}:${eventId}`)]})]});
+ };
 }

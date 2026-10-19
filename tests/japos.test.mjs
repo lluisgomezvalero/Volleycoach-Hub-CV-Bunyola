@@ -31,8 +31,8 @@ test('collapsed Japos performs no database calls and exposes accessible toggle',
  const jsx={jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props})},React={useState:()=>[false,()=>{}]};
  const Japos=createJapos(React,jsx,{from:()=>{throw Error('Unexpected query');}}),tree=Japos({teamId:'t'});assert.equal(tree.props.children[0].props['aria-expanded'],false);assert.equal(tree.props.children[1],null);assert.equal(Japos({}),null);
 });
-test('active app exposes Japos in session and training list with single injected runtime',()=>{
- const code=readFileSync('assets/index-evolution-20261019.js','utf8');assert.ok(code.includes('const Japos=createJapos(_,i,Q)'));assert.ok(code.includes('i.jsx(Japos,{event:a,teamId:a.team_id,seasonId:a.season_id,identity:t})'));assert.ok(code.includes('i.jsx(Japos,{teamId:p,identity:a})'));
+test('active app exposes dedicated Japos route, direct mobile tab and preserved training registration',()=>{
+ const code=readFileSync('assets/index-evolution-20261019.js','utf8');assert.ok(code.includes('const Japos=createJapos(_,i,Q)'));assert.ok(code.includes('["/japos","Japos",Bs]'));assert.ok(code.includes('path:"/japos",element:i.jsx(JapoPage,{})'));assert.ok(code.includes('i.jsx(Japos,{event:a,teamId:a.team_id,seasonId:a.season_id,identity:t})'));assert.ok(code.includes('items:Sc.slice(0,5)'));assert.ok(code.includes('R=Sc.slice(5).some'));assert.ok(!code.includes('i.jsx(Japos,{teamId:p,'));
 });
 test('result form saves once on double tap, preserves failed draft, and updates standings after confirmation',async()=>{
  let calls=0,finish;const pending=new Promise(resolve=>finish=resolve);
@@ -50,4 +50,14 @@ test('result form saves once on double tap, preserves failed draft, and updates 
  const p1=save.props.onClick(),p2=save.props.onClick();assert.equal(calls,1);finish({error:{message:'Connection interrupted'}});await Promise.all([p1,p2]);assert.equal(states[4].id,'retry-id');assert.ok(states[3].includes('Connection'));
  db.from=()=>({insert(){calls++;return {select:()=>({single:async()=>({data:{...candidate,updated_at:'confirmed',events:{status:'scheduled'}},error:null})})};}});
  tree=render();await find(tree,n=>n.type==='button'&&n.props.children==='Guardar resultado').props.onClick();assert.equal(states[4],null);assert.equal(states[0].length,1);assert.equal(states[6],'Resultado guardado.');assert.equal(japoStandings(states[0],[])[0].points,2);
+});
+test('dedicated tab is read-only while the same component keeps staff controls in training',()=>{
+ const jsx={jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props})};let states=[[],[],false,'',null,false,''],cursor=0;
+ const React={useState(initial){const n=cursor++;return [n<states.length?states[n]:initial,()=>{}];},useRef:initial=>({current:initial}),useEffect(){}};
+ const Hub=createJapos(React,jsx,{});cursor=0;const props={teamId:'t',event:{id:'e',season_id:'s'},identity:{profile:{role:'coach'}},standalone:true};
+ const body=Hub(props);assert.equal(typeof body.type,'function');
+ const contains=(node,text)=>JSON.stringify(node).includes(text);
+ cursor=0;assert.ok(contains(body.type(props),'Registrar Japo'));
+ cursor=0;assert.ok(!contains(body.type({...props,readOnly:true}),'Registrar Japo'));
+ assert.ok(source.includes('identity,standalone:true,readOnly:true'));
 });
