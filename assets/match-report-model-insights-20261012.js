@@ -5,7 +5,7 @@ const groups = {
   serve: ['int', 'aces', 'errors'],
   block: ['points', 'total', 'errors'],
   defense: ['positive', 'errors'],
-  setting: ['positive', 'errors']
+  setting: ['positive', 'errors', 'points']
 };
 export function deriveStats(raw = {}) {
   const r = raw.reception, a = raw.attack, s = raw.serve, b = raw.block;
@@ -58,7 +58,7 @@ export function normalizeReport(value) {
       serve: {int:['int','INT','attempts','total','intentos'],aces:['aces','ace','ACE'],errors:['errors','error','errores']},
       block: {points:['points','point','puntos'],total:['total','attempts','int','INT'],errors:['errors','error','errores']},
       defense: {positive:['positive','positives','positivas'],errors:['errors','error','errores']},
-      setting: {positive:['positive','positives','positivas'],errors:['errors','error','errores']}
+      setting: {positive:['positive','positives','positivas'],errors:['errors','error','errores'],points:['points','puntos','point_assists']}
     };
     const groupAliases={reception:['reception','recepcion'],attack:['attack','ataque'],serve:['serve','service','saque'],block:['block','blocking','blocks','bloqueo'],defense:['defense','defence','defensa'],setting:['setting','set','colocacion']};
     for (const [group, fields] of Object.entries(aliases)) {
@@ -115,7 +115,7 @@ export function validateReport(input) {
       out[group] = {};
       for (const key of Object.keys(v[group])) if (!fields.includes(key)) errors.push(`${path}.${group}.${key}: campo no reconocido.`);
       for (const field of fields) {
-        const optional = group === 'block' && field !== 'points';
+        const optional = (group === 'block' && field !== 'points') || (group === 'setting' && field === 'points');
         if (optional && v[group][field] == null) continue;
         out[group][field] = count(v[group][field], `${path}.${group}.${field}`);
       }
