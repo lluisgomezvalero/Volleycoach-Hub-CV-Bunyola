@@ -21,3 +21,9 @@ Se reutilizan nombres visibles de la plantilla. Una participante fuera de la pla
 Pruebas Node de los cuatro resultados, negativos/inválidos, participantes, cambios de equipo, ausencias, empates, correcciones, anulaciones, UUID repetido, paginación, carga diferida y formulario con doble toque/error/reintento. Integración con un único runtime React comprobada por la suite existente. Pruebas SQL transaccionales con rollback: escritura del entrenador, corrección/anulación, resultados inválidos, participantes duplicadas/ajenas, lectura de compañeras, aislamiento entre equipos y bloqueo de escritura de jugadoras y acceso anónimo. Advisors sin avisos nuevos sobre las tablas/funciones de Japos; avisos previos del proyecto ajenos a este cambio.
 
 Pendiente revisión visual en móvil con sesión real. No se ha probado un marcador en directo porque esta versión guarda resultados finales.
+
+## Apariencia Liga Japo
+
+Cabecera azul/dorada con balón decorativo en CSS, reglas en details nativo, resultados diarios con marcador A/B, podio por puestos oficiales y clasificación en filas compactas. La jugadora ve su fila y resumen propios destacados. Los empates comparten puesto y se incluyen todas las empatadas de los puestos 1–3; no se inventan segundo/tercer puesto cuando el ranking los salta. Temporada vacía: mensaje y copa decorativa, sin jugadoras o puntos de ejemplo. El registro sigue dentro del entrenamiento y la pestaña continúa en modo consulta. No hay cambios de consultas, permisos, tablas ni cálculo de puntos. Sin animaciones ni dependencias nuevas.
+
+Verificado por pruebas de componente/modelo y sintaxis. Intento de render móvil local bloqueado por navegador de pruebas no instalado y descarga no disponible; pendiente revisión visual real con sesión.

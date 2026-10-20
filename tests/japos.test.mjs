@@ -61,3 +61,17 @@ test('dedicated tab is read-only while the same component keeps staff controls i
  cursor=0;assert.ok(!contains(body.type({...props,readOnly:true}),'Registrar Japo'));
  assert.ok(source.includes('identity,standalone:true,readOnly:true'));
 });
+test('podium includes all tied players and never awards an invented second or third place',async()=>{
+ const {japoPodium}=await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+ assert.deepEqual(japoPodium([]),[]);
+ const rows=[{id:'a',rank:1},{id:'b',rank:1},{id:'c',rank:3},{id:'d',rank:3},{id:'e',rank:5}];
+ assert.deepEqual(japoPodium(rows).map(g=>[g.rank,g.players.map(p=>p.id)]),[[1,['a','b']],[3,['c','d']]]);
+ assert.deepEqual(japoPodium([{id:'a',rank:1}]).map(g=>g.rank),[1]);
+});
+test('new game presentation keeps rules collapsed and empty season free of invented players or points',()=>{
+ const jsx={jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props})};let cursor=0,states=[[],[],false,'',null,false,''];
+ const React={useState(initial){const n=cursor++;return [n<states.length?states[n]:initial,()=>{}];},useRef:initial=>({current:initial}),useEffect(){}};
+ const Hub=createJapos(React,jsx,{});const props={teamId:'t',seasonId:'s',identity:{profile:{role:'player'}},standalone:true,readOnly:true};const node=Hub(props);cursor=0;const body=node.type(props);
+ const rules=body.props.children[0];assert.equal(rules.type,'details');assert.equal(rules.props.open,undefined);
+ const board=body.props.children.at(-1),rendered=JSON.stringify(board.type(board.props));assert.ok(rendered.includes('El podio está por estrenar'));assert.ok(!rendered.includes('japo-podium-place'));assert.ok(!rendered.includes('Registrar Japo'));
+});
