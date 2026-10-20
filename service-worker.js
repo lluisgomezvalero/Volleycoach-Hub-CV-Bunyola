@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'volleycoach-react-pwa-';
-const CACHE_VERSION = '20261020-japo-game-style-v9';
+const CACHE_VERSION = '20261020-japo-css-path-v10';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const OFFLINE_SHELL = ['./', './manifest.webmanifest'];
 
