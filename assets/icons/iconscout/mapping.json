@@ -1,0 +1,387 @@
+{
+  "repository": "https://github.com/Iconscout/unicons",
+  "commit": "e394b019a72a75aa370417a447ece41b8d75c2b2",
+  "license": "IconScout Simple License",
+  "mapping": {
+    "Activity": {
+      "name": "heart-rate",
+      "style": "line",
+      "file": "line/heart-rate.svg"
+    },
+    "AlarmClock": {
+      "name": "stopwatch",
+      "style": "line",
+      "file": "line/stopwatch.svg"
+    },
+    "ArrowLeft": {
+      "name": "arrow-left",
+      "style": "line",
+      "file": "line/arrow-left.svg"
+    },
+    "Award": {
+      "name": "award",
+      "style": "line",
+      "file": "line/award.svg"
+    },
+    "BadgeCheck": {
+      "name": "shield-check",
+      "style": "line",
+      "file": "line/shield-check.svg"
+    },
+    "BedDouble": {
+      "name": "bed-double",
+      "style": "line",
+      "file": "line/bed-double.svg"
+    },
+    "BellOff": {
+      "name": "bell-slash",
+      "style": "line",
+      "file": "line/bell-slash.svg"
+    },
+    "BellRing": {
+      "name": "bell",
+      "style": "line",
+      "file": "line/bell.svg"
+    },
+    "Bell": {
+      "name": "bell",
+      "style": "line",
+      "file": "line/bell.svg"
+    },
+    "Cake": {
+      "name": "gift",
+      "style": "line",
+      "file": "line/gift.svg"
+    },
+    "CalendarCheck2": {
+      "name": "schedule",
+      "style": "monochrome",
+      "file": "monochrome/schedule.svg"
+    },
+    "CalendarCheck": {
+      "name": "schedule",
+      "style": "monochrome",
+      "file": "monochrome/schedule.svg"
+    },
+    "CalendarDays": {
+      "name": "schedule",
+      "style": "monochrome",
+      "file": "monochrome/schedule.svg"
+    },
+    "Camera": {
+      "name": "camera",
+      "style": "line",
+      "file": "line/camera.svg"
+    },
+    "ChartNoAxesCombined": {
+      "name": "chart-growth",
+      "style": "line",
+      "file": "line/chart-growth.svg"
+    },
+    "Check": {
+      "name": "check",
+      "style": "monochrome",
+      "file": "monochrome/check.svg"
+    },
+    "ChevronDown": {
+      "name": "angle-down",
+      "style": "monochrome",
+      "file": "monochrome/angle-down.svg"
+    },
+    "ChevronLeft": {
+      "name": "angle-left",
+      "style": "monochrome",
+      "file": "monochrome/angle-left.svg"
+    },
+    "ChevronRight": {
+      "name": "angle-right",
+      "style": "monochrome",
+      "file": "monochrome/angle-right.svg"
+    },
+    "CircleAlert": {
+      "name": "exclamation-circle",
+      "style": "monochrome",
+      "file": "monochrome/exclamation-circle.svg"
+    },
+    "CircleCheckBig": {
+      "name": "check-circle",
+      "style": "monochrome",
+      "file": "monochrome/check-circle.svg"
+    },
+    "CircleCheck": {
+      "name": "check-circle",
+      "style": "monochrome",
+      "file": "monochrome/check-circle.svg"
+    },
+    "CircleMinus": {
+      "name": "minus-circle",
+      "style": "line",
+      "file": "line/minus-circle.svg"
+    },
+    "CircleX": {
+      "name": "times-circle",
+      "style": "monochrome",
+      "file": "monochrome/times-circle.svg"
+    },
+    "ClipboardCheck": {
+      "name": "file-check-alt",
+      "style": "line",
+      "file": "line/file-check-alt.svg"
+    },
+    "Clock3": {
+      "name": "clock-three",
+      "style": "monochrome",
+      "file": "monochrome/clock-three.svg"
+    },
+    "Dumbbell": {
+      "name": "dumbbell",
+      "style": "line",
+      "file": "line/dumbbell.svg"
+    },
+    "Ellipsis": {
+      "name": "apps",
+      "style": "monochrome",
+      "file": "monochrome/apps.svg"
+    },
+    "Flame": {
+      "name": "fire",
+      "style": "line",
+      "file": "line/fire.svg"
+    },
+    "Gauge": {
+      "name": "dashboard",
+      "style": "line",
+      "file": "line/dashboard.svg"
+    },
+    "HeartPulse": {
+      "name": "heart-medical",
+      "style": "line",
+      "file": "line/heart-medical.svg"
+    },
+    "House": {
+      "name": "house-user",
+      "style": "monochrome",
+      "file": "monochrome/house-user.svg"
+    },
+    "Info": {
+      "name": "info-circle",
+      "style": "line",
+      "file": "line/info-circle.svg"
+    },
+    "List": {
+      "name": "list-ul",
+      "style": "monochrome",
+      "file": "monochrome/list-ul.svg"
+    },
+    "LoaderCircle": {
+      "name": "spinner-alt",
+      "style": "line",
+      "file": "line/spinner-alt.svg"
+    },
+    "LockKeyhole": {
+      "name": "lock-alt",
+      "style": "monochrome",
+      "file": "monochrome/lock-alt.svg"
+    },
+    "LogOut": {
+      "name": "signout",
+      "style": "monochrome",
+      "file": "monochrome/signout.svg"
+    },
+    "MapPin": {
+      "name": "map-marker",
+      "style": "line",
+      "file": "line/map-marker.svg"
+    },
+    "Menu": {
+      "name": "bars",
+      "style": "monochrome",
+      "file": "monochrome/bars.svg"
+    },
+    "MessageSquareText": {
+      "name": "comment-alt-message",
+      "style": "monochrome",
+      "file": "monochrome/comment-alt-message.svg"
+    },
+    "MessageSquare": {
+      "name": "comment-message",
+      "style": "monochrome",
+      "file": "monochrome/comment-message.svg"
+    },
+    "Minus": {
+      "name": "minus",
+      "style": "line",
+      "file": "line/minus.svg"
+    },
+    "NotebookPen": {
+      "name": "notes",
+      "style": "line",
+      "file": "line/notes.svg"
+    },
+    "Pencil": {
+      "name": "edit",
+      "style": "line",
+      "file": "line/edit.svg"
+    },
+    "Plus": {
+      "name": "plus",
+      "style": "line",
+      "file": "line/plus.svg"
+    },
+    "RefreshCcw": {
+      "name": "refresh",
+      "style": "monochrome",
+      "file": "monochrome/refresh.svg"
+    },
+    "Save": {
+      "name": "save",
+      "style": "line",
+      "file": "line/save.svg"
+    },
+    "ShieldCheck": {
+      "name": "shield-check",
+      "style": "line",
+      "file": "line/shield-check.svg"
+    },
+    "Shield": {
+      "name": "shield",
+      "style": "line",
+      "file": "line/shield.svg"
+    },
+    "Smartphone": {
+      "name": "mobile-android",
+      "style": "line",
+      "file": "line/mobile-android.svg"
+    },
+    "Sparkles": {
+      "name": "smile-beam",
+      "style": "line",
+      "file": "line/smile-beam.svg"
+    },
+    "Table2": {
+      "name": "table",
+      "style": "monochrome",
+      "file": "monochrome/table.svg"
+    },
+    "Target": {
+      "name": "focus-target",
+      "style": "line",
+      "file": "line/focus-target.svg"
+    },
+    "Trash2": {
+      "name": "trash-alt",
+      "style": "line",
+      "file": "line/trash-alt.svg"
+    },
+    "TriangleAlert": {
+      "name": "exclamation-triangle",
+      "style": "monochrome",
+      "file": "monochrome/exclamation-triangle.svg"
+    },
+    "Trophy": {
+      "name": "trophy",
+      "style": "line",
+      "file": "line/trophy.svg"
+    },
+    "UserCheck": {
+      "name": "user-check",
+      "style": "line",
+      "file": "line/user-check.svg"
+    },
+    "UserMinus": {
+      "name": "user-minus",
+      "style": "line",
+      "file": "line/user-minus.svg"
+    },
+    "UserRoundCheck": {
+      "name": "user-check",
+      "style": "line",
+      "file": "line/user-check.svg"
+    },
+    "UserRound": {
+      "name": "user",
+      "style": "line",
+      "file": "line/user.svg"
+    },
+    "UsersRound": {
+      "name": "users-alt",
+      "style": "line",
+      "file": "line/users-alt.svg"
+    },
+    "Users": {
+      "name": "users-alt",
+      "style": "line",
+      "file": "line/users-alt.svg"
+    },
+    "X": {
+      "name": "times",
+      "style": "line",
+      "file": "line/times.svg"
+    },
+    "Zap": {
+      "name": "bolt",
+      "style": "line",
+      "file": "line/bolt.svg"
+    },
+    "Volleyball": {
+      "name": "volleyball",
+      "style": "line",
+      "file": "line/volleyball.svg"
+    },
+    "Eye": {
+      "name": "eye",
+      "style": "line",
+      "file": "line/eye.svg"
+    },
+    "History": {
+      "name": "history",
+      "style": "monochrome",
+      "file": "monochrome/history.svg"
+    },
+    "Send": {
+      "name": "envelope-send",
+      "style": "line",
+      "file": "line/envelope-send.svg"
+    },
+    "ArrowDownRight": {
+      "name": "arrow-down-right",
+      "style": "monochrome",
+      "file": "monochrome/arrow-down-right.svg"
+    },
+    "ArrowUpRight": {
+      "name": "arrow-up-right",
+      "style": "monochrome",
+      "file": "monochrome/arrow-up-right.svg"
+    },
+    "CircleGauge": {
+      "name": "tachometer-fast",
+      "style": "line",
+      "file": "line/tachometer-fast.svg"
+    },
+    "TrendingUp": {
+      "name": "chart-growth",
+      "style": "line",
+      "file": "line/chart-growth.svg"
+    },
+    "Download": {
+      "name": "download-alt",
+      "style": "monochrome",
+      "file": "monochrome/download-alt.svg"
+    },
+    "Search": {
+      "name": "search",
+      "style": "line",
+      "file": "line/search.svg"
+    },
+    "Archive": {
+      "name": "archive",
+      "style": "line",
+      "file": "line/archive.svg"
+    },
+    "ChartColumn": {
+      "name": "graph-bar",
+      "style": "monochrome",
+      "file": "monochrome/graph-bar.svg"
+    }
+  }
+}

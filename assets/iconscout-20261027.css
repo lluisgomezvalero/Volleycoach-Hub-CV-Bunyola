@@ -1,0 +1,6 @@
+/* IconScout Unicons: filled SVG shapes with source monochrome layers. */
+.app-icon{flex-shrink:0;vertical-align:middle}
+.japo-hero-ball .japo-iconscout-ball{display:block;width:66px;height:66px;transform:rotate(-12deg)}
+.japo-empty-cup:after{content:none}
+.icon-credits-link{display:block;padding:12px 16px;color:var(--muted,#6b7280);font-size:.68rem;text-decoration:underline;text-underline-offset:3px;line-height:1.4}
+.icon-credits-link:focus-visible{outline:2px solid #a57619;outline-offset:-3px}
