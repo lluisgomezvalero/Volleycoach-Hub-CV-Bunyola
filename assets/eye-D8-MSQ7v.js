@@ -1,1 +1,1 @@
-import{c}from"./index-NTH10f-r.js?v=runtime-20261022a";const r=c("Eye",[["path",{d:"M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0",key:"1nclc0"}],["circle",{cx:"12",cy:"12",r:"3",key:"1v7zrd"}]]);export{r as E};
+import{c}from"./index-NTH10f-r.js?v=runtime-20261027-icons";const r=c("Eye",[["path",{"d":"M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0","key":"0"}],["path",{"d":"M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6","key":"1"}]]);export{r as E};
