@@ -1,6 +1,6 @@
 # RPE comunicado introducido por el entrenador
 
-Bienestar del entrenador incluye «RPE y actividad adicional → Añadir RPE». Se elige jugadora y:
+El detalle del entrenamiento incluye «Después de la sesión → RPE de jugadoras → Añadir RPE», solo para el cuerpo técnico. Se elige jugadora y:
 
 - Una sesión finalizada del equipo con asistencia validada. Se guarda el RPE comunicado y la duración individual de esa participación.
 - Una actividad adicional: otro equipo/categoría, partido, amistoso, gimnasio u otro deporte. Se indican contexto, fecha/hora de inicio Europe/Madrid, minutos individuales y RPE 0–10. Se confirma que la actividad no está ya registrada.
