@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'volleycoach-react-pwa-';
-const CACHE_VERSION = '20261027-iconscout-unicons-v13';
+const CACHE_VERSION = '20261027-wellness-layout-v14';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const OFFLINE_SHELL = ['./', './manifest.webmanifest'];
 

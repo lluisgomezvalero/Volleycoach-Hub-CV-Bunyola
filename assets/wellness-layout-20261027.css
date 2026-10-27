@@ -1,0 +1,63 @@
+/* Coach overview: compact hierarchy, same data and accessible controls. */
+html .wellness-coach-page{gap:12px}
+html .wellness-coach-page .wellness-coach-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;padding:4px 0 6px}
+html .wellness-coach-page .wellness-coach-head h1{font-size:1.3rem;line-height:1.15;margin:4px 0 0;letter-spacing:-.025em}
+.wellness-coach-page .wellness-eyebrow{font-size:.64rem;letter-spacing:.055em}
+html .wellness-coach-page .wellness-head-actions{display:flex;width:auto;align-items:center;gap:7px;flex-wrap:nowrap}
+.wellness-coach-page .wellness-head-actions button{min-height:44px;border-radius:12px}
+html .wellness-coach-page .wellness-refresh-control button{width:44px;padding:0;display:grid;place-items:center;font-size:0;gap:0}
+.wellness-coach-page .wellness-refresh-control button svg{width:18px;height:18px}
+.wellness-coach-page .wellness-refresh-status{position:absolute;right:0;top:100%;width:180px;background:#fff;z-index:5;border-radius:8px;font-size:.72rem;box-shadow:0 3px 12px #172a4310}
+.wellness-coach-page .wellness-refresh-status:not(:empty){padding:7px 9px}
+html .wellness-coach-page .wellness-primary-button{padding:10px 13px;font-size:.78rem;gap:5px;box-shadow:none}
+html .wellness-coach-page .wellness-kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+html .wellness-coach-page .wellness-kpi{display:flex;flex-direction:column;justify-content:center;align-items:stretch;min-height:86px;padding:12px 8px;border-radius:13px;text-align:center;box-shadow:none}
+html .wellness-coach-page .wellness-kpi-icon{display:none}
+html .wellness-coach-page .wellness-kpi small{font-size:.69rem;line-height:1.25;letter-spacing:0;text-transform:none;min-height:28px;color:#687587;font-weight:650}
+html .wellness-coach-page .wellness-kpi strong{font-size:1.38rem;line-height:1.15;letter-spacing:-.025em;font-variant-numeric:tabular-nums;margin-top:3px}
+.wellness-coach-page .wellness-kpi:first-child{background:#f1f5f9;border-color:#e2e8ef}
+.wellness-coach-page .wellness-kpi.good{border-top:3px solid #81bda6}
+.wellness-coach-page .wellness-kpi.warm{border-top:3px solid #dcb76b}
+.wellness-coach-page .wellness-kpi.alert{border-top:3px solid #d99ca8}
+.wellness-coach-page #today-wellness-alerts-host{margin-top:2px}
+html .wellness-coach-page .today-wellness-responses{border-radius:13px;box-shadow:none}
+html .wellness-coach-page .today-wellness-responses-toggle{min-height:60px;padding:10px 12px}
+html .wellness-coach-page .today-wellness-responses-copy strong{font-size:.82rem}
+html .wellness-coach-page .today-wellness-responses-copy small{font-size:.7rem;line-height:1.35}
+html .wellness-coach-page .today-wellness-responses-action{font-size:.7rem}
+html .wellness-coach-page .wellness-card{border-radius:16px;padding:16px;box-shadow:none}
+html .wellness-coach-page .wellness-card-head h2{font-size:1.05rem;line-height:1.25}
+html .wellness-coach-page .weekly-team-wellness-head{margin-bottom:4px;align-items:center}
+html .wellness-coach-page .weekly-team-wellness-chart{grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin:12px 0 0}
+html .wellness-coach-page .weekly-team-wellness-plot{height:118px}
+html .wellness-coach-page .weekly-team-wellness-bar-track{height:88px;width:min(48px,76%)}
+html .wellness-coach-page .weekly-team-wellness-value{font-size:.95rem}
+html .wellness-coach-page .weekly-team-wellness-label{font-size:.73rem;min-height:30px;line-height:1.3}
+html .wellness-coach-page .weekly-team-wellness-coverage{font-size:.65rem;gap:2px}
+html .wellness-coach-page .weekly-team-wellness-records{font-size:.64rem}
+html .wellness-coach-page .weekly-team-wellness-mini{gap:4px;margin-top:7px}
+html .wellness-coach-page .weekly-team-wellness-mini small{font-size:.65rem}
+html .wellness-coach-page .weekly-team-wellness-mini b{font-size:.78rem}
+html .wellness-coach-page .weekly-team-wellness-foot{margin-top:11px;padding-top:10px;font-size:.67rem;flex-wrap:wrap;gap:6px}
+/* Shared RPE form now lives in the coach's training detail, after session RPE. */
+.training-manual-rpe{min-width:0}
+.pro-session-page .training-manual-rpe .manual-rpe-panel{margin:0;border-radius:16px;padding:16px}
+.training-manual-rpe .manual-rpe-head{align-items:center}
+.training-manual-rpe .manual-rpe-head strong{font-size:.98rem}
+.training-manual-rpe .manual-rpe-head small{font-size:.75rem;line-height:1.4;margin-top:3px}
+.training-manual-rpe .manual-rpe-head button{flex-shrink:0}
+.training-manual-status{font-size:.75rem;color:#718096;margin:0 0 6px}
+.training-manual-error{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:.8rem;color:#9f4933}
+.training-manual-error button{min-height:44px;padding:8px 12px;border:1px solid #d6dce4;border-radius:10px;background:#fff;font:inherit}
+@media(max-width:360px){
+ html .wellness-coach-page .wellness-coach-head{grid-template-columns:minmax(0,1fr);gap:9px}
+ html .wellness-coach-page .wellness-head-actions{justify-self:start}
+ html .wellness-coach-page .wellness-kpi-grid{gap:5px}
+ html .wellness-coach-page .wellness-kpi{padding:10px 4px}
+ html .wellness-coach-page .wellness-kpi small{font-size:.64rem}
+ html .wellness-coach-page .weekly-team-wellness-coverage{font-size:.59rem}
+ .training-manual-rpe .manual-rpe-head{flex-wrap:wrap;gap:9px}
+}
+
+@media(max-width:360px){html .wellness-coach-page .weekly-team-wellness-mini{grid-template-columns:1fr}html .wellness-coach-page .weekly-team-wellness-mini span{flex-direction:row;justify-content:space-between;align-items:center;gap:2px;padding:5px 3px}html .wellness-coach-page .weekly-team-wellness-mini small{font-size:.62rem}html .wellness-coach-page .weekly-team-wellness-mini b{font-size:.72rem}}
+@media(min-width:361px){.training-manual-rpe .manual-rpe-grid>label{display:grid;grid-template-rows:2.5em auto;align-items:end}}
