@@ -1,0 +1,5 @@
+/* Tabler SVG geometry: local assets, inherited colour, no layout or tap-target changes. */
+.app-icon{flex-shrink:0;vertical-align:middle}
+.bottom-nav .app-icon{stroke-width:1.8}
+.japo-hero-ball .japo-tabler-ball{display:block;width:66px;height:66px;opacity:.94;filter:invert(87%) sepia(70%) saturate(700%) hue-rotate(335deg);transform:rotate(-12deg)}
+.japo-empty-cup:after{content:none}
