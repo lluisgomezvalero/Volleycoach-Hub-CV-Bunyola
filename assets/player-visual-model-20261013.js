@@ -4,7 +4,7 @@ export const playerMetrics=[
   {key:'serve',label:'Saques que entran en juego',hint:'Cuanto más alta, mejor. Incluye los aces.',good:'Menos errores de saque',bad:'Más errores de saque',group:'serve',numerator:s=>s.serve? s.serve.int-s.serve.errors:0,total:s=>s.serve?.int||0}
 ];
 const countMetric=(key,label,group,field)=>({key,label,group,unit:'count',hint:'Recuento por partido. El tiempo de participación también influye.',numerator:s=>s[group]?.[field],total:()=>null});
-playerMetrics.push(countMetric('block','Bloqueos que terminan en punto','block','points'),countMetric('setting','Colocaciones que terminan en punto','setting','points'),countMetric('defense','Defensas positivas','defense','positive'),countMetric('aces','Aces de saque','serve','aces'));
+playerMetrics.push(countMetric('block','Bloqueos que terminan en punto','block','points'),{key:'setting',label:'Colocaciones que terminan en punto',hint:'Porcentaje de colocaciones válidas tras las que el ataque termina en punto. No mide por sí solo la calidad de la colocadora.',good:'Más colocaciones terminan en punto',bad:'Menos colocaciones terminan en punto',group:'setting',numerator:s=>s.setting?.points,total:s=>s.setting?.points!=null?s.setting.positive||0:0},countMetric('defense','Defensas positivas','defense','positive'),countMetric('aces','Aces de saque','serve','aces'));
 const positionGroups={central:['block','attack'],setter:['setting','defense'],libero:['reception','defense'],receiver:['reception','defense','attack'],opposite:['attack','defense']};
 export function metricsForPosition(position){
  const normalize=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]/g,'');
@@ -15,7 +15,8 @@ export function metricsForPosition(position){
 }
 export const playerMetricValue=(metric,point)=>metric.unit==='count'?String(point.count):`${point.value.toFixed(1)}%`;
 export function playerMetricDetail(metric,point){
- if(metric.unit==='count')return `${point.count} ${metric.key==='aces'?'aces de saque':metric.key==='block'?'bloqueos de punto':metric.key==='setting'?'colocaciones que terminaron en punto':'defensas positivas'}.`;
+ if(metric.unit==='count')return `${point.count} ${metric.key==='aces'?'aces de saque':metric.key==='block'?'bloqueos de punto':'defensas positivas'}.`;
+ if(metric.key==='setting')return `${point.count} de ${point.total} colocaciones válidas terminaron posteriormente en punto.`;
  return metric.key==='reception'?`${point.count} de tus ${point.total} recepciones permitieron atacar bien.`:metric.key==='attack'?`${point.count} de tus ${point.total} ataques terminaron en punto.`:`${point.count} de tus ${point.total} saques entraron en juego.`;
 }
 export function playerSeries(items,player,metric){
