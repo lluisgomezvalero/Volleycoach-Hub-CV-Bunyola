@@ -8,7 +8,7 @@ const groups = {
   setting: ['positive', 'errors', 'points']
 };
 export function deriveStats(raw = {}) {
-  const r = raw.reception, a = raw.attack, s = raw.serve, b = raw.block;
+  const r = raw.reception, a = raw.attack, s = raw.serve, b = raw.block, st = raw.setting;
   const pct = (n, d) => d > 0 ? n / d * 100 : null;
   const total = r ? r.positive + r.exclamative + r.errors : null;
   return {
@@ -21,6 +21,11 @@ export function deriveStats(raw = {}) {
     serveAce: s ? pct(s.aces, s.int) : null,
     serveError: s ? pct(s.errors, s.int) : null,
     serveContinuities: s ? s.int - s.aces - s.errors : null,
+    settingValid: st && st.points != null ? st.positive : null,
+    settingPointEnding: st ? (st.points != null ? st.points : st.positive) : null,
+    settingActions: st && st.points != null ? st.positive + st.errors : null,
+    settingConversion: st && st.points != null ? pct(st.points, st.positive) : null,
+    settingError: st && st.points != null ? pct(st.errors, st.positive + st.errors) : null,
     ownPoints: a && s && b ? a.points + s.aces + b.points : null
   };
 }
@@ -58,7 +63,7 @@ export function normalizeReport(value) {
       serve: {int:['int','INT','attempts','total','intentos'],aces:['aces','ace','ACE'],errors:['errors','error','errores']},
       block: {points:['points','point','puntos'],total:['total','attempts','int','INT'],errors:['errors','error','errores']},
       defense: {positive:['positive','positives','positivas'],errors:['errors','error','errores']},
-      setting: {positive:['positive','positives','positivas'],errors:['errors','error','errores'],points:['points','puntos','point_assists']}
+      setting: {positive:['positive','positives','positivas','valid','valids','valid_placements','validPlacements','colocaciones_validas','colocacionesValidas'],errors:['errors','error','errores'],points:['points','puntos','point_assists','point_ending','pointEnding','ending_in_point','acaba_en_punt','acaban_en_punto','terminan_en_punto']}
     };
     const groupAliases={reception:['reception','recepcion'],attack:['attack','ataque'],serve:['serve','service','saque'],block:['block','blocking','blocks','bloqueo'],defense:['defense','defence','defensa'],setting:['setting','set','colocacion']};
     for (const [group, fields] of Object.entries(aliases)) {
@@ -126,6 +131,7 @@ export function validateReport(input) {
       if (data && data[point] + data.errors > data.int) errors.push(`${path}.${group}: ${point} + errors no puede superar INT. INT ya incluye ambas acciones.`);
     }
     if (out.block?.total != null && out.block.points > out.block.total) errors.push(`${path}.block: los puntos no pueden superar el total de bloqueos.`);
+    if (out.setting?.points != null && out.setting.points > out.setting.positive) errors.push(`${path}.setting: las colocaciones que acaban en punto no pueden superar las colocaciones válidas.`);
     return out;
   };
   if (!object(value)) return { errors: ['El informe debe ser un objeto JSON.'], report: null };
