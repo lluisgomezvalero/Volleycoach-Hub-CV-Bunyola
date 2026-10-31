@@ -16,6 +16,6 @@ test('weekly team aggregation contains fatigue and coverage but no sleep or pain
  const team=source.slice(source.indexOf('function RN('),source.indexOf('function AN('));
  assert.ok(team.includes('Fatiga media semanal'));assert.ok(team.includes('weekly-team-wellness-coverage'));
  assert.ok(!/E\.sleep|E\.pain|kh\(le,"sleep"|kh\(le,"pain_score"|weekly-team-wellness-mini/.test(team));
- assert.ok(team.includes('Fatiga: 1–5'));assert.ok(team.includes('.select("id,player_id,entry_date,fatigue")'));
+ assert.ok(!team.includes('Fatiga: 1–5'));assert.ok(!team.includes('Última semana con datos'));assert.ok(team.includes('.select("id,player_id,entry_date,fatigue")'));
  const individual=source.slice(source.indexOf('function _N('),source.indexOf('function gc('));assert.ok(individual.includes('pain_score'));assert.ok(individual.includes('sleep'));
 });
