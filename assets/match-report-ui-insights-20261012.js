@@ -1,15 +1,16 @@
-import {playerMetrics,playerSeries,playerTrend,metricsForPosition,playerMetricValue,playerMetricDetail} from './player-visual-model-20261013.js?v=runtime-20261028-close-fatigue';
-import {r as React,j as jsx,s as db} from './index-NTH10f-r.js?v=runtime-20261028-close-fatigue';
-import {deriveStats,validateReport,reportExample,resolveNarratives} from './match-report-model-insights-20261012.js?v=runtime-20261028-close-fatigue';
+import {playerMetrics,playerSeries,playerTrend,metricsForPosition,playerMetricValue,playerMetricDetail} from './player-visual-model-20261013.js?v=runtime-20261031-setting';
+import {r as React,j as jsx,s as db} from './index-NTH10f-r.js?v=runtime-20261031-setting';
+import {deriveStats,validateReport,reportExample,resolveNarratives} from './match-report-model-insights-20261012.js?v=runtime-20261031-setting';
 const h=(type,props,...children)=>jsx.jsxs(type,{...props,children:children.length===1?children[0]:children});
 const pct=v=>v==null?'—':`${v.toFixed(1)}%`;
 const names={reception:'Recepción',attack:'Ataque',serve:'Saque',block:'Bloqueo',defense:'Defensa',setting:'Colocación'};
 const labels={positive:'Positivas',exclamative:'Exclamativas (!, -)',errors:'Errores',int:'INT · Total de acciones',points:'Puntos',aces:'Aces',total:'Total'};
+const settingRows=(setting,d)=>setting.points!=null?[['Colocaciones válidas',setting.positive],['Acaban en punto',setting.points],['Errores',setting.errors],['Acciones de colocación',d.settingActions],['Conversión a punto',pct(d.settingConversion)],['% error colocación',pct(d.settingError)]]:[['Acaban en punto',setting.positive],['Errores',setting.errors]];
 function KPI({label,value}){return h('article',{className:'report-kpi'},h('small',null,label),h('strong',null,value));}
 function StatsCards({stats}){
   const d=deriveStats(stats);
   return h('div',{className:'report-data-grid'},...Object.entries(names).filter(([key])=>stats[key]&&Object.values(stats[key]).some(n=>n>0)).map(([key,name])=>{
-    const rows=Object.entries(stats[key]).map(([field,value])=>[labels[field],value]);
+    const rows=key==='setting'?settingRows(stats[key],d):Object.entries(stats[key]).map(([field,value])=>[labels[field],value]);
     if(key==='reception')rows.push(['Positivas / total',`${stats[key].positive} / ${d.receptionTotal}`],['% positiva',pct(d.receptionPositive)],['% error',pct(d.receptionError)]);
     if(key==='attack')rows.push(['% punto',pct(d.attackPoint)],['% error',pct(d.attackError)],['Eficacia',pct(d.attackEfficiency)],['Continuidades',d.attackContinuities]);
     if(key==='serve')rows.push(['% ace',pct(d.serveAce)],['% error',pct(d.serveError)],['Continúan',d.serveContinuities]);
