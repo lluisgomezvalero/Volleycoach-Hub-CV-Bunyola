@@ -1,4 +1,4 @@
-import {loadAdditionalPlayerLoads,createManualPlayerRpe} from './manual-player-rpe-20261022.js?v=runtime-20261101-training-fix';
+import {loadAdditionalPlayerLoads,createManualPlayerRpe} from './manual-player-rpe-20261022.js?v=runtime-20261101-gameplan';
 export function createTrainingManualRpe(React,jsx,db){
  const h=jsx.jsx,hs=jsx.jsxs,Form=createManualPlayerRpe(React,jsx,db);
  return function TrainingManualRpe({identity,players,event,rpes=[],attendance=[],onSaved}){
