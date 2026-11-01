@@ -24,7 +24,7 @@ function nodes(tree){if(!tree||typeof tree!=='object')return [];return [tree,...
 function text(tree){if(tree==null||typeof tree==='boolean')return '';if(typeof tree!=='object')return String(tree);return [tree.props?.children].flat(Infinity).map(text).join(' ');}
 test('rotation editor switches rival rotation and changes only its selected target; second tap clears',()=>{
  const c=fixture(),plan={...normalizeTactics(),hideServeObjectives:false},onChange=fn=>fn(plan);
- let tree=c.RotationEditor({plan,onChange});nodes(tree).find(n=>n.type==='button'&&text(n).trim()==='R3').props.onClick();tree=c.RotationEditor({plan,onChange});nodes(tree).find(n=>n.type==='Court').props.onZone(7);assert.equal(plan.serveByRotation.R3,7);assert.equal(plan.serveByRotation.R1,null);
+ let tree=c.RotationEditor({plan,onChange});nodes(tree).find(n=>n.type==='button'&&n.props['aria-label']?.startsWith('R3 ·')).props.onClick();tree=c.RotationEditor({plan,onChange});nodes(tree).find(n=>n.type==='Court').props.onZone(7);assert.equal(plan.serveByRotation.R3,7);assert.equal(plan.serveByRotation.R1,null);
  tree=c.RotationEditor({plan,onChange});nodes(tree).find(n=>n.type==='Court').props.onZone(7);assert.equal(plan.serveByRotation.R3,null);
 });
 test('rival list allows adding just one identified server, editing it and removing it',()=>{
@@ -42,4 +42,14 @@ test('input controls never receive children, which React rejects for void elemen
  const c=fixture(),plan={...normalizeTactics({opponentServers:[{name:'Ana'}]}),hideServeObjectives:false};
  for(const tree of [c.ServersEditor({plan,onChange:()=>{}}),c.RotationEditor({plan,onChange:()=>{}})])
   for(const n of nodes(tree).filter(n=>n.type==='input'))assert.ok(!Object.hasOwn(n.props,'children'));
+});
+
+test('server cards retain their compact summary while editing and can be collapsed',()=>{
+ const c=fixture(),plan=normalizeTactics({opponentServers:[{name:'Ana',dorsal:'8',type:'jump_float',zone:5,notes:'Profundo'}]}),onChange=fn=>fn(plan);
+ let tree=c.ServersEditor({plan,onChange});let card=nodes(tree).find(n=>n.type==='details'&&n.props.className.includes('gp-server-card'));assert.equal(card.props.open,false);
+ assert.ok(text(card).includes('#8 · Ana'));assert.ok(text(card).includes('Flotante en salto'));
+ nodes(card).find(n=>n.type==='summary').props.onClick({preventDefault(){}});
+ tree=c.ServersEditor({plan,onChange});card=nodes(tree).find(n=>n.type==='details'&&n.props.className.includes('gp-server-card'));assert.equal(card.props.open,true);
+ nodes(card).find(n=>n.type==='input'&&n.props.placeholder==='Nombre rival').props.onChange({target:{value:'Ana María'}});
+ tree=c.ServersEditor({plan,onChange});assert.equal(nodes(tree).find(n=>n.type==='details'&&n.props.className.includes('gp-server-card')).props.open,true);
 });

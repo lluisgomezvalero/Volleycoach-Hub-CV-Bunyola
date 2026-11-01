@@ -1,1 +1,82 @@
 .gp-tactics-section{min-width:0}.gp-tactics-section .gp-field select,.gp-tactics-section .gp-field textarea{width:100%;min-height:44px;padding:10px 12px;border:1px solid #dce2ea;border-radius:10px;background:#fff;color:#17243a;font:inherit;box-sizing:border-box}.gp-server-list{display:grid;gap:12px}.gp-server-card{min-width:0;border:1px solid #e2e7ed;border-radius:14px;padding:14px;background:#fff}.gp-server-card header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.gp-server-card p{margin:8px 0 0;font-size:.88rem;line-height:1.5}.gp-server-fields{display:grid;grid-template-columns:minmax(0,2fr) minmax(65px,1fr);gap:12px;margin-bottom:12px}.gp-server-notes{white-space:pre-wrap;overflow-wrap:anywhere}.gp-rotation-tabs{flex-wrap:wrap}.gp-rotation-tabs button{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px}.gp-rotation-tabs small{font-size:.7rem;opacity:.8}.gp-rotation-summary{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:14px 0}.gp-rotation-summary>span{display:flex;flex-direction:column;gap:4px;padding:10px 5px;border:1px solid #e3e8ef;border-radius:10px;text-align:center;font-size:.8rem}.gp-rotation-summary b{font-size:.75rem;color:#677489}.gp-rotation-context{font-size:.88rem;font-weight:650;margin:4px 0 12px}.gp-defense-value{display:inline-block;padding:10px 14px;background:#fff6dc;border-radius:10px}.gp-tactics-section>.gp-action-secondary{margin-top:12px}@media(max-width:600px){.gp-rotation-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.gp-server-fields{grid-template-columns:minmax(0,2fr) minmax(65px,1fr)}.gp-server-fields>.gp-field:nth-child(n+3){grid-column:1/-1}}
+
+/* Match-day scouting: compact identities and one clear target per rotation. */
+html .gp-tactics-section .gp-section-title{margin-bottom:16px}
+html .gp-tactics-section .gp-section-title h2{font-size:1.08rem;letter-spacing:-.02em}
+html .gp-tactics-section .gp-section-title p{font-size:.8rem;line-height:1.5;margin-top:4px}
+html .gp-defense-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+html .gp-defense-options button{min-height:48px;border:1px solid #e1e6ed;border-radius:12px;background:#f8fafc;padding:10px;font:inherit;font-size:.82rem;font-weight:650;color:#526076;cursor:pointer}
+html .gp-defense-options button.selected{border-color:#e0a321;background:#fff5d9;color:#805612;box-shadow:inset 0 0 0 1px #e0a321}
+html .gp-rotation-tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:14px}
+html .gp-rotation-tabs button{position:relative;display:flex;flex-direction:column;gap:5px;min-width:0;min-height:67px;border:1px solid #e1e6ed;border-radius:12px;padding:10px 6px;background:#f8fafc;color:#8792a2;cursor:pointer;font:inherit}
+html .gp-rotation-tabs .gp-rotation-label{font-size:.69rem;letter-spacing:.04em;font-weight:750;color:#637187}
+html .gp-rotation-tabs strong{font-size:1rem;line-height:1.2;font-variant-numeric:tabular-nums}
+html .gp-rotation-tabs .is-configured{background:#fffdf7;color:#25364c}
+html .gp-rotation-tabs .active{border-color:#e1a11d;box-shadow:inset 0 0 0 1px #e1a11d;background:#fff4d5;color:#85570c}
+html .gp-rotation-tabs .active .gp-rotation-label{color:#85570c}
+html .gp-rotation-board{max-width:390px;margin:0 auto}
+html .gp-rotation-context{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 10px}
+html .gp-rotation-context>span{font-size:.74rem;font-weight:550;color:#778396}
+html .gp-rotation-context>strong{font-size:.83rem;text-align:right;color:#293b51}
+html .gp-rotation-board .gp-serve-court{border-radius:13px;aspect-ratio:1.05/1}
+html .gp-rotation-help{font-size:.7rem;color:#7b8797;text-align:center;margin:9px 0 0;line-height:1.4}
+html .gp-visibility-toggle{margin-top:17px;padding-top:13px;border-top:1px solid #edf0f4;font-size:.77rem}
+html details.gp-server-card{padding:0;border-radius:13px;overflow:hidden;box-shadow:none}
+html .gp-server-summary{display:flex;align-items:center;gap:10px;padding:12px;min-height:76px;list-style:none;cursor:pointer}
+html .gp-server-summary::-webkit-details-marker{display:none}
+html .gp-server-summary::marker{content:''}
+html .gp-server-monogram{display:flex;align-items:center;justify-content:center;flex:0 0 36px;height:36px;border-radius:11px;background:#f1f4f8;color:#596b81;font-size:.8rem;font-weight:800}
+html .gp-server-overview{display:grid;gap:5px;min-width:0;flex:1}
+html .gp-server-overview>strong{font-size:.86rem;line-height:1.3;color:#26374c;overflow-wrap:anywhere}
+html .gp-server-tags{display:flex;align-items:center;flex-wrap:wrap;gap:5px 8px;font-size:.71rem;line-height:1.3;color:#738094}
+html .gp-server-tags b{padding:2px 6px;border-radius:5px;background:#fff2d4;color:#8b6219;font-size:.66rem;font-weight:750}
+html .gp-server-note-preview{font-size:.72rem;line-height:1.4;color:#7a8595;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+html .gp-server-expand{flex-shrink:0;color:#98691d;font-size:.68rem;font-weight:700}
+html .gp-server-card[open]>.gp-server-summary{background:#fffaf0}
+html .gp-server-edit-body{padding:14px;border-top:1px solid #eceff3}
+html .gp-server-remove{display:block;margin:8px 0 0 auto;min-height:44px;padding:8px 10px;border:0;background:transparent;color:#a05252;font:inherit;font-size:.74rem;cursor:pointer}
+html .gp-tactics-section .gp-add-server{width:100%;min-height:44px;border:1px dashed #d7dfe9;border-radius:11px;background:#fbfcfe;font-size:.78rem;color:#63738a;box-shadow:none}
+html .gp-player-view .gp-server-card{border-left:3px solid #dfb35f}
+html .gp-player-view .gp-server-card>strong{font-size:.9rem}
+html .gp-player-view .gp-rotation-summary>span{background:#fafbfc;border-color:#e8ecf1;border-radius:12px;padding:12px 6px;color:#27394f;font-weight:650}
+.gp-tactics-section button:focus-visible,.gp-server-summary:focus-visible{outline:3px solid #cf981f;outline-offset:3px}
+@media(max-width:600px){
+ html .gp-defense-options{grid-template-columns:repeat(2,minmax(0,1fr))}
+ html .gp-rotation-tabs{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+ html .gp-rotation-tabs button{flex-direction:row;justify-content:space-between;gap:8px;min-height:48px;padding:10px 12px;border-radius:11px}
+ html .gp-rotation-tabs strong{font-size:.9rem}
+ html .gp-rotation-context{gap:8px}
+ html .gp-server-summary{padding:11px;gap:8px}
+ html .gp-server-expand{font-size:.65rem}
+ html .gp-actions-bar{position:static;display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:10px;border-radius:14px;box-shadow:none}
+ html .gp-actions-bar>div{grid-column:1/-1;margin:0;padding:0 2px 3px;display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+ html .gp-actions-bar>div strong{font-size:.65rem;font-weight:550;color:#8a94a2}
+ html .gp-actions-bar>div small{font-size:.67rem}
+ html .gp-actions-bar button{min-height:44px;padding:9px;font-size:.75rem;justify-content:center}
+ html .gp-actions-bar>.gp-action-primary{grid-column:1/-1;box-shadow:none}
+}
+html .gp-fold-section>.gp-fold-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;list-style:none;cursor:pointer;margin:0}
+html .gp-fold-summary::-webkit-details-marker{display:none}
+html .gp-fold-summary::marker{content:''}
+html .gp-fold-summary::after{content:'';width:8px;height:8px;flex-shrink:0;border-right:2px solid #9b855b;border-bottom:2px solid #9b855b;transform:rotate(45deg);margin:0 4px 4px 0}
+html .gp-fold-section[open]>.gp-fold-summary{margin-bottom:16px}
+html .gp-fold-section[open]>.gp-fold-summary::after{transform:rotate(225deg);margin-top:5px}
+html .gp-fold-summary h2{font-size:1.08rem;letter-spacing:-.02em}
+html .gp-fold-summary p{font-size:.76rem;line-height:1.4;color:#7b8796;margin:4px 0 0}
+html .gp-fold-section:not([open]){padding-top:15px;padding-bottom:15px}
+html .gp-fold-summary:focus-visible{outline:3px solid #cf981f;outline-offset:5px;border-radius:5px}
+html .gp-page>.gp-header{padding:18px;border-radius:16px;background:#1b2b40;color:#fff;box-shadow:none}
+html .gp-page>.gp-header h1{color:#fff;font-size:clamp(1.45rem,4vw,2rem);line-height:1.1;letter-spacing:-.025em}
+html .gp-page>.gp-header p{color:#c5cfdb;font-size:.78rem}
+html .gp-page>.gp-header .gp-eyebrow{color:#efc364}
+html .gp-actions-bar>.gp-action-primary{background:#efac1b;border:1px solid #df9c10;color:#293345;box-shadow:none;font-weight:750}
+html .gp-status-row .gp-status-card,html .gp-status-row .gp-read-summary{box-shadow:none}
+@media(max-width:600px){
+ html .gp-page>.gp-header{padding:14px}
+ html .gp-status-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+ html .gp-status-row .gp-status-card,html .gp-status-row .gp-read-summary{padding:11px;gap:7px;min-height:74px;border-radius:12px}
+ html .gp-status-row small{font-size:.57rem;letter-spacing:.04em}
+ html .gp-status-row strong{font-size:.77rem;line-height:1.3}
+ html .gp-status-row em{font-size:.62rem;line-height:1.35}
+ html .gp-status-row .gp-read-summary>svg{width:16px;height:16px;flex-shrink:0}
+}
