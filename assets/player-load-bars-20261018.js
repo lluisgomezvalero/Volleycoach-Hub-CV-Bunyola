@@ -1,4 +1,4 @@
-import {individualMinutes} from './individual-minutes-20261015.js?v=runtime-20261101-gameplan';
+import {individualMinutes} from './individual-minutes-20261015.js?v=runtime-20261101-gameplan-fix';
 const WEEK=7*86400000;
 const validScore=r=>r&&r.score!==null&&r.score!==undefined&&r.score!==''&&Number.isFinite(Number(r.score))&&Number(r.score)>=0&&Number(r.score)<=10;
 const labels=['Hace 4 semanas','Hace 3 semanas','Hace 2 semanas','Semana pasada','Últimos 7 días'];

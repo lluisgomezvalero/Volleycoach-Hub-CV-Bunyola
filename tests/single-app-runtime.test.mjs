@@ -6,7 +6,7 @@ const root=resolve('.');
 function moduleRef(ref,parent){const url=new URL(ref,`file://${parent}`);return url.pathname+url.search;}
 function graph(){
  const html=readFileSync(resolve(root,'index.html'),'utf8'),entry=moduleRef(html.match(/<script[^>]+src="([^\"]+)"/)[1],resolve(root,'index.html')),seen=new Map();
- function visit(ref){const file=ref.split('?')[0];if(seen.has(ref)||!existsSync(file)||!file.endsWith('.js'))return;const text=readFileSync(file,'utf8');seen.set(ref,text);for(const expression of [/(?:import|export)\s*(?:[^"'\n]*?\sfrom\s*)?["'](\.[^"']+)["']/g,/import\(["'](\.[^"']+)["']\)/g])for(const match of text.matchAll(expression))visit(moduleRef(match[1],file));}
+ function visit(ref){const file=ref.split('?')[0];if(seen.has(ref)||!existsSync(file)||!file.endsWith('.js'))return;const text=readFileSync(file,'utf8');seen.set(ref,text);for(const expression of [/(?:import|export)\s*(?:[^"'\n]*?\bfrom\s*)?["'](\.[^"']+)["']/g,/import\(["'](\.[^"']+)["']\)/g])for(const match of text.matchAll(expression))visit(moduleRef(match[1],file));}
  visit(entry);return {entry,seen};
 }
 test('all active screen and session imports share one app bootstrap and React runtime, including query versions',()=>{

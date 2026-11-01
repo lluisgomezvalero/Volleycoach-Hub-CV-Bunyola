@@ -8,7 +8,7 @@ export function normalizeTactics(plan={}){
  opponentServers:(Array.isArray(plan.opponentServers)?plan.opponentServers:[]).filter(s=>s&&typeof s==='object').map(s=>({name:String(s.name||''),dorsal:String(s.dorsal||''),type:Object.hasOwn(SERVES,s.type)?s.type:'',zone:zones.includes(Number(s.zone))?Number(s.zone):null,notes:String(s.notes||'')}))};
 }
 export function createTacticsComponents(React,jsx,Court){
- const h=(tag,props,...children)=>jsx.jsx(tag,{...props,children:children.length===1?children[0]:children});
+ const h=(tag,props,...children)=>jsx.jsx(tag,children.length?{...props,children:children.length===1?children[0]:children}:(props||{}));
  const field=(label,control)=>h('label',{className:'gp-field'},h('span',null,label),control);
  const option=(value,label)=>h('option',{value,key:value},label);
  const zoneSelect=(value,onChange,label)=>h('select',{value:value??'',onChange:event=>onChange(event.target.value?Number(event.target.value):null),'aria-label':label},option('','Sin definir'),...zones.map(z=>option(z,`Zona ${z}`)));

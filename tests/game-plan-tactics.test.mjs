@@ -37,3 +37,9 @@ test('player view shows only identified useful server notes, honors hidden serve
  plan.hideServeObjectives=false;out=text(c.TacticsView({plan}));assert.ok(out.includes('Nuestro saque por rotación rival'));assert.ok(out.includes('Zona 5'));assert.ok(out.includes('Sin definir'));
 });
 test('preview uses unsaved editor state, while players still read the published plan',()=>{assert.ok(source.includes('plan:N,event:x,preview:!0'));assert.ok(source.includes('plan:u.payload.plan,event:x,activeAttack:W'));assert.ok(source.includes('modelVersion:ze'));});
+
+test('input controls never receive children, which React rejects for void elements',()=>{
+ const c=fixture(),plan={...normalizeTactics({opponentServers:[{name:'Ana'}]}),hideServeObjectives:false};
+ for(const tree of [c.ServersEditor({plan,onChange:()=>{}}),c.RotationEditor({plan,onChange:()=>{}})])
+  for(const n of nodes(tree).filter(n=>n.type==='input'))assert.ok(!Object.hasOwn(n.props,'children'));
+});
