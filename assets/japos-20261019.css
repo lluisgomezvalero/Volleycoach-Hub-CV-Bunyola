@@ -13,3 +13,32 @@
 .japo-your-score{display:flex;align-items:center;gap:10px;padding:12px;margin:0 0 10px;border-radius:14px;background:#fff6df;border:1px solid #f3dfac}.japo-your-score>div{display:flex;flex:1;min-width:0;flex-direction:column;gap:4px}.japo-your-score small{font-size:.6rem;letter-spacing:.09em;color:#9a772e;font-weight:800}.japo-your-score strong{font-size:.82rem}.japo-your-score>span:last-child{font-size:.68rem;color:#9c824e}.japo-ranking-row{display:flex;align-items:center;gap:9px;border-bottom:1px solid #eff1f4;padding:12px 3px}.japo-ranking-row:last-child{border:0}.japo-ranking-position{font-size:.85rem;font-weight:800;min-width:21px;text-align:center;color:#8994a3}.japo-ranking-name{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}.japo-ranking-name strong{font-size:.84rem;overflow-wrap:anywhere}.japo-ranking-name small{font-size:.7rem;color:#8a95a3}.japo-ranking-points{display:flex;align-items:center;gap:4px;white-space:nowrap}.japo-ranking-points strong{font-size:1.1rem;color:#8f6a25}.japo-ranking-points small{font-size:.66rem;color:#8e99a8}.japo-ranking-row.is-you .japo-ranking-name strong{color:#9a711e}.japo-ranking-note{font-size:.68rem;text-align:center;padding:8px 0 0}
 .japo-day-results{border:1px solid #e3e7ed;background:white;border-radius:18px;padding:13px;margin-bottom:16px}.japo-body .japo-day-results h3{margin:0 0 6px;font-size:.86rem}.japo-scoreline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.japo-scoreline strong{font-size:1.15rem;letter-spacing:.1em}.japo-team-chip{font-size:.66rem;border-radius:7px;padding:5px 7px;background:#eaf1fc;color:#4e6d97}.japo-team-chip.team-b{background:#f1ecfa;color:#8570ab}.japo-scoreline small{color:#8994a4;font-size:.7rem}
 @media(max-width:360px){.japo-hero{padding:18px}.japo-hero-ball{width:66px;transform:scale(.8) rotate(-14deg);transform-origin:right}.japo-hero-copy{max-width:77%}.japo-podium-player strong{font-size:.67rem}.japo-league{padding:15px 10px 8px}.japo-ranking-row{gap:7px}.japo-ranking-name strong{font-size:.78rem}.japo-your-score{padding:10px;gap:7px}}
+/* Compact league overview: preserve the navy/gold presentation. */
+.japo-page .japo-hero{min-height:112px;padding:17px 19px;border-radius:20px}
+.japo-page .japo-hero h1{font-size:1.8rem;margin:8px 0 5px}
+.japo-page .japo-hero p{font-size:.76rem}
+.japo-page .japo-hero-ball{width:66px}
+.japo-page .japo-session-picker{margin:12px 0 7px;gap:4px}
+.japo-page .japo-session-picker select{min-height:44px;padding:8px 10px;font-size:.84rem}
+.japo-page .japo-rules{margin:0 0 8px}
+.japo-page .japo-league{padding:13px 12px 5px;border-radius:18px}
+.japo-page .japo-league-heading{margin-bottom:7px}
+.japo-page .japo-league-heading h3{font-size:1.08rem;margin-top:3px}
+.japo-page .japo-podium-panel{padding:0;margin:0 0 5px;border-bottom:1px solid #edf0f4}
+.japo-page .japo-podium-panel>summary{display:flex;align-items:center;justify-content:space-between;min-height:38px;list-style:none;color:#997328;font-size:.74rem;font-weight:650}
+.japo-page .japo-podium-panel>summary::-webkit-details-marker{display:none}
+.japo-page .japo-podium-panel>summary:after{content:'⌄';font-size:1rem}
+.japo-page .japo-podium-panel[open]>summary:after{content:'⌃'}
+.japo-page .japo-your-score{padding:8px 10px;margin-bottom:4px;gap:8px}
+.japo-page .japo-your-score>div{gap:2px}
+.japo-page .japo-ranking-row{min-height:45px;padding:6px 1px;gap:7px}
+.japo-page .japo-ranking-row .japo-initials,.japo-page .japo-your-score .japo-initials{width:28px;height:28px;border-radius:9px;font-size:.6rem}
+.japo-page .japo-ranking-position{min-width:19px;font-size:.78rem}
+.japo-page .japo-ranking-name{gap:2px}
+.japo-page .japo-ranking-name strong{font-size:.79rem;line-height:1.25}
+.japo-page .japo-ranking-name small{font-size:.64rem;line-height:1.2}
+.japo-page .japo-ranking-points strong{font-size:1rem}
+.japo-page .japo-ranking-points small{font-size:.6rem}
+.japo-page .japo-ranking-note{margin:6px 0 4px;padding:0;font-size:.64rem}
+.japo-page .japo-day-results{padding:10px 12px;margin-bottom:10px;border-radius:15px}
+.japo-page .japo-day-results details{padding:5px 0}

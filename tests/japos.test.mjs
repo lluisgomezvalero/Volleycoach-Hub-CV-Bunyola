@@ -75,3 +75,17 @@ test('new game presentation keeps rules collapsed and empty season free of inven
  const rules=body.props.children[0];assert.equal(rules.type,'details');assert.equal(rules.props.open,undefined);
  const board=body.props.children.at(-1),rendered=JSON.stringify(board.type(board.props));assert.ok(rendered.includes('El podio está por estrenar'));assert.ok(!rendered.includes('japo-podium-place'));assert.ok(!rendered.includes('Registrar Japo'));
 });
+
+test('league begins on 2 November in Mallorca and includes only valid non-void results',async()=>{
+ const {japoLeagueGames}=await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+ const at=(id,date,extra={})=>({...game(id,['a'],['b']),event_id:id,events:{starts_at:date,status:'scheduled'},...extra});
+ const rows=[at('old','2026-11-01T22:59:59Z'),at('start','2026-11-01T23:00:00Z'),at('later','2026-11-09T18:00:00Z'),at('void','2026-11-02T18:00:00Z',{voided:true}),at('invalid','2026-11-02T18:00:00Z',{sets_a:1,sets_b:1}),at('cancel','2026-11-02T18:00:00Z',{events:{starts_at:'2026-11-02T18:00:00Z',status:'cancelled'}})];
+ assert.deepEqual(japoLeagueGames(rows).map(g=>g.id),['start','later']);
+});
+test('matchdays count only events with results, deduplicate games and keep chronological J numbers',async()=>{
+ const {japoMatchdays}=await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`);
+ const at=(id,event_id,date,extra={})=>({...game(id,['a'],['b']),event_id,events:{starts_at:date,status:'scheduled'},...extra});
+ const rows=japoMatchdays([at('b','nov9','2026-11-09T18:00:00Z'),at('old','old','2026-10-26T18:00:00Z'),at('a','nov2','2026-11-02T18:00:00Z'),at('a2','nov2','2026-11-02T18:00:00Z'),at('void','nov16','2026-11-16T18:00:00Z',{voided:true})],'season');
+ assert.deepEqual(rows.map(r=>r.japoLabel),['J2 (9 Noviembre)','J1 (2 Noviembre)']);assert.equal(rows[1].season_id,'season');
+ assert.ok(!source.includes("children:`${date(e)} · ${e.title||'Entrenamiento'}`"));
+});
