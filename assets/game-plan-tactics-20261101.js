@@ -4,7 +4,10 @@ export const ROTATIONS=['R1','R2','R3','R4','R5','R6'];
 const zones=[1,2,3,4,5,6,7,8,9];
 export function normalizeTactics(plan={}){
  const rotations={};for(const r of ROTATIONS){const zone=Number(plan.serveByRotation?.[r]);rotations[r]=zones.includes(zone)?zone:null;}
- return {opponentDefense:Object.hasOwn(DEFENSES,plan.opponentDefense)?plan.opponentDefense:'',serveByRotation:rotations,
+ return {
+  openingServeRotation:ROTATIONS.includes(plan.openingServeRotation)?plan.openingServeRotation:'',
+  openingReceiveRotation:ROTATIONS.includes(plan.openingReceiveRotation)?plan.openingReceiveRotation:'',
+  opponentDefense:Object.hasOwn(DEFENSES,plan.opponentDefense)?plan.opponentDefense:'',serveByRotation:rotations,
  opponentServers:(Array.isArray(plan.opponentServers)?plan.opponentServers:[]).filter(s=>s&&typeof s==='object').map(s=>({name:String(s.name||''),dorsal:String(s.dorsal||''),type:Object.hasOwn(SERVES,s.type)?s.type:'',zone:zones.includes(Number(s.zone))?Number(s.zone):null,notes:String(s.notes||'')}))};
 }
 export function createTacticsComponents(React,jsx,Court){
@@ -15,6 +18,15 @@ export function createTacticsComponents(React,jsx,Court){
  const section=(title,description,...body)=>h('section',{className:'gp-editor-section gp-tactics-section'},h('div',{className:'gp-section-title'},h('div',null,h('h2',null,title),description?h('p',null,description):null)),...body);
  const foldSection=(title,status,...body)=>h('details',{className:'gp-editor-section gp-tactics-section gp-fold-section',open:true},
   h('summary',{className:'gp-section-title gp-fold-summary'},h('div',null,h('h2',null,title),h('p',null,status))),...body);
+ function OpeningRotationEditor({plan,onChange}){
+  const rotationField=(label,key)=>field(label,h('select',{
+   value:plan[key],onChange:event=>{const value=event.target.value;onChange(p=>{p[key]=value});}
+  },option('','Sin definir'),...ROTATIONS.map(rotation=>option(rotation,rotation))));
+  return section('Rotaciones de salida','Elige nuestra rotación inicial según cómo empiece el set.',
+   h('div',{className:'gp-server-fields'},
+    rotationField('En saque','openingServeRotation'),
+    rotationField('En recepción','openingReceiveRotation')));
+ }
  function DefenseEditor({plan,onChange}){
   return foldSection('Defensa rival',DEFENSES[plan.opponentDefense]||'Sin definir',
    h('div',{className:'gp-defense-options',role:'group','aria-label':'Tipo de defensa'},
@@ -73,6 +85,11 @@ export function createTacticsComponents(React,jsx,Court){
     onChange(p=>{p.opponentServers.push({name:'',dorsal:'',type:'',zone:null,notes:''})});
    }},'+ Añadir sacadora'));
  }
- function TacticsView({plan}){const p=normalizeTactics(plan),servers=p.opponentServers.filter(s=>(s.name.trim()||s.dorsal.trim())&&(s.type||s.zone||s.notes.trim()));return h(React.Fragment,null,p.opponentDefense?section('Defensa rival','',h('strong',{className:'gp-defense-value'},DEFENSES[p.opponentDefense])):null,!plan.hideServeObjectives&&ROTATIONS.some(r=>p.serveByRotation[r])?section('Nuestro saque por rotación rival','La rotación indicada corresponde al rival.',h('div',{className:'gp-rotation-summary'},...ROTATIONS.map(r=>h('span',{key:r},h('b',null,r),p.serveByRotation[r]?`Zona ${p.serveByRotation[r]}`:'Sin definir')))):null,servers.length?section('Saque rival por jugadora','',h('div',{className:'gp-server-list'},...servers.map((s,index)=>h('article',{className:'gp-server-card',key:index},h('strong',null,[s.dorsal?`#${s.dorsal}`:'',s.name].filter(Boolean).join(' · ')),s.type||s.zone?h('p',null,[SERVES[s.type],s.zone?`Destino habitual: Z${s.zone}`:''].filter(Boolean).join(' · ')):null,s.notes.trim()?h('p',{className:'gp-server-notes'},s.notes):null)))):null);}
- return {DefenseEditor,RotationEditor,ServersEditor,TacticsView};
+ function TacticsView({plan}){const p=normalizeTactics(plan),servers=p.opponentServers.filter(s=>(s.name.trim()||s.dorsal.trim())&&(s.type||s.zone||s.notes.trim()));return h(React.Fragment,null,
+ p.openingServeRotation||p.openingReceiveRotation?section('Rotaciones de salida','',
+  h('div',{className:'gp-server-fields'},
+   p.openingServeRotation?h('span',null,'En saque · ',h('strong',null,p.openingServeRotation)):null,
+   p.openingReceiveRotation?h('span',null,'En recepción · ',h('strong',null,p.openingReceiveRotation)):null)):null,
+ p.opponentDefense?section('Defensa rival','',h('strong',{className:'gp-defense-value'},DEFENSES[p.opponentDefense])):null,!plan.hideServeObjectives&&ROTATIONS.some(r=>p.serveByRotation[r])?section('Nuestro saque por rotación rival','La rotación indicada corresponde al rival.',h('div',{className:'gp-rotation-summary'},...ROTATIONS.map(r=>h('span',{key:r},h('b',null,r),p.serveByRotation[r]?`Zona ${p.serveByRotation[r]}`:'Sin definir')))):null,servers.length?section('Saque rival por jugadora','',h('div',{className:'gp-server-list'},...servers.map((s,index)=>h('article',{className:'gp-server-card',key:index},h('strong',null,[s.dorsal?`#${s.dorsal}`:'',s.name].filter(Boolean).join(' · ')),s.type||s.zone?h('p',null,[SERVES[s.type],s.zone?`Destino habitual: Z${s.zone}`:''].filter(Boolean).join(' · ')):null,s.notes.trim()?h('p',{className:'gp-server-notes'},s.notes):null)))):null);}
+ return {OpeningRotationEditor,DefenseEditor,RotationEditor,ServersEditor,TacticsView};
 }
