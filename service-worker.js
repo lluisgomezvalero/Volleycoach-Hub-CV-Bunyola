@@ -1,12 +1,16 @@
 const CACHE_PREFIX = 'volleycoach-react-pwa-';
-const CACHE_VERSION = '20261031-stats-fix-v16';
+const CACHE_VERSION = '20261105-navigation-refresh-v17';
 const CACHE_NAME = `${CACHE_PREFIX}${CACHE_VERSION}`;
 const OFFLINE_SHELL = ['./', './manifest.webmanifest'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    try { await cache.addAll(OFFLINE_SHELL); } catch (_) {}
+    try {
+      await cache.addAll(OFFLINE_SHELL.map(path =>
+        new Request(new URL(path, self.registration.scope), { cache: 'reload' })
+      ));
+    } catch (_) {}
     await self.skipWaiting();
   })());
 });
@@ -27,7 +31,7 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith((async () => {
     try {
-      return await fetch(request);
+      return await fetch(request, { cache: 'no-cache' });
     } catch (error) {
       const cache = await caches.open(CACHE_NAME);
       const fallback = await cache.match('./');
