@@ -1,0 +1,78 @@
+html .pro-rpe-panel .pro-rpe-summary-card {
+  padding: 9px 12px !important;
+  gap: 4px 8px !important;
+}
+html .individual-rpe-panel { overflow: visible; }
+html .individual-rpe-filters {
+  display: flex;
+  gap: 6px;
+  padding: 8px 9px;
+  border-bottom: 1px solid #f0ede7;
+}
+html .individual-rpe-filters button {
+  min-height: 36px;
+  padding: 6px 10px;
+  background: #f7f8fa;
+  border: 1px solid #e8e9ec;
+  border-radius: 9px;
+  color: #596577;
+  font: inherit;
+  font-size: .76rem;
+}
+html .individual-rpe-filters button[aria-pressed="true"] {
+  background: #fff4d4;
+  border-color: #e4c681;
+  color: #79551a;
+  font-weight: 750;
+}
+html .individual-rpe-panel .individual-rpe-row {
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  gap: 4px 7px;
+  padding: 6px 8px;
+  min-height: 46px;
+}
+html .individual-rpe-panel .individual-rpe-avatar { width: 26px; height: 26px; }
+html .individual-rpe-panel .individual-rpe-player strong { overflow-wrap: anywhere; }
+html .individual-rpe-panel .individual-rpe-actions {
+  grid-column: 3;
+  max-width: none;
+  margin: 0;
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+html .individual-rpe-panel .individual-rpe-override-button {
+  min-height: 36px;
+  padding: 5px 7px;
+  white-space: nowrap;
+  font-size: .69rem;
+}
+.individual-rpe-menu { position: relative; }
+.individual-rpe-menu summary {
+  display: grid;
+  place-items: center;
+  min-width: 32px;
+  min-height: 36px;
+  border-radius: 8px;
+  background: #f7f8fa;
+  color: #596577;
+  cursor: pointer;
+  list-style: none;
+  font-size: 1.15rem;
+}
+.individual-rpe-menu summary::-webkit-details-marker { display: none; }
+html .individual-rpe-menu > button {
+  position: absolute;
+  z-index: 4;
+  right: 0;
+  top: calc(100% + 4px);
+  background: white;
+  box-shadow: 0 4px 15px #172a4326;
+  white-space: nowrap;
+}
+.individual-rpe-row-status {
+  grid-column: 2 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 8px;
+}
+.individual-rpe-row-status .warning { color: #8a6023; }
