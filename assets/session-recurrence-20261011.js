@@ -1,4 +1,4 @@
-import {r as React,j as jsx,s as db} from './index-NTH10f-r.js?v=runtime-20261105-rpe-training-days';
+import {r as React,j as jsx,s as db} from './index-NTH10f-r.js?v=runtime-20261109-report-import';
 const days=[[1,'Lunes'],[2,'Martes'],[3,'Miércoles'],[4,'Jueves'],[5,'Viernes'],[6,'Sábado'],[0,'Domingo']];
 export function repeatDates(form){
  if(!form.repeat_weekly)return [form.date];

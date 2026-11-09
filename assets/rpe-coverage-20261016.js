@@ -1,4 +1,4 @@
-import {individualMinutes} from './individual-minutes-20261015.js?v=runtime-20261105-rpe-training-days';
+import {individualMinutes} from './individual-minutes-20261015.js?v=runtime-20261109-report-import';
 const WEEK=7*86400000;
 // Descriptive coverage only. It does not change load, reference or ACWR calculations.
 export function rpeCoverage(events,attendance,rpes,playerId,duration,now=Date.now()){
